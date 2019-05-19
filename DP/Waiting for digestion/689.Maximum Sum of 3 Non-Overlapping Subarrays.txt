@@ -1,0 +1,129 @@
+## Specification
+In a given array nums of positive integers, find three non-overlapping subarrays with maximum sum. Each subarray will be of size k, and we want to maximize the sum of all 3*k entries.
+Return the result as a list of indices representing the starting position of each interval (0-indexed). If there are multiple answers, return the lexicographically smallest one.
+
+Example:
+Input: [1,2,1,2,6,7,5,1], 2
+Output: [0, 3, 5]
+Explanation: Subarrays [1, 2], [2, 6], [7, 5] correspond to the starting indices [0, 3, 5].
+We could have also taken [2, 1], but an answer of [1, 3, 5] would be lexicographically larger.
+
+
+## Code
+# derived
+class Solution {
+    
+    int[] nums;
+    int[][] ref, accu;
+    
+    // ref[i][j]: starting index for subarray i+1 that enables max accu sum
+    // accu[i][j]: max accu sum given i+1\th subarray starting at j
+    private int solve(int cur, int curE, int k, int curSum) {
+        if (curE != 0) curSum += accu[curE-1][cur-k];
+        accu[curE][cur] = cur == 0 ? curSum : Math.max(curSum, accu[curE][cur-1]);
+        ref[curE][cur] = cur == 0 ? 0 : (accu[curE][cur-1] < curSum ? cur : ref[curE][cur-1]);
+        if (cur == nums.length-k*(3-curE)) return 0;
+        return curSum - nums[cur] + nums[cur + k] - (curE == 0 ? 0 : accu[curE-1][cur-k]);
+    }
+    
+    public int[] maxSumOfThreeSubarrays(int[] nums, int k) {
+        int n = nums.length, curSum = 0;
+        this.nums = nums; ref = new int[3][n]; accu = new int[3][n];
+        for (int curE = 0; curE < 3; curE++) {
+            for (int i = curE*k; i < curE*k+k; i++) curSum += nums[i];
+            for (int cur = curE*k; cur <= n-k*(3-curE); cur++)
+		// each time, we del the first from curSum and add the next
+		// otherwise, if k very large, we have to iterate thru k elements
+		// for summation each time
+                curSum = solve(cur, curE, k, curSum); 
+        }
+        int r3 = ref[2][n-k], r2 = ref[1][r3-k], r1 = ref[0][r2-k];
+        return new int[]{r1, r2, r3};
+    }
+}
+
+# naive_indep calculate sum each time
+class Solution {
+    
+    int[] nums;
+    int[][] ref;
+    
+    private int add(int cur, int curE, int k) {
+        int res = 0;
+        for (int i = curE, st = cur; i >= 0; i--, st = ref[curE-1][st-k])
+            for (int j = st; j < st + k; j++) res += nums[j];
+        return res;
+    }
+    
+    // curE-
+    // ref[i][j]: starting index for subarray i+1 that enables max accu sum
+    private int solve(int cur, int curE, int k, int sum) {
+        if (cur > nums.length - k*(3-curE) || cur < 2*k) return 0;
+        sum = Math.max(sum, add(cur, curE, k));
+        ref[curE][cur] = cur == 0 ? 0 : (add(cur-1, curE, k) < sum ? cur : ref[curE][cur-1]);
+        return sum;
+    }
+    
+    public int[] maxSumOfThreeSubarrays(int[] nums, int k) {
+        int sum1 = 0, sum2 = 0, sum3 = 0, n = nums.length;
+        this.nums = nums; ref = new int[3][n]; accu = new int[3][n];
+        for (int i = 0; i <= n-k; i++) {
+            sum3 = solve(i, 2, k, sum3);
+            sum2 = solve(i, 1, k, sum2);
+            sum1 = solve(i, 0, k, sum1);
+        }
+        int r3 = ref[2][n-k], r2 = ref[1][r3-k], r1 = ref[0][r2-k];
+        return new int[]{r1, r2, r3};
+    }
+}
+
+
+// use accu array to store
+/*
+id 0 1 2 3 4 5 6 7    k=2
+   1 2 1 2 6 7 5 1
+
+ref                         accu
+    id 0 1 2 3 4 5 6 7          id 0 1 2  3  4  5  6  7
+curE 0 0 0 0                curE 0 3 3 3
+     1     2 3 4                 1     6 11 16
+     2         4 5 5             2          19 23 22
+*/
+class Solution {
+    
+    int[] nums;
+    int[][] ref, accu;
+    /*
+    private int add(int cur, int curE, int k) {
+        int res = 0;
+        for (int i = curE, st = cur; i >= 0; i--, st = ref[curE-1][st-k])
+            for (int j = st; j < st + k; j++) res += nums[j];
+        return res;
+    }
+    */
+    private int add(int cur, int curE, int k) {
+        int ans = 0;
+        for (int i = cur; i < cur+k; i++) ans += nums[i];
+        if (curE != 0) ans += accu[curE-1][cur-k]; // cur will not be 0 is curE > 0
+        return ans;
+    }
+    
+    // ref[i][j]: starting index for subarray i+1 that enables max accu sum
+    // accu[i][j]: max accu sum given i+1\th subarray starting at j
+    private void solve(int cur, int curE, int k) {
+        if (cur > nums.length - k*(3-curE) || cur < curE*k) return;
+        int curSum = add(cur, curE, k);
+        accu[curE][cur] = cur == 0 ? curSum : Math.max(curSum, accu[curE][cur-1]);
+        ref[curE][cur] = cur == 0 ? 0 : (accu[curE][cur-1] < curSum ? cur : ref[curE][cur-1]);
+    }
+    
+    public int[] maxSumOfThreeSubarrays(int[] nums, int k) {
+        int n = nums.length;
+        this.nums = nums; ref = new int[3][n]; accu = new int[3][n];
+        for (int i = 0; i <= n-k; i++)
+            for (int curE = 2; curE >= 0; curE--) solve(i, curE, k);
+        int r3 = ref[2][n-k], r2 = ref[1][r3-k], r1 = ref[0][r2-k];
+        return new int[]{r1, r2, r3};
+        //return new int[]{accu[0][0], accu[0][1], accu[0][2], accu[1][2], accu[1][3], accu[1][4], accu[2][4], accu[2][5], accu[2][6]};
+    }
+}

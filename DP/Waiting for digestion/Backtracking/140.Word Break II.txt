@@ -1,0 +1,452 @@
+## Specification
+Given a non-empty string s and a dictionary wordDict containing a list of non-empty words,
+add spaces in s to construct a sentence where each word is a valid dictionary word. Return
+all such possible sentences.
+
+Note:
+The same word in the dictionary may be reused multiple times in the segmentation. You may
+assume the dictionary does not contain duplicate words.
+
+Example 1:
+Input:
+s = "catsanddog"
+wordDict = ["cat", "cats", "and", "sand", "dog"]
+Output:
+[
+  "cats and dog",
+  "cat sand dog"
+]
+
+Example 2:
+Input:
+s = "pineapplepenapple"
+wordDict = ["apple", "pen", "applepen", "pine", "pineapple"]
+Output:
+[
+  "pine apple pen apple",
+  "pineapple pen apple",
+  "pine applepen apple"
+]
+Explanation: Note that you are allowed to reuse a dictionary word.
+
+Example 3:
+Input:
+s = "catsandog"
+wordDict = ["cats", "dog", "sand", "and", "cat"]
+Output:
+[]
+
+
+## Ideas
+(3) Trie
+
+(2) DFS_mem
+Record all positions in s where valid words start at each i finish. Note, this is only
+recorded when such a word sequence cover the whole s.
+
+a) assemble words as recursing, add to r when reach the end
+b) record all valid words starting from each id no matter whether the rest string can be broken
+c) record id, when reach the end, build/assemble all words in stack (true DFS)
+
+(1) DFS, stack
+
+
+## Code
+// 2nd visit - Feb_18_2019
+class Solution {
+    
+    String s;
+    List<String> dict;
+    List<String>[] dp;
+    
+    public List<String> solve(int i) {
+        if (dp[i] != null) return dp[i];
+        List<String> cur = new ArrayList<String>();
+        for (int j = i; j < s.length(); j++) {
+            String cs = s.substring(i, j + 1);
+            if (!dict.contains(cs) || (j < s.length()-1 && solve(j + 1).isEmpty())) continue;
+            if (j == s.length() - 1) cur.add(cs);
+            else for (String ls : solve(j + 1)) cur.add(cs + " " + ls);
+        }
+        dp[i] = cur;
+        return dp[i];
+    }
+        
+    public List<String> wordBreak(String s, List<String> dict) {
+        this.s = s; this.dict = dict;
+        dp = new List[s.length() + 1];
+        return solve(0);
+    }
+}
+
+# (3) Trie
+class Solution {
+    struct TrieNode {
+        int index;
+        vector<TrieNode*> next;
+        TrieNode() : index(-1) {next.resize(26, NULL);}
+    };
+public:
+    vector<string> wordBreak(string s, vector<string>& wordDict) {
+        int N = s.size();
+        if (!N) return {};
+        
+        // reverse-order Trie, O(M) time & space, where M=sizeof(wordDict)
+        TrieNode root;
+        for (int i=0; i<wordDict.size(); i++) {
+            TrieNode *node = &root;
+            for (int j=wordDict[i].size()-1; j>-1; j--) {
+                if (!node->next[wordDict[i][j]-'a']) node->next[wordDict[i][j]-'a'] = new TrieNode();
+                node = node->next[wordDict[i][j]-'a'];
+            }
+            node->index = i;
+        }
+        
+        // DP, O(N^2) time & space
+        //  seg[i+1] restores indices of all possible words which end at s[i].
+        //  Only store words which are able to reach s[0]. This works for case ["aaa...baaa...", ["a", "aa", ...]].
+        
+        vector<vector<int>> seg(N+1);
+        seg[0].push_back(-1);
+        for (int i=0; i<N; i++) {
+            TrieNode *node = &root;
+            for (int j=i; j>-1 && node->next[s[j]-'a']; j--) {
+                node = node->next[s[j]-'a'];
+                if (node->index > -1 && !seg[j].empty()) seg[i+1].push_back(node->index);
+            }
+        }
+        
+        // DFS backtracking, O(R*N) time, O(N^2) space, where R=res.size() and R<=2^N
+        
+        vector<string> res;
+        vector<pair<int, int>> path;
+        path.push_back({N, seg[N].size()});
+        while (path.size()) {
+            int len = path.back().first, idx = --path.back().second;
+            if (len == 0) {
+                string str = "";
+                for (int i=path.size()-2; i>-1; i--) str += wordDict[seg[path[i].first][path[i].second]] + ' ';
+                str.erase(str.size()-1);
+                res.push_back(str);
+                path.pop_back();
+                continue;
+            }
+            if (idx > -1) {
+                int sublen = len - wordDict[seg[len][idx]].size();
+                path.push_back({sublen, seg[sublen].size()});
+            }
+            else path.pop_back();
+        }
+        
+        return res;
+    }
+};
+
+
+(2) DFS_mem
+// ** imp1 **
+class Solution {
+public:
+    // assemble words as recursing, add to r when reach the end
+    void buildResult(unordered_map<int, vector<int>>& result, int i, string& s, string curr, vector<string>& r) {
+        if (i == s.size()) {
+            r.push_back(curr);
+            return;
+        }
+        for (int j : result[i]) {
+            if (curr.empty())
+                buildResult(result, j, s, s.substr(i, j - i), r);
+            else
+                buildResult(result, j, s, curr + ' ' + s.substr(i, j - i), r);
+        }
+    }
+
+    vector<string> wordBreak(string& s, vector<string>& wordDict) {
+        unordered_set<string> dict (wordDict.begin(), wordDict.end());
+	// stores id where valid words that start at i finishes
+        unordered_map<int, vector<int>> result;
+        for (int i = s.size(); i >= 0; --i) {
+            for (int j = i + 1; j <= s.size(); ++j) {
+                string ss = s.substr(i, j - i);
+                if (dict.find(ss) == dict.end()) continue; // word not exists
+                if (j >= s.size()) // last word of s
+		    result[i].push_back(s.size());
+                else if (result.find(j) != result.end()) // there are words start from j that reach the end
+                    result[i].push_back(j);
+            }
+        }
+        vector<string> r;
+        buildResult(result, 0, s, "", r);
+        return r;
+    }
+};
+
+// ** imp2 **
+class Solution {
+    
+    ArrayList<String>[] mem;
+    List<String> dict;
+    
+    public void construct(String str, int st) {
+        if (st >= str.length()) return;
+        for (String s : dict) {
+            if (!str.substring(st).startsWith(s) || mem[st].contains(s)) continue;
+            mem[st].add(s);
+            construct(str, st + s.length()); // dfs
+        }
+    }
+    
+    public List<String> wordBreak(String str, List<String> wordDict) {
+        mem = new ArrayList[str.length()];
+        dict = wordDict;
+        int len = str.length();
+        for (int i = 0; i < len; i++) mem[i] = new ArrayList<String>();
+        construct(str, 0);
+        
+        /*
+        ArrayList<String> test = new ArrayList<String>();
+        for (int i = 0; i < str.length(); i++) {
+            if (mem[i].isEmpty()) continue;
+            for (String s : mem[i]) test.add(s);
+            test.add(Integer.toString(i));
+        }
+        */
+        
+        for (int i = len - 1; i >= 0; i--) {
+            if (mem[i].isEmpty()) continue;
+            ArrayList<String> newal = new ArrayList<String>();
+            for (String s1 : mem[i]) {
+                if (i + s1.length() >= len) newal.add(s1);
+                else if (!mem[i + s1.length()].isEmpty())
+                    for (String s2 : mem[i + s1.length()]) newal.add(s1 + " " + s2);
+            }
+            mem[i] = newal;
+        }
+        return mem[0];
+        //return test;
+    }
+}
+
+// ** imp3 **
+class Solution {
+    
+    boolean[] bk; // bk[i] == true indicates str can be divided into (0, i - 1) & (i, ..)
+    ArrayList<String> res = new ArrayList<String>();
+    
+    // build result from recorded start, end position
+    public void dfs(String str, Stack<String> mem, int st, List<String> wordDict) {
+	// when reach the end, build/assemble all words in stack
+        if (st == str.length()) {
+            String cur = "";
+            for (String s : mem) cur += " " + s;
+            res.add(cur.substring(1, cur.length()));
+            return;
+        }
+	//dfs
+        for (int i = st + 1; i <= str.length(); i++) {
+            if (!bk[i] || !wordDict.contains(str.substring(st, i))) continue;
+            mem.push(str.substring(st, i));
+            dfs(str, mem, i, wordDict);
+            mem.pop();
+        }
+    }
+
+    public List<String> wordBreak(String str, List<String> wordDict) {
+        bk = new boolean[str.length() + 1];
+        bk[0] = true;
+        for (int i = 1; i <= str.length(); i++) {
+            for (int j = i - 1; j >= 0 ; j--) {
+                if (!bk[j] || !wordDict.contains(str.substring(j, i))) continue;
+                bk[i] = true;
+                break;
+            }
+        }
+        if (!bk[str.length()]) return res;
+        dfs(str, new Stack<String>(), 0, wordDict);
+        return res;
+    }
+}
+
+// cpp
+class Solution {
+public:
+    void dfs(string s, int pos, vector<string>& res, vector<string>& temp, vector<bool>& dp, vector<string>& wordDict){
+        if(pos == dp.size()-1){
+            string s = "";
+            for(int i = 0; i < temp.size()-1; i++){
+                s += temp[i] + " ";
+            }
+            s += temp.back();
+            res.push_back(s);
+            return;
+        }
+        //DFS
+        for(int i = pos+1; i < dp.size(); i++){
+            if(dp[i] && find(wordDict.begin(), wordDict.end(), s.substr(pos, i - pos))!= wordDict.end()){
+                temp.push_back(s.substr(pos, i-pos));
+                dfs(s, i, res, temp, dp, wordDict);
+                temp.pop_back();
+            }            
+        }
+    }
+
+    vector<string> wordBreak(string s, vector<string>& wordDict) {
+        vector<string> res;
+        vector<string> temp;
+        //dp[i] indicates that s could be seperated as [0, i-1] and [i, size-1]
+        vector<bool> dp(s.size()+1, false);
+        dp[0] = true;
+        
+        for(int i = 1; i <= s.size(); i++){
+            for(int j = i-1; j >= 0; j--){                
+                if(dp[j] && find(wordDict.begin(), wordDict.end(), s.substr(j,i-j)) != wordDict.end()){
+                    dp[i] = true;
+                    break;
+                }
+            }
+        }
+        if(dp[s.size()])
+            dfs(s, 0, res, temp, dp, wordDict);
+        return res;
+    }
+};
+
+
+(1)
+
+// ** 1st try **
+// same as 2nd visit not real dfs
+class Solution {     
+
+    // returns an array including all substrings derived from s.
+    List<String> DFS(String s, List<String> wordDict, HashMap<String, LinkedList<String>>map) {
+        if (map.containsKey(s)) return map.get(s);
+        LinkedList<String> res = new LinkedList<String>();
+        if (s.length() == 0) { res.add(""); return res; }
+        for (String word : wordDict) {
+            if (!s.startsWith(word)) continue;
+            List<String>sublist = DFS(s.substring(word.length()), wordDict, map);
+            for (String sub : sublist)
+                res.add(word + (sub.isEmpty() ? "" : " ") + sub);
+        }
+        map.put(s, res);
+        return res;
+    }
+
+    public List<String> wordBreak(String s, List<String> wordDict) {
+        return DFS(s, wordDict, new HashMap<String, LinkedList<String>>());
+    }
+}
+
+class Solution {
+    private Map<Integer, List<String>> cache = new HashMap<>();
+    int maxWordLen = 0;
+
+    private List<String> dfs(String s, int i, Set<String> wordDict) {
+        if(cache.get(i) != null) return cache.get(i);
+        List<String> ret = new ArrayList<>();
+        for(int j = i+1; j <= Math.min(s.length(), i+maxWordLen); ++j) {
+            String w = s.substring(i, j);
+            if(wordDict.contains(w)) {
+                List<String> res = dfs(s, j, wordDict);
+                for(String sub: dfs(s, j, wordDict)) ret.add("".equals(sub) ? w : w + " " + sub);
+            }
+        }
+        cache.put(i, ret);
+        return cache.get(i);
+    }
+
+    public List<String> wordBreak(String s, List<String> wordDict) {
+        Set<String> dict = new HashSet<>(wordDict);
+        for(String word: wordDict) maxWordLen = Math.max(maxWordLen, word.length());
+        List<String> last = new ArrayList<>();
+        last.add("");
+        cache.put(s.length(), last); 
+        return dfs(s, 0, dict);
+    }
+}
+
+// ** naive **
+// TLE
+class Solution {
+    
+    List<String> res;
+    String sp;
+    HashSet<String> dict;
+    int len;
+    
+    public void find(int st, int ed, String s) {
+        if (ed > len) return;
+        String cur = sp.substring(st, ed);
+        if (dict.contains(cur)) {
+            //res.add(cur);
+            StringBuilder sb = new StringBuilder(s);
+            sb.append(cur + " ");
+            if (ed >= len) { res.add(sb.toString().substring(0, sb.toString().length() - 1)); return; }
+            else if (ed < len) find(ed, ed + 1, sb.toString());
+        }
+        find(st, ed + 1, s);
+    }
+    
+    public List<String> wordBreak(String str, List<String> wordDict) {
+        res = new ArrayList<String>();
+        sp = str;
+        dict = new HashSet<String>();
+        len = str.length();
+        for (String s : wordDict) dict.add(s);
+        String ini = new String();
+        find(0, 1, ini);
+        return res;
+    }
+}
+
+
+class Solution {
+    
+    HashSet<String> dict;
+    HashMap<Integer, ArrayList<String>> stor = new HashMap<Integer, ArrayList<String>>();
+    
+    public void construct(String s, int len, int st) {
+        for (int i = st + 1; i <= len; i++) { // i is idx of cur char in str
+            String cur = s.substring(st, i);
+            if (dict.contains(cur)) {
+                ArrayList<String> a = stor.get(st);
+                if (!stor.get(st).contains(cur)) a.add(cur);
+                stor.put(st, a);
+                construct(s, len, i);
+            }
+        }
+    }
+    
+    public List<String> wordBreak(String str, List<String> wordDict) {
+        int len = str.length();
+        dict = new HashSet<String>(wordDict);
+        for (int i = 0; i < str.length(); i++) stor.put(i, new ArrayList<String>());
+        construct(str, len, 0);
+        
+        
+        ArrayList<String> test = new ArrayList<String>();
+        for (int i = 0; i < len; i++) {
+            if (stor.get(i).isEmpty()) continue;
+            for (String s : stor.get(i)) {
+                test.add(s);
+            }
+            test.add(Integer.toString(i));
+        }
+        
+        /*
+        for (int i = len - 1; i >= 0; i--) {
+            if (stor.get(i).isEmpty()) continue;
+            ArrayList<String> newal = new ArrayList<String>();
+            for (String s1 : stor.get(i)) {
+                if (i + s1.length() >= len) newal.add(s1);
+                else if (!stor.get(i + s1.length()).isEmpty())
+                    for (String s2 : stor.get(i + s1.length())) newal.add(s1 + " " + s2);
+            }
+            stor.replace(i, newal);
+        }
+        return stor.get(0);
+        */
+        return test;
+    }
+}

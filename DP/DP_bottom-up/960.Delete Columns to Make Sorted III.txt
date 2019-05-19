@@ -1,0 +1,113 @@
+## Specification
+We are given an array A of N lowercase letter strings, all of the same length. Now, we may choose any set of deletion indices, and for each string, we delete all the characters in those indices. For example, if we have an array A = ["babca","bbazb"] and deletion indices {0, 1, 4}, then the final array after deletions is ["bc","az"].
+
+Suppose we chose a set of deletion indices D such that after deletions, the final array has every element (row) in lexicographic order. For clarity, A[0] is in lexicographic order (ie. A[0][0] <= A[0][1] <= ... <= A[0][A[0].length - 1]), and so on. Return the minimum possible value of D.length.
+
+Example 1:
+Input: ["babca","bbazb"]
+Output: 3
+Explanation: After deleting columns 0, 1, and 4, the final array is A = ["bc", "az"].
+Both these rows are individually in lexicographic order (ie. A[0][0] <= A[0][1] and A[1][0] <= A[1][1]).
+Note that A[0] > A[1] - the array A isn't necessarily in lexicographic order.
+
+Example 2:
+Input: ["edcba"]
+Output: 4
+Explanation: If we delete less than 4 columns, the only row won't be lexicographically sorted.
+
+Example 3:
+Input: ["ghi","def","abc"]
+Output: 0
+Explanation: All rows are already lexicographically sorted.
+
+Note:
+1 <= A.length <= 100
+1 <= A[i].length <= 100
+
+
+
+## Testcases
+["aaa","aaa","aaa"]
+["aaaabaa"]
+
+
+## Ideas
+# (2) DP_bottom-up
+// others
+Lee boil this down to "Take n cols as n elements, so we have an array of n elements and we are searching for the maximum increasing subsequence"
+
+
+// indep
+We first set dp be of size [n-1][n] to accomodate an extra column dp[:][n] which stores the total # of chars after appending nothing to each char in the string which is simply 1. Then, for each char starting from the last, say ith char now, we are evaluating the possible result, appending chars [i+1, n-1] to it. If for a specific string A[.][i] = 'b' while A[.][j] = 'a', then we cannot append j to i, in this case, we set dp[i][j] as the max of dp[i][j+1 : n-1]. Otherwise, if j can be appended to i, then we appending not only j but also all chars that can be added following j together to i, leading to dp[j][j+1] + 1 possibilities.
+
+
+# (1) DP_top-down
+Whichever DP imple used, be sure not to to iterate over string vectors which will boost the running time almost 8 times, and space more than 10 times!!!!!
+
+
+# (0) DP_definition
+// derived
+dp[i] denotes the maximum # of chars (i ~ n-1) maintained across all strs
+
+
+// indep
+If the strings are all of one char, then nothing need to be removed. Based on this, to decide how many chars can removed to the least, we can simulate the process, adding new chars to the single char. 
+
+(DP_bottom-up imple)
+dp[i][j], max # of chars after appending valid chars (j ~ n-1) to char i for all strs.
+For each char in the string, we set it as the first char and serially appending the following chars to it.
+
+(DP_top-down imple)
+dp[i][j] records the maximum # of chars (0~i) that can be added given last char in all strings being the jth one. For each char in the string, we set it as the last char and serially appending the preceding chars to it.
+
+
+
+## Code
+# (2) DP_bottom-up
+// derived
+class Solution {
+public:
+    int minDeletionSize(vector<string>& A) {
+        int n = A[0].size(), ans = 0;
+	if (n <= 1) return 0;
+        // dp[i], max # of chars maintained from ith char onward for all strs
+        vector<int> dp(n, 1);
+        for (int i = n - 2; i >= 0; i--) { // from ith char onward
+            for (int j = i + 1, match = 1; j < n; j++, match = 1) { // appending jth char following ith char
+                for (int s = 0; s < A.size(); s++)
+                    if (A[s][i] > A[s][j]) { match = 0; break; }
+                if (match) dp[i] = max(dp[i], 1 + dp[j]);
+            }
+        }
+        for (int i : dp)
+            ans = max(ans, i);
+        return n - ans;
+    }
+};
+
+// indep_160ms/20ms
+class Solution {
+public:
+    // whether A[:][preced] can be appended following A[:][cur]
+    int check(int cur, int preced, vector<string>& A) {
+	for (int i= 0; i < A.size(); i++)
+        // for (string s : A)
+            if (A[i][cur] > A[i][preced]) return 0;
+        return 1;
+    }
+    
+    int minDeletionSize(vector<string>& A) {
+        int n = A[0].size(), ans = 0;
+        // dp[i][j], max # of chars after appending valid chars (j ~ n-1) to char i for all strs
+        int dp[n][n + 1]; memset(dp, 0, sizeof(dp));
+        for (int i = 0; i < n; i++) dp[i][n] = 1;
+        
+        for (int cur = n - 2; cur >= 0; cur--)
+            for (int fol = n - 1; fol > cur; fol--)
+                dp[cur][fol] = max(dp[cur][fol + 1], check(cur, fol, A) ? (1 + dp[fol][fol + 1]) : 0);
+        
+        for (int i = 0; i < n; i++)
+            ans = max(ans, dp[i][i + 1]);
+        return n - ans;
+    }
+};

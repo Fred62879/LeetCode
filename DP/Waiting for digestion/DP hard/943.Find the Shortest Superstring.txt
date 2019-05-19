@@ -1,0 +1,352 @@
+## Specification
+Similar: LT847
+Given an array A of strings, find any smallest string that contains each string in A as a substring. We may assume that no string in A is substring of another string in A.
+ 
+Example 1:
+Input: ["alex","loves","leetcode"]
+Output: "alexlovesleetcode"
+Explanation: All permutations of "alex","loves","leetcode" would also be accepted.
+
+Example 2:
+Input: ["catg","ctaagt","gcta","ttca","atgcatc"]
+Output: "gctaagttcatgcatc"
+
+Note:
+1 <= A.length <= 12
+1 <= A[i].length <= 20
+
+
+## Testcases
+["catg","ctaagt","gcta","ttca","atgcatc"]
+["catg","gcta","ttca","ctaagt"]
+[catgcta, gctacatg, ctaagtgcta,]
+
+
+
+## Ideas
+(6) SP
+https://leetcode.com/problems/find-the-shortest-superstring/discuss/198920/Shortest-Hamiltonian-Path-in-weighted-digraph-(with-instructional-explanation)
+
+https://leetcode.com/problems/find-the-shortest-superstring/discuss/196888/Shortest-Path-Problem-(Directed-acyclic-graph-with-nonnegative-weights)
+
+
+(5) BFS
+https://leetcode.com/problems/find-the-shortest-superstring/discuss/231018/C%2B%2B-bfs
+
+
+(4) DFS
+https://leetcode.com/problems/find-the-shortest-superstring/discuss/195063/Complete-search-(DFS)-with-simple-prunning *** slow ***
+
+https://leetcode.com/problems/find-the-shortest-superstring/discuss/232754/Go-solutiongreedy-DFS-4ms-faster-than-100-987.1KB-less-than-100.
+
+
+(3) DP_bottom-up
+https://leetcode.com/problems/find-the-shortest-superstring/discuss/194932/Travelling-Salesman-Problem
+
+
+(2) DP_top-down/DFS
+https://leetcode.com/problems/find-the-shortest-superstring/discuss/195564/java-dp-with-bitmask-o(12-*-212-*-12).-easy-to-explain-and-impl-in-20mins.-cheers!
+
+https://leetcode.com/problems/find-the-shortest-superstring/discuss/195655/Python-Recursive-DFS-%2B-Memo
+
+
+(1) Greedy
+https://www.jianshu.com/p/a3035d6fe213
+
+// allegedely wrong
+https://leetcode.com/problems/find-the-shortest-superstring/discuss/195040/Greedy-solution-is-WRONG.-If-your-greedy-solution-gets-AC-it-only-means-you-are-LUCKY-enough.
+
+
+## Code
+# (6) SP
+
+
+# (5) BFS
+
+
+# (4) DFS
+// extremely slow
+class Solution {
+private:
+    vector<vector<int>> g;
+    vector<int> max_points, path, max_path;
+    unordered_set<int> unused;
+    int sum = 0, max_sum = 0;
+    
+private:
+    void dfs() {
+        if (unused.size() == 0) {
+            if (sum >= max_sum) { max_sum = sum; max_path = path; }
+            return;
+        }
+        
+        std::vector<int> un;
+        int mp = 0;
+        for (auto u : unused) {
+            un.push_back(u);
+            mp += max_points[u];
+        }
+        if (mp + sum < max_sum) return; // cut
+        int prev = path.back();
+        for (auto u: un) {
+            unused.erase(u);
+            path.push_back(u);
+            sum += g[prev][u];
+            dfs();
+            sum -= g[prev][u];
+            path.pop_back();
+            unused.insert(u);
+        }
+    }
+    
+public:
+    string shortestSuperstring(vector<string>& A) {
+        g.assign(A.size(), vector<int>(A.size(), 0));
+        max_points.assign(A.size(), 0);
+        
+        for (int i = 0; i < A.size(); ++i) {
+            for (int j = 0; j < A.size(); ++j) {
+                if (i == j) continue;
+                int max_len = min(A[i].size(), A[j].size());
+                for (int t = 1; t <= max_len; ++t)
+                    if (std::equal(A[i].begin()+A[i].size()-t, A[i].end(), A[j].begin()))
+                        g[i][j] = t;
+                max_points[i] = max(max_points[i], g[i][j]);
+                max_points[j] = max(max_points[j], g[i][j]);
+            }
+        }
+        
+        for (int i = 0; i < A.size(); ++i) unused.insert(i);
+        for (int u = 0; u < A.size(); ++u) {
+            unused.erase(u);
+            path.push_back(u);
+            dfs();
+            path.pop_back();
+            unused.insert(u);
+        }
+        string res = A[max_path[0]];
+        for (int i = 1; i < max_path.size(); ++i)
+            res += A[max_path[i]].substr(g[max_path[i-1]][max_path[i]]);
+        return res;
+    }
+};
+
+
+# (3) DP_bottom-up_TSP
+// easy understanding
+class Solution {
+public:
+    string shortestSuperstring(vector<string>& A) {
+        int n = A.size();
+        vector<vector<string>> dp(1<<n,vector<string>(n));
+        vector<vector<int>> cost(n,vector<int>(n,0));
+        for(int i = 0;i<n;i++) for(int j = 0;j<n;j++) if(i!=j){
+            for(int k = min(A[i].size(),A[j].size());k>0;k--) if(A[i].substr(A[i].size()-k) == A[j].substr(0,k)){
+                cost[i][j] = k; break;
+            }
+        }
+        for(int i = 0;i<n;i++) dp[1<<i][i]+=A[i];
+        for(int o = 1;o<1<<n;++o){
+            for(int i = 0;i<n;i++) if(o&(1<<i)){
+                for(int j = 0;j<n;j++) if(i!=j && o&(1<<j)){
+                    string temp = dp[o^(1<<i)][j]+A[i].substr(cost[j][i]);
+                    if(dp[o][i].empty() || temp.size()<dp[o][i].size()) dp[o][i] = temp;
+                }
+            }
+        }
+        int last = (1<<n)-1;
+        string res = dp[last][0];
+        for(auto i:dp[last]) if(res.size()>i.size()) res = i;
+        return res;
+    }
+};
+
+// official_not_imple
+https://leetcode.com/problems/find-the-shortest-superstring/discuss/199029/Rewrite-the-official-solution-in-C%2B%2B
+
+class Solution {    
+public:
+    int overlap(string a, string b) {
+        int ans = 0, ovlp = 0, n = a.size(), m = b.size();
+        for (int i = 0, j = 0; i < n && j < m; i++) {
+            if (a[i] != b[j]) { i -= j; j = 0; ovlp = 0; }
+            else if (j == m - 1) {ans = max(ans, ovlp + 1); ovlp = 0; j = 0; }
+            else { ovlp++; j++; }
+        }
+        ans = max(ans, ovlp);
+        return ans == m ? -1 : ans;
+    }
+    
+    string shortestSuperstring(vector<string>& A) {
+        int n = A.size(), m = 1 << n;
+        // calculate pair-wise distance
+        vector<vector<int>> dist(n, vector<int>(n, 0));
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++) 
+                if (i != j) dist[i][j] = overlap(A[i], A[j]);
+        
+        // dp[i][j], total overlap for path i terminate at j
+        vector<vector<int>> dp(m, vector<int>(n, -1));
+        vector<vector<int>> edgeto(m, vector<int>(n, 0));
+        for (int i = 0; i < n; i++) dp[1 << i][i] = 0;
+        
+        // bottom-up DP
+        int st = 0;
+        for (int path = 1; path < m; path++) {
+            for (int node = 0; node < n; node++) {
+                if (((path >> node) & 1) == 0) continue;
+                int ppath = path^(1 << node);
+                if (ppath == 0) break;
+                // append node after tail
+                for (int tail = 0; tail < n; tail++) {
+                    if ((((path >> tail) & 1) == 0) || node == tail) continue;
+                    int prevOvlp = dp[path][node];
+                    int curOvlp = dp[ppath][tail] + dist[tail][node];
+                    if (prevOvlp < curOvlp) { 
+                        dp[path][node] = curOvlp; edgeto[path][node] = tail; 
+                        if (path == m - 1) st = node;
+                    }
+                }
+            }
+        }
+        // cout << st << edgeto[1<<st][st];
+        
+        // trace and generate ans string
+        string res = A[st]; 
+        int trace = 1 << st;
+        while (trace != m - 1) {
+            int next = edgeto[trace][st], ovlp = dist[st][next];
+            if (ovlp != -1) res += A[next].substr(ovlp, A[next].size());
+            trace |= (1 << next); st = next;
+            cout << trace << ", " << next;
+        }
+        // return res;
+        
+        return "";
+    }
+};
+
+# (2) DP topdown
+// others_self imple
+class Solution {
+private:
+    vector<vector<int>> dist, dp, edgeto;
+public:
+    // max overlap between a & b (start from b[0]); if b contained in a, return -1
+    int overlap(string a, string b) {
+        int ans = 0, ovlp = 0, n = a.size(), m = b.size();
+        for (int i = 0, j = 0; i < n && j < m; i++) {
+            if (a[i] != b[j]) { i -= j; j = 0; ovlp = 0; }
+            else if (j == m - 1) {ans = max(ans, ovlp + 1); ovlp = 0; j = 0; }
+            else { ovlp++; j++; }
+        }
+        ans = max(ans, ovlp);
+        return ans == m ? -1 : ans;
+    }
+    
+    // max overlap given cur string end at tail with path being occupied
+    int solve(int n, int path, int tail, vector<string>& A, vector<vector<int>>& dist, vector<vector<int>>& dp, vector<vector<int>>& edgeto) {
+        if (path == (1 << n) - 1) return 0;
+        if (dp[path][tail] != -1) return dp[path][tail];
+        
+        int ans = INT_MIN;
+        for (int i = 0; i < n; i++) {
+            if ((path >> i) & 1) continue; // str i visited before
+            int ovlp = dist[tail][i], cur, npath = path | (1 << i);
+            
+            if (ovlp == -1) cur = A[i].size() + solve(n, npath, tail, A, dist, dp, edgeto);
+            else cur = ovlp + solve(n, npath, i, A, dist, dp, edgeto);
+            
+            if (cur > ans) { ans = cur; edgeto[path][tail] = i; }
+        }
+        dp[path][tail] = ans;
+        return ans;
+    }
+    
+    string shortestSuperstring(vector<string>& A) {
+        int n = A.size(), m = 1 << n;
+        // calculate pair-wise distance
+        vector<vector<int>> dist(n, vector<int>(n, 0));
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++) 
+                if (i != j) dist[i][j] = overlap(A[i], A[j]);
+        // dp
+        vector<vector<int>> dp(m, vector<int>(n, -1)); // dp[i][j] path i terminate at j
+        vector<vector<int>> edgeto(m, vector<int>(n, -1));
+        int st = 0, ans = INT_MIN;
+        for (int root = 0; root < n; root++) {
+            int cur = solve(n, 1 << root, root, A, dist, dp, edgeto);
+            if (cur > ans) { ans = cur; st = root; }
+        }
+        // trace and generate ans string
+        string res = A[st]; 
+        int trace = 1 << st;
+        while (trace != m - 1) {
+            int next = edgeto[trace][st], ovlp = dist[st][next];
+            if (ovlp != -1) res += A[next].substr(ovlp, A[next].size());
+            trace |= (1 << next); st = next;
+        }
+        return res;
+    }
+};
+
+// java
+class Solution {
+    int overlap(String a, String b) {
+        int ans = 0, ovlp = 0, n = a.length(), m = b.length();
+        for (int i = 0, j = 0; i < n; i++) {
+            if (a.charAt(i) != b.charAt(j)) { i -= j; j = 0; ovlp = 0; }
+            else if (j == m-1) {ans=Math.max(ans,ovlp+1); ovlp = 0; j = 0; }
+            else { ovlp++; j++; }
+        }
+        ans = Math.max(ans, ovlp);
+        return ans == m ? -1 : ans;
+    }
+    
+    // max overlap given cur string end at tail with path being occupied
+    int solve(int n, int path, int tail, String[] A, int[][] dist, int[][] dp, int[][] edgeto) {
+        if (path == (1 << n) - 1) return 0;
+        if (dp[path][tail] != -1) return dp[path][tail];
+        int ans = Integer.MIN_VALUE;
+        for (int i = 0; i < n; i++) {
+            if (((path >> i) & 1) == 1) continue;
+            int ovlp = dist[tail][i], cur;
+            if (ovlp == -1) cur = solve(n, path | (1 << i), tail, A, dist, dp, edgeto);
+            else cur = ovlp + solve(n, path | (1 << i), i, A, dist, dp, edgeto);
+            if (cur > ans) { ans = cur; edgeto[path][tail] = i; }
+        }
+        dp[path][tail] = ans;
+        return ans;
+    }
+    
+    public String shortestSuperstring(String[] A) {
+        int n = A.length, m = 1 << n;
+        // calculate pair-wise distance
+        int[][] dist = new int[n][n];
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++) 
+                if (i != j) dist[i][j] = overlap(A[i], A[j]);
+        // dp
+        int[][] dp = new int[m][n], edgeto = new int[m][n];
+        for (int i = 0; i < m; i++) { Arrays.fill(dp[i], -1);  Arrays.fill(edgeto[i], -1); }
+        int st = 0, ans = Integer.MIN_VALUE;
+        for (int root = 0; root < n; root++) {
+            int cur = solve(n, 1 << root, root, A, dist, dp, edgeto);
+            System.out.println("distance: " + cur);
+            if (cur > ans) { ans = cur; st = root; }
+        }
+        //System.out.println("****" + st);
+        // trace and generate ans string
+        StringBuilder res = new StringBuilder(); 
+        res.append(A[st]);
+        int trace = 1 << st;
+        while (trace != m - 1) {
+            int next = edgeto[trace][st], ovlp = dist[st][next];
+            if (ovlp != -1) res.append(A[next].substring(ovlp));
+            trace |= (1 << next); st = next;
+        }
+        return res.toString();
+    }
+}
+
+# (1) Greedy

@@ -1,0 +1,103 @@
+**** Specification ****
+Given an array of non-negative integers, you are initially positioned at 
+the first index of the array. Each element in the array represents your
+maximum jump length at that position. Your goal is to reach the last index
+in the minimum number of jumps.
+
+Example:
+Input: [2,3,1,1,4]
+Output: 2
+Explanation: The minimum number of jumps to reach the last index is 2. 
+Jump 1 step from index 0 to 1, then 3 steps to the last index.
+
+
+**** Testcases ****
+[7,3,4,5,6,7,8,5,4,2,8,3,9,10,23,21,32,14,22,28,19]
+TLE
+[5,6,4,4,6,9,4,4,7,4,4,8,2,6,8,1,5,9,6,5,2,7,9,7,9,6,9,4,1,6,8,8,4,4,2,0,3,8,5]
+MLE
+[8,2,4,4,4,9,5,2,5,8,8,0,8,6,9,1,1,6,3,5,1,2,6,6,0,4,8,6,0,3,2,8,7,6,5,1,7,0,3,4,8,3,5,9,0,4,0,1,0,5,9,2,0,7,0,2,1,0,8,2,5,1,2,3,9,7,4,7,0,0,1,8,5,6,7,5,1,9,9,3,5,0,7,5]
+
+
+**** Ideas ****
+(4) based on previous BFS idea, we do not record anything. Instead, we calculate
+the range of each level while incrementing the # jumps by one after each level
+
+(3) BFS. Start with pos 0, we update the number of jumps to reach pos in the
+next level (1, 0+nums[0]). The first jump breach the array will be the smallest
+number of junmps
+
+
+**** Code ****
+// 4th
+class Solution {
+    public int jump(int[] nums) {
+        int n = nums.length, st = 0, ed = 0, f = 0, pj = 0;
+        if (n <= 2) return n-1;
+        while (st < n) {
+            for (int i = st; i <= ed; i++) {
+                if (i + nums[i] >= n - 1) return pj + 1;
+                f = Math.max(f, i + nums[i]);
+            }
+            st = ed + 1; ed = f; f = 0; pj++;
+        }
+        return 0;
+    }
+}
+
+// 3rd
+class Solution {
+    public int jump(int[] nums) {
+        int n = nums.length, ans = Integer.MAX_VALUE, st = 0, ed = 0, f = 0;
+        if (n <= 2) return n-1;
+        int[] ref = new int[n]; Arrays.fill(ref, Integer.MAX_VALUE);
+        ref[0] = 0;
+        while (st < n) {
+            for (int i = st; i <= ed; i++) {
+                if (i + nums[i] >= n - 1) return ref[i] + 1;
+                f = Math.max(f, i + nums[i]);
+                for (int j = ed + 1; j <= i + nums[i] && j < n; j++) {
+                    ref[j] = Math.min(ref[j], ref[i] + 1);
+                }
+            }
+            st = ed + 1; ed = f; f = 0;
+        }
+        return ans;
+    }
+}
+
+// 2nd
+class Solution {
+    public int jump(int[] nums) {
+        int n = nums.length, ans = Integer.MAX_VALUE;
+        if (n <= 2) return n-1;
+        LinkedList<int[]> ref = new LinkedList<int[]>();
+        ref.add(new int[]{0, 0});
+        while (!ref.isEmpty()) {
+            int[] cur = ref.removeFirst();
+            int nm = cur[0], curid = cur[1];
+            if (curid + nums[curid] >= n - 1) return nm + 1;
+            for (int i = curid + 1; i <= curid + nums[curid] && i < n; i++)
+                ref.addLast(new int[]{nm + 1, i});
+        }
+        return ans;
+    }
+}
+
+// 1st
+class Solution {
+    public int jump(int[] nums) {
+        int n = nums.length, ans = Integer.MAX_VALUE;
+	if (n <= 2) return n-1;
+        LinkedList<int[]> ref = new LinkedList<int[]>();
+        ref.add(new int[]{0, 0});
+        while (!ref.isEmpty()) {
+            int[] cur = ref.removeLast();
+            int nm = cur[0], curid = cur[1];
+            if (curid + nums[curid] >= n - 1) ans = Math.min(ans, nm + 1);
+            for (int i = curid + 1; i <= curid + nums[curid] && i < n; i++)
+                ref.addLast(new int[]{nm + 1, i});
+        }
+        return ans;
+    }
+}

@@ -1,0 +1,22 @@
+class Solution {
+    public int maxProfit(int[] p) {
+        int k = 2;
+        if (p.length == 0) return 0;
+        int[][] res = new int[k + 1][p.length];
+        for (int i = 1; i <= k; i++) {           // i is transaction number
+            int maxProfBfSell = Integer.MIN_VALUE;
+            for (int j = 1; j < p.length; j++) { // j is day number
+                int prevProf = res[i][j - 1];
+                maxProfBfSell = Math.max(maxProfBfSell, res[i - 1][j - 1] - p[j - 1]);
+                // max accumulated total profit till previous trans
+                // last trans should end before previous day for sake of a success purchase for cur trans
+                res[i][j] = Math.max(prevProf, maxProfBfSell + p[j]); 
+                // current trans ends either in/before previous day or right today - val is total profit
+                // trans ends right today means just sell out xx today --> max total profit = max profit from
+                // previous trans + price today. NOTE: profit is calculated in accumulation, with purchase
+                // behavior causing decrease in profit
+            }
+        }
+        return res[k][p.length - 1];
+    }
+}

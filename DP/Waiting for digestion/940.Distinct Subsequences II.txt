@@ -1,0 +1,44 @@
+## Specification
+Similar: LT132,647,730
+Given a string S, count the number of distinct, non-empty subsequences of S. Since the result may be large, return the answer modulo 10^9 + 7. 
+
+Example 1:
+Input: "abc"
+Output: 7
+Explanation: The 7 distinct subsequences are "a", "b", "c", "ab", "ac", "bc", and "abc".
+
+
+## Testcases
+"cebacd"
+"abcadac"
+"cccdc"
+"zchmliaqdgvwncfatcfivphddpzjkgyygueikthqzyeeiebczqbqhdytkoawkehkbizdmcnilcjjlpoeoqqoqpswtqdpvszfaksn"
+
+
+## Ideas
+Iterating from the last char to the first, we are updating the (a) ans which records the total # of unique substrings so far and also the (b) dp array which records all unique substrings start from the current char.
+
+At, say char 'b', to update ans, first calculate all substrings (allow duplicates) from cur onward which is 2*prev+1. To remove duplicates we subtract all substrings starting from the 'b' if any existed after current position (a). To update dp array, we simply assign 'b' in dp array with prev ans + 1. This works as all subarray starting with 'b' now will starting from this current b equals to appending b to all unique substrings from the next char onward.
+
+     a  d  a  c
+ans 13  7  3  1 (from c to a)
+dp   8  4  2  1
+
+
+## Code
+// indep_fastest and space efficient
+class Solution {
+public:
+    int distinctSubseqII(string S) {
+        int n = S.size(), q = 1e9 + 7;
+        unsigned int ans = 1;
+        vector<int> dp(26, 0); // dp[i], # of substring start with char i
+        dp[S[n-1] -'a'] = 1;
+        for (int i = n - 2; i >= 0; i--) {
+            int letr = S[i] - 'a', hold = (ans + 1) % q;
+            ans = (ans*2 + 1 - dp[letr] + q) % q;
+            dp[letr] = hold;
+        }
+        return ans;
+    }
+};

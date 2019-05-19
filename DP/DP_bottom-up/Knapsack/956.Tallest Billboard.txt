@@ -1,0 +1,237 @@
+## Specification
+You are installing a billboard and want it to have the largest height.  The billboard will have two steel supports, one on each side.  Each steel support must be an equal height. You have a collection of rods which can be welded together. For example, if you have rods of lengths 1, 2, and 3, you can weld them together to make a support of length 6. Return the largest possible height of your billboard installation.  If you cannot support the billboard, return 0.
+
+Example 1:
+Input: [1,2,3,6]
+Output: 6
+Explanation: We have two disjoint subsets {1,2,3} and {6}, which have the same sum = 6.
+
+Example 2:
+Input: [1,2,3,4,5,6]
+Output: 10
+Explanation: We have two disjoint subsets {2,3,5} and {4,6}, which have the same sum = 10.
+
+Example 3:
+Input: [1,2]
+Output: 0
+Explanation: The billboard cannot be supported, so we return 0.
+
+Note:
+0 <= rods.length <= 20
+1 <= rods[i] <= 1000
+The sum of rods is at most 5000.
+
+
+## Testcases
+[3,4,7,6,5,2] - 12
+[50,68,70,55,73,68,55,68,64,70,60,66,56,64,60,53,1000,1000,1000,1000]
+
+
+## Ideas
+# DP_top-down
+https://leetcode.com/problems/tallest-billboard/discuss/204160/C%2B%2B-16-ms-DFS-%2B-memo
+https://leetcode.com/problems/tallest-billboard/discuss/203942/C%2B%2B-16ms-solution-beats-100
+The basic idea is that at each rod, we have 3 choices, either bypass it, add to bag 1, or add to bag 2. The dp structure can be designed based on knapsack idea. Actually, instead of remembering dp[a][b][cur] where a and b is current value of two bags, remembering the diff between two bags suffices.
+
+For instance, at 5th rod, if current a, b are 10 and 4, then we dfs to the end and remember the result in dp[5][6]. Later, when 5th rod is revisited with a, b being 16 and 10, dp[5][6] tells whether two bags with 5 differences can be balanced using rod 5 onward and if so, how many nodes need to be added to the larger bag (or smaller equally works) to equalize.
+
+
+# knapsack
+(2) others
+https://leetcode.com/problems/tallest-billboard/discuss/203181/JavaC%2B%2BPython-DP-min(O(SN2)-O(3N2-*-N)
+dp[i] record the length of the shorter support for the pair whose sum is the max among all pair diff by i. Since in 2D array version, at each i, we only access its last row, this 1D simply saved the space in this way. And the clone method within each outer for loop is to ensure we update current while keep accessing the result of last run.
+The use of map (cpp) simply makes it possible to only iterate over reached diff.
+
+(1) derived
+Since we are sort of taking elements into two bags and achieving equal weights finally, we can set weight of elements in one bag to always be larger than that in the other such that we can use this larger weight as the capacity which should be used up finally by the other bag.
+
+However, as we are traversing the array, it is not necessarily that one bag will be constantly the larger one and the two bags may constantl swap their roles being the larger one. In this case, we can simply remember the one whose capacity is the larger one so far.
+
+After going thru rods 0~i, with some or all rods being allocated to two bags, let dp[i][j] be the weight of the heavier bag which is j larger than that of the lighter bag, then dp[i][j] can be contributed by three conditions: (i) direct previous (dp[i][j]) given rod i being abandoned; (ii) the result when current rod i is added to larger bag (dp[i - 1][j - rods[i]]); (iii) ... to smaller bag whose weight is still smaller than large (dp[i - 1][j + rods[i]]); (iv) ... larger than original large bag (dp[i - 1][rods[i] - j])
+
+
+## Code
+# DP_top-down
+# failed to use int[][] instead
+class Solution {
+public:
+    // max equalized length of two supports of cur len a and b (a >= b), starting from cur\th rod
+    int solve(int cur, int a, int b, int sum, vector<int>& rods, vector<vector<int>>& dp) {
+        if (a > sum || b > sum) return -2;              // impossible for b to catch up with a
+        int diff = abs(a - b), lg = max(a, b);
+        if (cur == rods.size()) return a == b ? a : -2; // -2 means un-equalizable
+        if (dp[cur][diff] != -1) return dp[cur][diff] == -2 ? -2 : dp[cur][diff] + lg;
+        
+        int v1 = solve(cur + 1, a + rods[cur], b, sum, rods, dp);
+        int v2 = solve(cur + 1, a, b + rods[cur], sum, rods, dp);
+        int v3 = solve(cur + 1, a, b, sum, rods, dp);
+        
+        int ans = max(-2, max({v1, v2, v3}) - lg);
+        dp[cur][diff] = ans;
+        return ans == -2 ? -2 : ans + lg;
+    }
+    
+    int tallestBillboard(vector<int>& rods) {
+        int n = rods.size(), sum = accumulate(rods.begin(), rods.end(), 0) / 2;
+        vector<vector<int>> dp(n, vector<int>(sum + 1, -1));
+        // for (int i = 0; i < n; i++) assign(dp[i].begin(), dp[i].end(), -1);
+        return max(0, solve(0, 0, 0, sum, rods, dp));
+    }
+};
+
+# knapsack
+// (2) 1D_others too slow excellent idea
+Class Solution {
+    public int tallestBillboard(int[] rods) {
+        int[] dp = new int[5001];
+        for (int d = 1; d < 5001; d++) dp[d] = -10000;
+        for (int x : rods) {                    
+            int[] cur = dp.clone();              
+            for (int d = 0; d + x < 5001; d++) {
+                dp[d + x] = Math.max(dp[d + x], cur[d]);
+                dp[Math.abs(d - x)] = Math.max(dp[Math.abs(d - x)], cur[d] + Math.min(d, x));
+            }
+        }
+        return dp[0];
+    }
+}
+// cpp
+class Solution {
+public:
+    int tallestBillboard(vector<int>& rods) {
+        unordered_map<int, int> dp;
+        dp[0] = 0;
+        for (int x : rods) {
+            unordered_map<int, int> cur(dp);
+            for (auto it: cur) {
+                int d = it.first; // current difference
+                dp[d + x] = max(dp[d + x], cur[d]);
+                // dp[abs(d - x)] = max(dp[abs(d - x)], cur[d] + min(d, x));
+		if (d >= x) dp[d - x] = max(dp[d - x], cur[d] + x);
+		else dp[x - d] = max(dp[x - d], cur[d] + d);
+            }
+        }
+        return dp[0];
+    }
+};
+
+// (1) 2D_derived_optomized
+#include <iostream>
+
+class Solution {
+public:
+    int tallestBillboard(vector<int>& rods) {
+        int n = rods.size(), ans = 0;
+        if (n < 2) return 0;
+        int sum = accumulate(begin(rods), end(rods), 0) / 2;
+        // std::cout << sum << "\n";
+        // dp[i][j], length of longer rod which is j longer than the other when rod i is taken
+        // after taking rod [0,i], current total capacity
+        vector<vector<int>> dp(n, vector<int>(sum + 1, INT_MIN));
+        dp[0][rods[0]] = rods[0];
+        for (int i = 0; i < n; i++) dp[i][0] = 0;
+        // fill table
+        for (int i = 1; i < n; i++) {
+            for (int j = 0; j <= sum; j++) {
+                // (1) inherit prev condition, do not take current rod
+                int cur = dp[i - 1][j];
+                // (2) contributed by adding cur rod to prev large
+                if (j >= rods[i]) cur = max(cur, dp[i - 1][j - rods[i]] + rods[i]);
+                // (3) ... to prev small
+                if (j + rods[i] <= sum) // larger one maintain
+                    cur = max(cur, dp[i - 1][j + rods[i]]);
+                if (j <= rods[i] && rods[i] - j <= sum) // swap large
+                    cur = max(cur, dp[i - 1][rods[i] - j] + j);
+                dp[i][j] = cur;
+            }
+        }
+        return dp[n - 1][0];
+    }
+};
+
+// space and time optimized
+class Solution {
+public:
+    int tallestBillboard(vector<int>& rods) {
+        int n = rods.size(), sum = accumulate(begin(rods), end(rods), 0) / 2;
+        if (n < 2) return 0;
+        int dp[n][sum + 1];
+        for (int i = 0; i < n; i++) for (int j = 0; j <= sum; j++) dp[i][j] = INT_MIN;
+            //memset(dp[i], INT_MIN, sizeof(dp[i]));
+        dp[0][rods[0]] = rods[0];
+        for (int i = 0; i < n; i++) dp[i][0] = 0;
+        
+        for (int i = 1; i < n; i++) {
+            for (int j = 0; j <= sum; j++) {
+                int cur = dp[i - 1][j];
+                if (j >= rods[i]) cur = max(cur, dp[i - 1][j - rods[i]] + rods[i]);
+                if (j + rods[i] <= sum) cur = max(cur, dp[i - 1][j + rods[i]]);
+                if (j <= rods[i] && rods[i] - j <= sum) cur = max(cur, dp[i - 1][rods[i] - j] + j);
+                dp[i][j] = cur;
+            }
+        }
+        return dp[n - 1][0];
+    }
+};
+
+
+# Failed attempts
+// DP_top-down_TLE
+class Solution {
+public:
+    // whether two rods of len a and b can both become length sum starting from cur
+    int solve(int cur, int a, int b, int sum, vector<int>& rods, vector<vector<vector<int>>>& dp) {
+        if (a == b && a == sum) return 1;
+        if (dp[a][b][cur] != -1) return dp[a][b][cur];
+        if (cur == rods.size()) return 0;
+        // grow
+        int v1 = solve(cur + 1, a + rods[cur], b, sum, rods, dp);
+        int v2 = solve(cur + 1, a, b + rods[cur], sum, rods, dp);
+        int v3 = solve(cur + 1, a, b, sum, rods, dp);
+        int res = v1 || v2 || v3;
+        dp[a][b][cur] = res;
+        return res;
+    }
+    
+    int tallestBillboard(vector<int>& rods) {
+        int n = rods.size(), sum = 0;
+        for (int r : rods) sum += r;
+        vector<vector<vector<int>>> dp(sum, vector<vector<int>>(sum, vector<int>(n, -1);
+        for (int i = sum - 1; i >= 0; i++)
+            if(solve(0, 0, 0, i, sum, rods, dp)) return i;
+        return 0;
+    }
+};
+
+// indep_naiva_TLE
+class Solution {
+public:
+    int tallestBillboard(vector<int>& rods) {
+        int n = rods.size(), m = 1 << n, sum = 0;
+        for (int r : rods) sum += r;
+        // height for all subsets
+        vector<int> h(m, 0); queue<int> q;
+        for (int i = 0; i < n; i++) { h[1 << i] = rods[i]; q.push(1 << i); }
+        while (!q.empty()) {
+            int sz = q.size();
+            for (int i = 0; i < sz; i++) {
+                int cur = q.front(); q.pop();
+                for (int j = 0; j < n; j++) {
+                    int k = cur | 1 << j;
+                    if (k == cur) continue;
+                    h[k] = h[cur] + rods[j]; q.push(k);
+                }
+            }
+        }
+        // bottom-up
+        for (int s = sum - 1; s >= 0; s--) {
+            for (int rs1 = 1; rs1 < m; rs1++) {
+                for (int rs2 = 1; rs2 < m; rs2++) {
+                    if (rs1 & rs2) continue; // not disjoint
+                    if (h[rs1] == h[rs2] && h[rs1] == s) return s;
+                }
+            }
+        }
+        return 0;
+    }
+};

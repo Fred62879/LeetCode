@@ -1,0 +1,86 @@
+## Specification
+Similar: LT132,647,940
+Given a string S, find the number of different non-empty palindromic subsequences in S, and return that number modulo 10^9 + 7. A subsequence of a string S is obtained by deleting 0 or more characters from S. A sequence is palindromic if it is equal to the sequence reversed. Two sequences A_1, A_2, ... and B_1, B_2, ... are different if there is some i for which A_i != B_i.
+
+Example 1:
+Input: 
+S = 'bccb'
+Output: 6
+Explanation: 
+The 6 different non-empty palindromic subsequences are 'b', 'c', 'bb', 'cc', 'bcb', 'bccb'.
+Note that 'bcb' is counted only once, even though it occurs twice.
+
+Note:
+The length of S will be in the range [1, 1000].
+Each character S[i] will be in the set {'a', 'b', 'c', 'd'}.
+
+
+## Testcases
+"acdbdcba"
+"aaaccbbdd"
+"acdbdcbacdbada"
+"daaaabaadcccbcbbaabdbccbbabccacdacdddacbadbadcadcb"
+"abcdabcdabcdabcdabcdabcdabcdabcddcbadcbadcbadcbadcbadcbadcbadcba"
+
+
+## Ideas
+(2) DP_bottom-up
+(1) DP_top-down
+
+
+## Code
+// (2) derived_bottom_up_cpp
+class Solution {
+public:
+    
+    int countPalindromicSubsequences(string S) {
+        int n = S.size(); long q = 1000000007;
+        vector<vector<int>> dp(n, vector<int>(n, 0));
+        for (int i = 0; i < n; i++) dp[i][i] = 1;
+        
+        for (int len = 1; len < n; len++) {
+            for (int i = 0, j = i + len; i < n - len; i++, j++) {
+                if (S[i] != S[j])
+                    dp[i][j] = (dp[i][j - 1] + dp[i + 1][j] - dp[i + 1][j - 1] + q) % q;
+                else {
+                    dp[i][j] = dp[i + 1][j - 1] * 2;
+                    int rlo = -1, rhi = -1, lo = i + 1, hi = j - 1;
+                    for (int k = lo; k <= hi && rlo == -1; k++) if (S[i] == S[k]) rlo = k;
+                    for (int k = hi; k >= rlo + 1 && rhi == -1; k++) if (S[i] == S[k]) rhi = k;
+                    if (rlo == -1) dp[i][j] += 2;
+                    else if (rhi == -1) dp[i][j]++;                    
+                    else if (rlo <= rhi - 2) dp[i][j] -= dp[rlo][rhi];
+                    dp[i][j] = (dp[i][j] + q) % q;
+                }
+            }
+        }
+        return dp[0][n - 1];
+    }
+};
+
+// imple problem?????
+class Solution {
+public:
+    long q = 1000000007;
+    
+    int repeat(vector<vector<int>> &dp, string &s, char c, int lo, int hi) {
+        if (lo > hi || lo == hi && s[lo] != c) return 0;
+        int rlo = -1, rhi = -1;
+        for (int i = lo; i <= hi && rlo == -1; i++) if (s[i] == c) rlo = i;
+        if (rlo == -1) return 0; // no char c
+        for (int i = hi; i >= rlo + 1 && rhi == -1; i++) if (s[i] == c) rhi = i;
+        if (rhi == -1) return 1; // only one char c found
+        return rlo > rhi - 2 ? 2 : (dp[rlo + 1][rhi - 1] + 2 + q) % q;
+    }
+    
+    int countPalindromicSubsequences(string S) {
+        int n = S.size();
+        vector<vector<int>> dp(n, vector<int>(n, 0));
+        for (int i = 0; i < n; i++) dp[i][i] = 1;
+        for (int len = 1; len < n; len++)
+            for (int i = 0, j = i + len; i < n - len; i++, j++)
+                dp[i][j] = S[i] != S[j] ? (dp[i][j - 1] + dp[i + 1][j] - dp[i + 1][j - 1] + q) % q :
+                        (dp[i + 1][j - 1]*2 - repeat(dp, S, S[i], i + 1, j - 1) + 2 + q) % q;
+        return dp[0][n - 1];
+    }
+};

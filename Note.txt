@@ -1,0 +1,212 @@
+如果leetcode一上来做的很顺手，说明基础知识还不错，思路也都有，直接做题，辅助看书就可以；
+如果一上来感觉非常艰难，一天3-4道，一碰难题就想跳楼的话，可以花较多时间在看CC150上，看过一章之后，
+在leetcode上做对应题目作为练习和检测。
+
+hackerrank可不简单，反正比topcoder要难的。其中难度在Expert以上的题你试过就知道了。
+个人认为leetcode还是很简单的，lintcode略难。
+
+
+
+
+## Java tips
+# (I) programming tricks
+// (1) Math.floorMod
+Instead of dp[i][j] = dp[i][j] < 0 ? dp[i][j] + 1000000007 : dp[i][j] % 1000000007;
+you can use Math.floorMod method dp[i][j] = Math.floorMod(dp[i][j], 1000000007);
+
+// (2) int present
+int MOD = 1_000_000_007;
+
+// (3) nested for loop continue
+
+            search: for (int j = i+1; j < W; ++j) {
+                for (String row: A)
+                    if (row.charAt(i) > row.charAt(j))
+			// break from cur for loop without updating dp[i]
+                        continue search;
+                dp[i] = Math.max(dp[i], 1 + dp[j]);
+            }
+
+// (4) int[]
+int[] a = null
+
+
+# (II) 
+// (1) Comparator
+    public class coinCompare implements Comparator<Integer> {
+        @Override
+        public int compare(Integer a, Integer b) {
+            return nums[a] - nums[b];
+        }
+    }
+
+Arrays.sort(idx, new coinCompare());
+       
+// (2) lambda
+Arrays.sort(idx, (Integer a, Integer b) -> nums[a] - nums[b]);
+
+// (3) Arrays.fill
+Do not use this to fill array of arraylist, otherwise, all arraylists will be
+modified simultaneously
+class Solution {
+    
+    public List<List<String>> findLadders(String beginWord, String endWord, List<String> wordList) {
+        List<List<String>> res = new ArrayList<List<String>>();
+        ArrayList<Integer>[] difs = new ArrayList[5];
+        Arrays.fill(difs, new ArrayList<Integer>());
+        difs[0].add(0);
+        
+        ArrayList<String> cur = new ArrayList<String>();
+        cur.add(String.valueOf(difs[2].size()));
+        res.add(cur);
+        return res;
+    }
+}
+
+
+// (4) PQ
+PriorityQueue<int[]> pq = new PriorityQueue<int[]>((a,b) -> a[1] - b[1]);
+	for (int neigh: graph[i])
+	    pq.add(new int[]{neigh, graph[neigh].length});
+
+// (5) hash
+LT818
+putIfAbsent()
+
+
+
+## Cpp
+(1) LT730 
+vector<map<char,int>> cnt(n);
+cnt[i][c]...;
+
+(2)
+bulks of if else under several for loops, parenthesis can all be ommitted
+
+(3) LT879
+"https://leetcode.com/problems/profitable-schemes/discuss/154685/C%2B%2B-ACCEPTED-top-down-DP-with-O(N*G*P)-but-why-does-it-still-take-too-long-(1800ms)"
+
+you are calling 3-level regression on vector<>(), The delay is zoomed out at 3rd order. The lookup will be a hard job for vectors. The iterator need to look up the address book, instead of in static library just add index+starting address and you can get the address.
+
+(4) LT902
+string s = "0";
+s[0] == '0' -> true
+
+(5) Memset
+https://leetcode.com/problems/shortest-path-visiting-all-nodes/discuss/136158/C%2B%2B-7ms-Simple-solution-with-intuition-(this-is-a-wrong-intuition-happened-to-pass-all-test-case)
+
+bool visited[1<<graph.size()][graph.size()];
+memset(visited, 0, sizeof(visited));
+
+(6) While
+do {
+    j1 = advanceBy(1, j1, nums, dir);
+    j2 = advanceBy(2, j2, nums, dir);
+} while (j1 >= 0 && j2 >= 0 && j1 != j2);
+
+
+(7) define
+https://leetcode.com/problems/tallest-billboard/discuss/203942/C%2B%2B-16ms-solution-beats-100
+
+#define NOT_REACHABLE -10011
+#define YET_TO_VISIT -10012
+if (j < 0 || j > 2 * sum[i])
+     return NOT_REACHABLE;
+
+(8) assign
+private:
+	vector<int> a;
+public: 
+	int sth() { a.assign(n, 0); }
+
+(9) map iterator
+	unordered_map<int, int> cur(dp);
+            for (auto it: cur) {
+                int d = it.first;
+                dp[d + x] = max(dp[d + x],cur[d]);
+
+(10)
+int compare (const void *a, const void * b) {  
+    return ( (*(pairSum *)a).sum - (*(pairSum*)b).sum );  
+}
+
+(11) Swap
+https://leetcode.com/problems/permutations/discuss/18360/C%2B%2B-backtracking-and-nextPermutation
+for two entries in an array, can directly swap: swap(nums[i], nums[j]);
+
+(12) auto
+   struct State {
+      int mask;
+      int last;
+   };
+auto[mask, last] = q.front(); q.pop();
+
+(13)
+#if DEBUG
+int main(int argc, char** argv) {
+    return 0;
+}
+#endif
+
+(14) char* and string
+int dfs(int r, int c, const char* word, vector<vector<char>>& board) { ... }
+dfs(i, j, word.c_str() + 1, board)
+// plus one means to start from the 2nd char of word
+
+(15) struct, constructor
+struct TrieNode {
+        TrieNode *children[26];
+        string word;
+
+        TrieNode() : word("") {
+            for (int i = 0; i < 26; i++) {
+                children[i] = nullptr;
+            }
+        }
+    };
+
+(16) hash function for pair
+LT818_BFS
+
+(17) Sort
+LT975 DP
+std::sort(B.begin(), B.end(), [&A](int i, int j) {return A[i] < A[j];});
+
+(18) TreeMap
+We can use a TreeMap, which is an excellent structure for maintaining sorted data.
+
+(19) int64_t
+
+(20) Iterator
+To iterate over refernce ot vector of objects without incurring large memory and time consumption do this:
+for (auto& sth : col)...
+
+(21) BinarySearch equivalent
+LT209 - Array
+lower_bound(). Application refer to question
+
+(22) static vector
+LT920
+use in function without initializing it each call.
+
+
+
+## Python
+(1) LT903_official solution
+@lru_cache(None)
+
+
+
+
+
+## Data structure
+(1) PQ and Multiset
+PriorityQueue.remove() complexity is o(n). so the solution is o(n^2). proper data structure should be something like MultiSet (Not buildin with JDK), can be implemented using Map.
+
+
+
+## Alg hints
+(1) Combination (LT903)
+You have two ways. One way is you can just create a table of binom[n][k] directly, all modulo MOD. Then, use the recurrence C(n,k) = C(n-1,k-1) + C(n-1,k) to populate this table. This solution uses only int.
+
+The second way is that you could just use long. Since every value is modulo MOD, the multiplication of two of those values will fit into a long integer.

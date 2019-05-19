@@ -1,0 +1,94 @@
+## Specification
+Given a collection of distinct integers, return all possible permutations.
+
+Example:
+
+Input: [1,2,3]
+Output:
+[
+  [1,2,3],
+  [1,3,2],
+  [2,1,3],
+  [2,3,1],
+  [3,1,2],
+  [3,2,1]
+]
+
+
+## Ideas
+(2) backtracking
+https://leetcode.com/problems/permutations/discuss/18360/C%2B%2B-backtracking-and-nextPermutation
+For each starting position, to generate permutations of length n - i, simply swap the current prev start with new start entry and then decrementing i to generate permutations of length n - i - 1.
+
+https://leetcode.com/problems/permutations/discuss/18282/backtracking-Clean-C%2B%2B-recursion-with-detailed-explanation
+
+(1) DFS
+
+
+## Code
+# (2) backtracking_others
+// concise
+class Solution {
+public:
+    vector<vector<int>> permute(vector<int>& nums) {
+        vector<vector<int>> perms;
+        permute(nums, 0, perms);
+        return perms;
+    }
+private:
+    void permute(vector<int> nums, int i, vector<vector<int>>& perms) {
+        if (i == nums.size()) {
+            perms.push_back(nums);
+        } else {
+            for (int j = i; j < nums.size(); j++) {
+                swap(nums[i], nums[j]);
+                permute(nums, i + 1, perms);
+            }
+        }
+    }
+};
+
+// DFS style
+class Solution {
+public:
+    vector<vector<int>> permute(vector<int>& nums) {
+        vector<vector<int>>res;
+        DFS(res, nums, 0);
+        return res;        
+    }
+    
+    void DFS(vector<vector<int>>& res, vector<int>& nums, int pos){
+        if(pos == nums.size() - 1){
+            res.push_back(nums);
+            return;
+        }
+        for(int i = pos; i < nums.size(); i++){
+            swap(nums[pos], nums[i]);
+            DFS(res, nums, pos + 1);
+            swap(nums[pos], nums[i]);
+        }
+    }
+};
+
+# (1) DFS_indep_slow
+class Solution {
+public:
+    // all permutations for nums not on stack
+    vector<vector<int>> dfs(vector<int>& nums, vector<int>& onStack) {
+        vector<vector<int>> res;
+        for (int i = 0; i < nums.size(); i++) {
+            if (onStack[i]) continue;
+            onStack[i] = 1;
+            vector<vector<int>> prev = dfs(nums, onStack);
+            if (prev.size() == 0) res.push_back({nums[i]});
+            else for (vector<int> p : prev) { p.push_back(nums[i]); res.push_back(p); }
+            onStack[i] = 0;
+        }
+        return res;
+    }
+    
+    vector<vector<int>> permute(vector<int>& nums) {
+        vector<int> onStack(nums.size(), 0);
+        return dfs(nums, onStack);
+    }
+};

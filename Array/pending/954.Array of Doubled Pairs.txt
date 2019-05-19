@@ -1,0 +1,133 @@
+## Specification
+Given an array of integers A with even length, return true if and only if it is possible to reorder it such that A[2 * i + 1] = 2 * A[2 * i] for every 0 <= i < len(A) / 2.
+
+Example 1:
+Input: [3,1,3,6]
+Output: false
+
+Example 2:
+Input: [2,1,2,6]
+Output: false
+
+Example 3:
+Input: [4,-2,2,-4]
+Output: true
+Explanation: We can take two groups, [-2,-4] and [2,4] to form [-2,-4,2,4] or [2,4,-2,-4].
+
+Example 4:
+Input: [1,2,4,16,8,4]
+Output: false
+
+Note:
+0 <= A.length <= 30000
+A.length is even
+-100000 <= A[i] <= 100000
+
+
+## Ideas
+# (3) Two pointers
+Actually, only an extra pointer is employed apart from the normal 'i' when traversing the array. And at each i, the extra pointer will go further beyond until it finds a value two-folder smaller than that pointed by i and set this smaller val as marked. If reach the end of the array, it means no couple can be found and thus return false.
+
+
+# (2) Map Greedy
+// others
+Instead of checking each int in A, we somehow shrink it into a set of unique ints and correspondingly the map records count for each unique element. Then, as we are going from the smallest-abs-valed int, we are sure that its count must not exceed that of its two-fold coupler.
+
+// derived
+Sort the array in descending abs val and then use a map to record the number of each int. Since we are starting from the int with larger abs, we only need to check if two-fold-smaller couples exist.
+
+
+# (1) Deque
+We first sort the array such that negative ints are presenting in ascending order while positive ints are descending with the larger ones being at left. Based on this, we traverse thru the array once, and since the abs value for neg ints are also descending, the first negative int must seek another neg with smaller abs val.
+
+To do this, we put the 1st neg int in a deque and as we go further, when we encounter a new neg int, we first check if it can be coupled with another neg int whose abs val is two fold larger. Since neg ints with larger vals are at the front of the deque, we simply access that and if the top value is in two fold relation with the current neg int, we pop out the first element. Otherwise, we have to store the current neg int at the tail of the deque hoping that it can some time present at the deque top and be accessed by other neg int with smaller abs vals.
+
+To optimize the process, take, -10, -8, -7, -4, for instance. As we are accessing -7, we have -10 and -8 on the deque and a simply optimization is that when we encounter an odd int who cannot be found with a larger-abs-val couple, we return false as we ae sure that no -3.5 exists. If we do not include -7 in, then as we reach -4, we shall also return false because if -5 existed, the -10 should have been popped out. Now as we are at -4, and -10 is still there, it means we do not have sufficient -5 to couple with -10 and thus couple failed.
+
+
+## Code
+# (3) Two pointers
+// derived
+class Solution {
+public:
+    bool canReorderDoubled(vector<int>& A) {
+        sort(A.begin(), A.end(), [] (int a, int b) {
+            if (a > 0 && b > 0) return a > b;
+            return a < b;
+        });
+        int p = 0, marked = 1e4 + 1, n = A.size();
+        for (int i = 0; i < n; i++) {
+            if (A[i] == marked) continue;
+            if (p < n) p++;
+            while (p < n && A[p] * 2 != A[i]) p++;
+            if (p == n) return false;
+            A[p] = marked;
+        }
+        return true;
+    }
+};
+
+
+# (2) Map_Greedy
+// others_faster
+class Solution {
+public:
+    bool canReorderDoubled(vector<int>& A) {
+        unordered_map<int, int> c;
+        for (int a : A) c[a]++;
+        vector<int> keys;
+        for (auto it : c)
+            keys.push_back(it.first);
+        sort(keys.begin(), keys.end(), [](int i, int j) {return abs(i) < abs(j);});
+        for (int x : keys) {
+            if (c[x] > c[2 * x])
+                return false;
+            c[2 * x] -= c[x];
+        }
+        return true;
+    }
+};
+
+// derived
+class Solution {
+public:
+    bool canReorderDoubled(vector<int>& A) {
+        sort(A.begin(), A.end(), [] (int a, int b) {
+            return abs(a) > abs(b);
+        });
+        int count = A.size();
+        unordered_map<int, int> map;
+        for (int i : A) {
+            if (map.find(i) == map.end()) map[i] = 1;
+            else map[i]++;
+        }
+        for (int i : A) {
+            if (map[i] == 0) continue;
+            if (abs(i) % 2 || map.find(i/2) == map.end() || map[i/2] == 0) return false;
+            map[i/2]--; map[i]--; count -= 2;
+        }
+        return count == 0;
+    }
+};
+
+
+# (1) Deque
+// indep
+class Solution {
+public:
+    bool canReorderDoubled(vector<int>& A) {
+        sort(A.begin(), A.end(), [] (int a, int b) {
+            if (a > 0 && b > 0) return a > b;
+            return a < b;
+        });
+        
+        deque<int> dq;
+        for (int i = 0; i < A.size(); i++) {
+            if (dq.empty()) dq.push_back(A[i]);
+            else if (dq.front() == 2 * A[i]) dq.pop_front();
+            else if (abs(A[i]) % 2 || abs(2 * A[i]) < abs(dq.front()) ) return false;
+            else dq.push_back(A[i]);
+        }
+        return dq.empty();
+    }
+};

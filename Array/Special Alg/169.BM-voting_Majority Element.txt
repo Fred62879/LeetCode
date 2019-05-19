@@ -1,0 +1,36 @@
+## Specification
+Given an array of size n, find the majority element. The majority element is the element that appears more than ⌊ n/2 ⌋ times. You may assume that the array is non-empty and the majority element always exist in the array.
+
+Example 1:
+Input: [3,2,3]
+Output: 3
+
+Example 2:
+Input: [2,2,1,1,1,2,2]
+Output: 2
+
+
+## Testcases
+[0,0,0,0,0,0,0,1,2,3,4,2,2,2,2,2,2,2,2,2,2]
+
+
+## Ideas
+# Boyer-Moore Voting Algorithm
+Since there shall be one and only one maj element in an array, its count would definitely exceed that of any other elements. In this case, we can traversing the array while counting the largest # of repeated elements we encountered so far and maintaining the element possessing this temporal largest count which is the our candidate. When we encounter elements other than candidate, decrement the count and when this count zero-out, we updating the nxt element as candidate and so forth.
+
+This idea works because wherever we are at the array, the count of the real major element preceding the current element, offseting by other elements, would still give the largest count finally after summing the residue (offseted pre count, positive or negative) up with the count of real major after this element. Imagine all elements apart from major are counted up and this largest possible irrelevant count is still smaller than major element count
+
+
+## Code
+// derived
+class Solution {
+public:
+    int majorityElement(vector<int>& nums) {
+        int ct = 1, mj = nums[0], n = nums.size();
+        for (int i = 1; i < n; i++) {
+            if (nums[i] == mj) ct++;
+            else if (--ct == 0 && i < n - 1) { mj = nums[++i]; ct++; }
+        }
+        return mj;
+    }
+};

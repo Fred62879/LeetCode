@@ -1,0 +1,104 @@
+## Specification
+Similar: LT964
+Your car starts at position 0 and speed +1 on an infinite number line.  (Your car can go into negative positions.) Your car drives automatically according to a sequence of instructions A (accelerate) and R (reverse). When you get an instruction "A", your car does the following: position += speed, speed *= 2. When you get an instruction "R", your car does the following: if your speed is positive then speed = -1 , otherwise speed = 1.  (Your position stays the same.) For example, after commands "AAR", your car goes to positions 0->1->3->3, and your speed goes to 1->2->4->-1. Now for some target position, say the length of the shortest sequence of instructions to get there.
+
+Example 1:
+Input: 
+target = 3
+Output: 2
+Explanation: 
+The shortest instruction sequence is "AA".
+Your position goes from 0->1->3.
+
+Example 2:
+Input: 
+target = 6
+Output: 5
+Explanation: 
+The shortest instruction sequence is "AAARA".
+Your position goes from 0->1->3->7->7->6.
+
+Note:
+1 <= target <= 10000.
+
+
+
+## Ideas
+# (INTUITION & PROOF)
+// official
+Let A^k denote the command AAAA⋯A (k times). Starting with an "R" command doesn't help, and as the final sequence does not end on an "R", so we have some sequence like R A^{k_1} R A^{k_2} ... R A^{k_n} which could be instead A^{k_2} R A^{k_3} R ... A^{k_n} R R A^{k_1} for the same final position of the car. (Here, ki ≥0, where A^0 means no command.)
+
+So let's suppose our command is always of the form A^{k_1} R A^{k_2} R ... A^{k_n}. Note that under such a command, the car will move to final position (2^{k_1} - 1) - (2^{k_2} - 1) + (2^{k_3} - 1) - ... Without loss of generality, we can say that (k_i, i odd) is monotone decreasing, and (k_i, i even) is also monotone decreasing. Also because terms will cancel out, we can also ignore the possibility that k_i = k_j (for i, ji,j with different parity).
+
+Another key claim is that k_i is bounded by a+1, where a is the smallest integer such that 2^a ≥ target. Basically, if you drive past the target, you don't need to keep driving. This is because it adds another power of two (as 2^{k_i} - 1 = ∑ (j<k_i) 2^j) to the position that must get erased by one or more negative terms later (in whole or in part), as it is not part of the target.
+
+// others math
+https://leetcode.com/problems/race-car/discuss/147479/Mathematical-proof-on-why-the-DP-solution-works
+
+// overall
+https://leetcode.com/problems/race-car/discuss/124326/Summary-of-the-BFS-and-DP-solutions-with-intuitive-explanation%20is%20a%20better%20alternative.
+
+# (5) Recursion
+
+# (4) DP_bottom-up
+
+# (3) DP_top-down
+
+# (2) BFS
+
+# (1) Dijstra's
+// proof
+Dijkstra's algorithm uses a priority queue to continually searches the path with the lowest cost to destination, so that when we reach the target, we know it must have been through the lowest cost path. 
+
+Back to the problem, as described below in intuition part, we have some barrier where we are guaranteed to never cross. As we are also handling negative targets, in total we have 2 * barrier + 1 nodes. After, we could move walk = 2**k - 1 steps for a cost of k + 1 (the 1 is to reverse). If we reach our destination exactly, we don't need the R, so it is just k steps.
+
+// analysis
+Time Complexity: O(TlogT). There are O(T) nodes, we process each one using O(logT) work (both popping from the heap and adding the edges). Space Complexity: O(T).
+
+Comments from others indicates that this is incorrect because the time complexity is O(T(logT)^2). This is because at each of the nodes in the range of (-T, T) i.e. 2T you are creating log T nodes. Thus total of N = 2TlogT nodes. Now you are pushing these to the heap at max N times. Thus heap worst case is NlogN ~ T(logT)^2 
+
+Dijkstra is unnecessary here as there can be negative cycles and negative weights if we have A after R based on your approach framework. "While Dijkstra's algorithm may fail on certain graphs with negative edge weights, having a negative cycle (i.e., a cycle in the graph for which the sum of edge weights is negative) is a bigger problem for any shortest path algorithm.". In my opinion Dijkstra is unnecessary and regular BFS on weighted graph with regular pruning as described in approach https://leetcode.com/problems/race-car/discuss/124326/Summary-of-the-BFS-and-DP-solutions-with-intuitive-explanation is a better alternative.
+
+
+## Code
+# (1) Dijcstra's
+class Solution {
+    public int racecar(int target) {
+        int K = 33 - Integer.numberOfLeadingZeros(target - 1);
+        int barrier = 1 << K;
+        int[] dist = new int[2 * barrier + 1];
+        Arrays.fill(dist, Integer.MAX_VALUE);
+        dist[target] = 0;
+
+        PriorityQueue<Node> pq = new PriorityQueue<Node>(
+            (a, b) -> a.steps - b.steps);
+        pq.offer(new Node(0, target));
+
+        while (!pq.isEmpty()) {
+            Node node = pq.poll();
+            int steps = node.steps, targ1 = node.target;
+            if (dist[Math.floorMod(targ1, dist.length)] > steps) continue;
+
+            for (int k = 0; k <= K; ++k) {
+                int walk = (1 << k) - 1;
+                int targ2 = walk - targ1;
+                int steps2 = steps + k + (targ2 != 0 ? 1 : 0);
+
+                if (Math.abs(targ2) <= barrier && steps2 < dist[Math.floorMod(targ2, dist.length)]) {
+                    pq.offer(new Node(steps2, targ2));
+                    dist[Math.floorMod(targ2, dist.length)] = steps2;
+                }
+            }
+        }
+
+        return dist[0];
+    }
+}
+
+class Node {
+    int steps, target;
+    Node(int s, int t) {
+        steps = s;
+        target = t;
+    }
+}

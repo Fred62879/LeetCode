@@ -1,0 +1,176 @@
+## Specification
+# LT1. Two Sum
+Given an array of integers, return indices of the two numbers such that they add up to a specific target. You may assume that each input would have exactly one solution, and you may not use the same element twice.
+
+# LT15. 3Sum
+Given an array nums of n integers, are there elements a, b, c in nums such that a + b + c = 0? Find all unique triplets in the array which gives the sum of zero.
+
+
+
+## Code
+# 3Sum
+// binarySearch_others
+https://leetcode.com/problems/3sum/discuss/258996/C%2B%2B-99.55(Runtime)-93.09(Memory)-with-comment
+
+double eps = 1e-6;
+// to compare int with a double with precision controlling
+int dcmp(int ival, double dval) {
+    double idval = (double)ival;
+    if(fabs(idval-dval)<eps) return 0;
+    return idval > dval ? 1: -1;
+}
+
+// find the first num in nums[first,first+size) > val(double)
+int upperBound(const vector<int>& nums, int size, double val) {
+    int len = size-1, first = nums.size() - size;
+    int half, middle;
+    while (len) {
+        half = len>>1; middle = first+half;
+        if(dcmp(nums[middle],val)==1) len = half;
+        else { first = middle+1; len = len-half-1; }
+    }
+    return first;
+}
+
+// find the first num in nums[first, first+size) >= val
+int lowerBound(const vector<int>& nums, int size, double val) {
+    int len = size-1, first = nums.size()-size;
+    int middle, half;
+    while(len) {
+        half=len>>1;
+        middle = first+half;
+        if(dcmp(nums[middle],val)==-1) {
+            first = middle+1;
+            len = len - half -1;
+        }
+        else len = half;
+    }
+    return first;
+}
+
+// main idea: nums[i] + -nums[i]/2 + -nums[i]/2 = 0, 
+// use nums[i] to locate '-nums[i]/2' or other nums that make nums[i]+a+b = 0
+void twoSum(vector<vector<int>> &three, const vector<int>& nums, int p) {
+    int size = nums.size(), i = 0;
+    while(i<p) {
+        double m = -(double)nums[i]/2;
+        int l, r, mark;
+        l = lowerBound(nums, size-i-1,m), r = upperBound(nums, size-i-1,m);
+        if(l==r) l--;
+        else r = l+1;
+
+        // use 'mark' to reduce subscript operation
+        mark = -nums[i];
+        while(l>i&&r<size) {
+            if(nums[l]+nums[r]==mark) {
+                three.push_back(vector<int>{nums[i],nums[l],nums[r]});
+                l--;
+                r++;
+                // avoid duplicate triplets
+                while(l&&nums[l]==nums[l+1])l--;
+                while(r<size&&nums[r]==nums[r-1])r++;
+            }
+            else if(nums[l]+nums[r]<mark) r++;
+            else l--;
+        }
+        i++;
+        while(i<p&&nums[i]==nums[i-1]) i++;
+    }
+}
+
+class Solution {
+public:
+    vector<vector<int>> threeSum(vector<int>& nums) {
+        vector<vector<int>> three;
+        if(nums.size()<3) return three;
+        sort(nums.begin(), nums.end());
+        int p = upperBound(nums, nums.size(), 0);
+        twoSum(three, nums, p);
+        return three;
+    }
+};
+
+
+// 2 pointers_derived
+class Solution {
+public:
+    vector<vector<int>> threeSum(vector<int>& nums) {
+        vector<vector<int>> res;	
+        int n = nums.size();
+	if (n <= 2) return res;
+        sort(nums.begin(), nums.end());
+        for (int i = 0; i < n - 2 && nums[i] <= 0; i++) {
+            if (i > 0 && nums[i] == nums[i - 1]) continue;
+            long l = i + 1, r = n - 1;
+            while (l < r && nums[r] >= 0) {
+                int lo = l, hi = r;
+                while (lo < hi && nums[lo] == nums[lo + 1]) lo++;
+                while (hi > lo && nums[hi] == nums[hi - 1]) hi--;
+                
+                int cur = nums[lo] + nums[hi] + nums[i];
+                if (!cur) { res.push_back({nums[i], nums[lo], nums[hi]}); l = ++lo; r = --hi; }
+                else if (cur < 0) l = lo + 1;
+                else r = hi - 1;
+            }
+        }
+        return res;
+    }
+};
+
+// faster
+class Solution {
+public:
+    vector<vector<int>> threeSum(vector<int>& nums) {
+        vector<vector<int>> result;
+        if(nums.size()<=2)return result;
+        sort(nums.begin(), nums.end());
+        for (int i = 0; i < nums.size() - 2 && nums[i] <= 0; i++) {
+            int a = nums[i];
+            if (i > 0 && a == nums[i - 1]) continue;
+            for (long j = i + 1, k = nums.size() - 1; j < k;) { // use long faster
+                int b = nums[j], c = nums[k], value = a + b + c;
+                if (value == 0) {
+                    result.push_back(vector<int>({a, b, c}));
+                    while (j<k && b == nums[++j]);
+                    while (j < k &&c == nums[--k]);
+                } 
+                else if (value > 0) k--;
+                else j++;
+            }
+        }
+        return result;
+    }
+};
+
+
+# 2Sum
+// map
+class Solution {
+    public int[] twoSum(int[] nums, int target) {
+        Map<Integer, Integer> map = new HashMap<>();
+        for (int i = 0; i < nums.length; i++) {
+            int complement = target - nums[i];
+            if (map.containsKey(complement)) {
+                return new int[] { map.get(complement), i };
+            }
+            map.put(nums[i], i);
+        }
+        throw new IllegalArgumentException("No two sum solution");
+    }
+}
+
+// binary search
+class Solution {
+    public int[] twoSum(int[] nums, int target) {
+        int n = nums.length;
+        Integer[] id = new Integer[n];
+        for (Integer i = 0; i < n; i++) id[i] = i;
+        Arrays.sort(id, (Integer a, Integer b) -> nums[a] - nums[b]);
+        Arrays.sort(nums);
+        for (int i = 0; i < n - 1; i++) {
+            int t = Arrays.binarySearch(nums, i + 1, n, target - nums[i]);
+            if (t > 0) return new int[]{id[i], id[t]};
+        }
+        return new int[2];
+    }
+}

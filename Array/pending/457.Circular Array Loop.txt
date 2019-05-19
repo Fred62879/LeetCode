@@ -1,0 +1,114 @@
+## Specification
+You are given a circular array nums of positive and negative integers. If a number k at an index is positive, then move forward k steps. Conversely, if it's negative (-k), move backward k steps. Since the array is circular, you may assume that the last element's next element is the first element, and the first element's previous element is the last element.
+
+Determine if there is a loop (or a cycle) in nums. A cycle must start and end at the same index and the cycle's length > 1. Furthermore, movements in a cycle must all follow a single direction. In other words, a cycle must not consist of both forward and backward movements.
+
+Example 1:
+Input: [2,-1,1,2,2]
+Output: true
+Explanation: There is a cycle, from index 0 -> 2 -> 3 -> 0. The cycle's length is 3.
+
+Example 2:
+Input: [-1,2]
+Output: false
+Explanation: The movement from index 1 -> 1 -> 1 ... is not a cycle, because the cycle's length is 1. By definition the cycle's length must be greater than 1.
+
+Example 3:
+Input: [-2,1,-1,-2,-2]
+Output: false
+Explanation: The movement from index 1 -> 2 -> 1 -> ... is not a cycle, because movement from index 1 -> 2 is a forward movement, but movement from index 2 -> 1 is a backward movement. All movements in a cycle must follow a single direction.
+
+Note:
+-1000 ≤ nums[i] ≤ 1000
+nums[i] ≠ 0
+1 ≤ nums.length ≤ 5000
+
+Follow up: Could you solve it in O(n) time complexity and O(1) extra space complexity?
+
+
+## Testcases
+[2,-1,1,2,2]
+[-2,1,-1,-2,-2]
+[1,1,2]
+[-2,-3,-9]
+[-1,2,1,2]
+
+
+## Ideas
+Should be noticed that the array if does not possess loop including > 1 elements, then it must entail loop with exactly one element. Because we can always move (no 0), and because we have definite amount of elements, we will have to end up visiting elements previously visited and this will create a loop. If no loop longer than 1, then must be 1.
+
+
+## Code
+# (3) Topo sort?
+https://leetcode.com/problems/circular-array-loop/discuss/250546/Topological-Sort-O(n)
+
+
+# (2) Fast-slow pointers
+// primitive
+https://leetcode.com/problems/circular-array-loop/discuss/205171/C%2B%2B-Tortoise-and-Hare
+
+// adapted_other O(1) space, relatively slow
+class Solution {
+public:
+    // advance #dist steps from pos
+    // if direction change or self-loop return -1; otherwise return npos reached
+    int advance(int pos, int dist, int dir, vector<int>& nums) {
+        int npos = pos, n = nums.size();
+        for (int i = dist; i > 0; i--) {
+            int nnpos = (npos + nums[npos]) % n;
+            while (nnpos < 0) nnpos += n;
+            if (nums[nnpos]*dir < 0 || nnpos == npos) return -1; // direction change or one-ele loop
+            npos = nnpos;
+        }
+        return npos;
+    }
+    
+    bool circularArrayLoop(vector<int>& nums) {
+        int n = nums.size(), p1, p2;
+        vector<int> visited(n, 0);
+        for (int i = 0; i < n; i++) {
+            if (visited[i]) continue;
+            p1 = p2 = i;
+            do {
+                p1 = advance(p1, 1, nums[p1], nums);
+                p2 = advance(p2, 2, nums[p2], nums);
+                if (p1 != -1) visited[p1] = 1;
+            } while (p1 != -1 && p2 != -1 && p1 != p2);
+            if (p1 != -1 && p2 != -1 && p1 == p2) return true;
+        }
+        return false;
+    }
+};
+
+
+# (1) DFS
+// indep 12ms (when translated to java, 0ms)
+class Solution {
+public:
+    int dfs(vector<int>& nums, vector<int>& path, vector<int>& dp, int cur, int dir, int n) {
+        if (dp[cur] != -1) return dp[cur];
+        if (path[cur]) return 1;
+        int ndir = nums[cur] > 0 ? 1 : -1;
+        // direction violaton - all entris on current path invalid
+        if ((dir != 0 && ndir*dir < 0)) {
+            for (int i = 0; i < n; i++) {
+                if (!path[i]) continue;
+                dp[i] = 0; path[i] = 0;
+            }
+            return 0;
+        }
+        path[cur] = 1;
+        int postu = (cur + ndir*(abs(nums[cur]) % n) + n) % n, next = postu >= n ? (postu - n) : postu;
+        dp[cur] = next == cur ? 0 : dfs(nums, path, dp, next, ndir, n);
+        path[cur] = 0;
+        return dp[cur];
+    }
+    
+    bool circularArrayLoop(vector<int>& nums) {
+        vector<int> dp(nums.size(), -1), path(nums.size(), 0);
+        for (int i = 0; i < nums.size(); i++)
+            if (dp[i] == -1 && dfs(nums, path, dp, i, 0, nums.size()))
+                return true;
+        return false;
+    }
+};

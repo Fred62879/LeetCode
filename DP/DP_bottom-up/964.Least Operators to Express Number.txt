@@ -1,0 +1,92 @@
+## Specification
+Similar: LT818
+
+Given a single positive integer x, we will write an expression of the form x (op1) x (op2) x (op3) x ... where each operator op1, op2, etc. is either addition, subtraction, multiplication, or division (+, -, *, or /).  For example, with x = 3, we might write 3 * 3 / 3 + 3 - 3 which is a value of 3. When writing such an expression, we adhere to the following conventions:
+The division operator (/) returns rational numbers.
+There are no parentheses placed anywhere.
+We use the usual order of operations: multiplication and division happens before addition and subtraction.
+It's not allowed to use the unary negation operator (-).  For example, "x - x" is a valid expression as it only uses subtraction, but "-x + x" is not because it uses negation.
+
+We would like to write an expression with the least number of operators such that the expression equals the given target.  Return the least number of operators used.
+
+Example 1:
+Input: x = 3, target = 19
+Output: 5
+Explanation: 3 * 3 + 3 * 3 + 3 / 3.  The expression contains 5 operations.
+
+Example 2:
+Input: x = 5, target = 501
+Output: 8
+Explanation: 5 * 5 * 5 * 5 - 5 * 5 * 5 + 5 / 5.  The expression contains 8 operations.
+
+Example 3:
+Input: x = 100, target = 100000000
+Output: 3
+Explanation: 100 * 100 * 100 * 100.  The expression contains 3 operations.
+
+Note:
+2 <= x <= 100
+1 <= target <= 2 * 10^8
+
+
+
+## Ideas
+# (5) Dijkstra
+
+# (4) Recursion
+
+# (3) DP_bottom-up
+e.g. 5, 907. The else loop only fits the first run (907-905 and 910-907). Then, excd records the total # of steps to go beyond and unrch records that to reach furtherest not exceeding. Note, however large the value is, initially the two boundaries differ only by x and after 1st division, they differ only by 1 which is the initiation condition for the 1st run of if. 
+
+In that case, as can be found below, the two boundaries (ex & ur) now for 1st exceed and unreach would be identical. And thus, at this 1st if loop, the now four conditions proliferating from the original two can be restored to two, combining ex and ur respectively together. After this, the two ex's (25) and two ur's (20) can be evaluated identically as 910 and 905.
+
+      1st exceed    1st unreach
+ini       910          905
+1st if    22           21
+         /  \         /  \
+        25  20       25  20
+        ex  ur       ex  ur
+
+In detail, at the start of the 1st if, the residue (r) calculated is that for "1st ur + ur" which is 1. This gives directly 5 - 1 = 4 for "1st ur + ex". Since we know the product after division for 1st exceed is "1" larger, the residue will also be "1" larger and "1st ex + ur" will be 1 + 1 = 2 and "1st ex + ex" will be 5 - 2 = 3. Then write 25 and 20 out and evaluate in a similar way.
+
+# (2) DP_top-down
+
+# (1) BFS
+
+
+## Code
+# (3) DP_bottom-up
+// others
+class Solution {
+public:
+    int leastOpsExpressTarget(int x, int target) {
+        int excd, unrch, excd2, unrch2, ans = 0, i;
+        for (i = 0; target > 0; i++, target /= x) {
+            int r = target % x;
+            if (i != 0) {
+                // exceed in current run
+                excd2 = min(excd + (x - r - 1) * i, unrch + (x - r) * i);
+                // not reach in current run
+                unrch2 = min(unrch + r * i, excd + (r + 1) * i);
+                excd = excd2, unrch = unrch2;
+            } else {
+                excd = 2 * (x - r), unrch = 2 * r;
+            }
+        }
+        return min(i + excd, unrch) - 1;
+    }
+};
+
+
+## Testcases
+78
+19840328
+
+2
+125046
+
+2
+28125082
+
+3
+5 (or 14)

@@ -1,0 +1,460 @@
+**** Specification ****
+Given two arrays of length m and n with digits 0-9 representing two numbers. Create
+the maximum number of length k <= m + n from digits of the two. The relative order 
+of the digits from the same array must be preserved. Return an array of the k digits.
+Note: You should try to optimize your time and space complexity.
+
+Example 1:
+Input:
+nums1 = [3, 4, 6, 5]
+nums2 = [9, 1, 2, 5, 8, 3]
+k = 5
+Output:
+[9, 8, 6, 5, 3]
+
+Example 2:
+Input:
+nums1 = [6, 7]
+nums2 = [6, 0, 4]
+k = 5
+Output:
+[6, 7, 6, 0, 4]
+
+Example 3:
+Input:
+nums1 = [3, 9]
+nums2 = [8, 9]
+k = 3
+Output:
+[9, 8, 9]
+
+
+**** Testcases ****
+[2,1,7,8,0,1,7,3,5,8,9, 0,0,7,0,2,2,7,3,5,5]
+[2,6,2, 0,1,0,5,4,5,5,3,3,3,4]
+k
+
+
+**** Ideas ****
+(4) Iteratively (greedily) find the maximal number of x digits that could potentially be extended to k digits (i.e. there are at least k digits left). To determine whether the number can be extended, it suffices to record the index of the last used digit in both numbers (there can be multiple such pairs of indices leading to the same maximal number), and check that there are at least a total of k-x digits left in both numbers. 
+
+In the following implementation, the indices following the last used digits are recorded in list_indices. (Using set instead of vector or list because it can has at most max(m,n) elements, but with repetition it can blow up to 2^x and TLE.)
+
+To go from step x to x+1, for each pair of indices in list_indices, extend the maximum number by one digit chosen from the ranges starting from those indices. Depending on whether the added digit is from the first or the second number, we get two new pairs of indices (stored in next_list_indices). We can throw out those pairs whose corresponding added digits are not maximal.
+
+
+(3) for a request of k digits, we check each possible make up of the k digits.
+0 from 1 & k from 2; 1 from 1 & k-1 from 2....
+each time we merge and compare with previous max
+
+(2) similar with (1). improved somehow. Improvement similar to
+https://leetcode.com/problems/create-maximum-number/discuss/77287/C%2B%2B-16ms-FASTEST-beats-97.
+
+
+(1)_naive
+id    0   1   2     3   4   5   6     7   8   9  10
+n1    6   0   2     8   7   7   8     9   5   6   4
+idxm  0   0   0     3   3   3   3     7   7   7   7
+     ^sta                            ^a
+
+id    0   1   2   3   4     5   6   7     8     9  10  11  12
+n2    5   0   3   1   4     6   3   4     7     8   6   2   5
+idxm  0   0   0   0   0     5   5   5     8     9   9   9   9
+     ^stb                  ^b
+
+
+
+id    0   1   2     3   4   5   6     7   8   9  10
+n1    6   0   2     8   7   7   8     9   5   6   4
+idxm  0   0   0     3   3   3   3     7   7   7   7
+                                     ^sta ^a
+
+id    0   1   2   3   4     5   6   7     8     9  10  11  12
+n2    5   0   3   1   4     6   3   4     7     8   6   2   5
+idxm  0   0   0   0   0     5   5   5     8     9   9   9   9
+     ^stb                  ^b
+
+
+
+id    0   1   2     3   4   5   6     7   8   9  10
+n1    6   0   2     8   7   7   8     9   5   6   4
+idxm  0   0   0     3   3   3   3     7   7   7   7
+                                     ^
+
+id    0   1   2   3   4     5   6   7     8     9  10  11  12
+n2    5   0   3   1   4     6   3   4     7     8   6   2   5
+idxm  0   0   0   0   0     5   5   5     8     9   9   9   9
+                           ^b
+
+
+**** Analysis ****
+(4) If we index the elements in list_indices as (m1,n1), (m2, n2), ... then they can be shown to satisfy m1 < m2 < m3 < ... and n1 > n2 > n3 > ... which shows the size of list_indices can be at most max(m,n), so the space complexity is clearly O(m+n). (It helps to plot the indices in a 2D grid.)
+
+Further analysis shows that for set insertion we just need to check that the inserted element is not the same as the last inserted element, so we can get rid of a log(m+n) factor for insertion. There are k steps and for each step the total number of indices checked in getBestIndex doesn't exceed m+n (e.g. if you extend (m1,n1) by one digit from the first number, you get some (m1',n1) with m1' <= m2), so the time complexity is O(k(m+n)).
+
+With more reasoning you can avoid some of the getBestIndex calls under certain conditions, but that doesn't lead to improvement on the asymptotic complexity.
+
+
+**** Code ****
+// 2nd visit_others
+class Solution {
+public:
+    pair<int,int> getBestIndex(vector<int>& nums, int start, int span) {
+	// get index and maximum
+        int max_idx = 0;
+        int max_ = nums[start];
+        int i = 1;
+        while (i < span) {
+            auto val = nums[start+i];
+            if (val > max_) {
+                max_idx = i;
+                max_ = val;
+                if (max_ == 9) break;
+            }
+            i++;
+        }
+        return pair<int,int>(max_idx, max_);
+    }
+    
+    vector<int> maxNumber(vector<int>& nums1, vector<int>& nums2, int k) {
+        vector<int> best_seq;
+        set<pair<int,int>> list_indices = {{0,0}};
+        while (k-- > 0) {
+            set<pair<int,int>> next_list_indices;
+            int max_ = -1;
+            for (auto indices : list_indices) {
+                auto n1 = indices.first;
+                auto n2 = indices.second;
+		// total # of digits left of nums1&2 after filling all k digits
+                auto remaining = nums1.size() + nums2.size() - n1 - n2 - k;
+                int idx1, max1 = -1, idx2, max2 = -1;
+		// if all left digits are in nums1/2, we derive respectively the max span
+                auto remaining1 = min(remaining, nums1.size() - n1);
+                auto remaining2 = min(remaining, nums2.size() - n2);
+                if (remaining1)
+                    tie(idx1, max1) = getBestIndex(nums1, n1, remaining1);
+                if (remaining2)
+                    tie(idx2, max2) = getBestIndex(nums2, n2, remaining2);
+                auto max12 = max(max1, max2);
+                if (max12 < max_) continue;
+                if (max12 > max_) { max_ = max12; next_list_indices.clear(); }
+                if (max1 >= max2) next_list_indices.insert({n1+idx1+1, n2});
+                if (max1 <= max2) next_list_indices.insert({n1, n2+idx2+1});
+            }
+            best_seq.emplace_back(max_);
+            list_indices = move(next_list_indices);
+        }
+        return best_seq;
+    }
+};
+
+// 2nd visit_idea same_fail to implement
+class Solution {
+    
+    // whether a larger or not
+    private boolean larger(int[] a, int[] b) {
+        for (int i = 0; i < a.length; i++) if (a[i] < b[i]) return false;
+        return true;
+    }
+    
+    private void merge(int[] res, int[] a, int[] b) {
+        int la = a.length, lb = b.length;
+        for (int i = 0, ca = 0, cb = 0; i < res.length; i++) {
+            if (ca >= la || (cb < lb && a[ca] < b[cb]) ) res[i] = b[cb++];
+            else if (cb >= lb || (ca < la && a[ca] > b[cb]) ) res[i] = a[ca++];
+            else {
+                
+            }
+        }
+    }
+    
+    // correspond to maxSub, improved possibly
+    private LinkedList<Integer> findAll(int[] n) {
+        LinkedList<Integer> trace = new LinkedList<Integer>();
+        int[] dp = new int[n.length]; trace.add(0); int i, j;
+        for (i = 1, j = 0; i < n.length; i++) {
+            while (!trace.isEmpty() && n[i] > n[trace.peekLast()])
+                dp[j++] = trace.removeLast();
+            trace.addLast(i);
+        }
+        while (!trace.isEmpty()) dp[j++] = trace.removeLast(); 
+        return dp;
+    }
+    
+    public int[] maxNumber(int[] n1, int[] n2, int k) {
+        int l1 = n1.length, l2 = n2.length, lo = l2 > k ? 0 : k - l2, hi = l1 > k ? k : l1;
+        int[] res = new int[k], c1 = new int[l1], c2 = Arrays.copyOf(n2, l2);
+        int[] dp1 = findAll(n1), dp2 = findAll(n2); Arrays.fill(c1, -1);
+        for (int i = lo; i <= hi; i++) {
+            c1[dp1[i]] = n1[dp1[i]]; c2[dp2[k-i]] = -1;
+            int[] cur = merge(new int[k], c1, c2);
+            if (larger(cur, res)) res = cur;
+        }
+        return res;
+    }
+}
+
+// others
+class Solution {
+    
+    public int[] maxSub(int[] n, int nd) {
+        int[] res = new int[nd];
+        for (int i = 0, cur = 0; i < n.length && cur < nd; i++) {
+            while (cur > -1 && n[i] > res[cur] && n.length - 1 - i >= nd - cur - 1) res[cur--] = 0;
+            if (cur < nd - 1) res[++cur] = n[i];
+        }
+        return res;
+    }
+    
+    public boolean n1NextBigger(int[] p1, int[] p2, int a, int b) {
+        if (a == p1.length) return false;
+        if (b == p2.length) return true;
+        if (p1[a] == p2[b]) return n1NextBigger(p1, p2, a + 1, b + 1);
+        return p1[a] > p2[b];
+    }
+    
+    public int[] merge(int k, int[] p1, int[] p2) {
+        int[] res = new int[k];
+        int a = 0, b = 0;
+        for (int i = 0; i < k; i++) {
+            if (a == p1.length) res[i] = p2[b++];
+            else if (b == p2.length) res[i] = p1[a++];
+            else if (p1[a] == p2[b]) res[i] = !n1NextBigger(p1, p2, a, b) ? p2[b++] : p1[a++];
+            else res[i] = p1[a] > p2[b] ? p1[a++] : p2[b++];
+        }
+        return res;
+    }
+    
+    public int[] maxNumber(int[] n1, int[] n2, int k) {
+        int l1 = n1.length, l2 = n2.length;
+        if (l1 + l2 == k) return merge(k, n1, n2);
+        int[] res = new int[k], cur;
+        // i is the # of digits from n1
+        for (int i = Math.max(0, k - l2); i <= k && i <= l1; i++) {
+            int[] p1 = maxSub(n1, i), p2 = maxSub(n2, k - i);
+            cur = i == 0 ? p2 : (k == i ? p1 : merge(k, p1, p2));
+            for (int j = 0; j < k && cur[j] >= res[j]; j++) if (cur[j] > res[j]) res = cur;
+        }
+        return res;
+    }
+}
+
+// naive
+class Solution {
+    
+    int[] res, idxm1, idxm2;
+    
+    public int solve(int c, int j, int[] n, boolean isa) {
+        res[j] = n[c];
+        if (isa) {
+            if (c == n.length - 1) idxm1[c] = c + 1;
+            if (c < n.length - 1) idxm1[c + 1] = c + 1;
+            for (int i = c + 2; i < idxm1.length && idxm1[i] != i; i++) 
+                idxm1[i] = n[i] > n[idxm1[i - 1]] ? i : idxm1[i - 1];
+        } else {
+            if (c == n.length - 1) idxm2[c] = c + 1;
+            if (c < n.length - 1) idxm2[c + 1] = c + 1;
+            for (int i = c + 2; i < idxm2.length && idxm2[i] != i; i++) 
+                idxm2[i] = n[i] > n[idxm2[i - 1]] ? i : idxm2[i - 1];
+        }
+        return c + 1;
+    }
+    
+    public int[] maxNumber(int[] n1, int[] n2, int k) {
+        int l1 = n1.length, l2 = n2.length, ck = k + 1, sta = 0, stb = 0;
+        res = new int[k]; idxm1 = new int[l1]; idxm2 = new int[l2];
+        for (int i = 1; i < l1; i++) idxm1[i] = n1[i] > n1[idxm1[i - 1]] ? i : idxm1[i - 1];
+        for (int i = 1; i < l2; i++) idxm2[i] = n2[i] > n2[idxm2[i - 1]] ? i : idxm2[i - 1];
+        while (--ck > 0) {                            // ck is the number of digits we still need
+            int a = l1 == 0 ? 0 : idxm1[l1 - 1], b = l2 == 0 ? 0 : idxm2[l2 - 1]; // a/b is idx of the current max
+            // if shorter than k -- find a, b that guarantee an output longer than k
+            while (l1 - a + l2 - b < ck) {
+                if (a <= sta && b > stb) b = idxm2[b - 1];
+                else if (b <= stb && a > sta) a = idxm1[a - 1];
+                // if pointer reach start in neither array
+                else if (n1[a] > n2[b]) b = idxm2[b - 1];
+                else if (n1[a] < n2[b]) a = idxm1[a - 1];
+                else if (n1[a] == n2[b]) {
+                    if (n1[a - 1] < n2[b - 1]) b = idxm2[b - 1];
+                    else if (n1[a - 1] > n2[b - 1]) a = idxm1[a - 1];
+                    else {
+                        if (l1 - idxm1[a - 1] + l2 - idxm2[b - 1] < k) { b = idxm2[b - 1]; a = idxm1[a - 1]; }
+                        else {a = idxm1[a - 1];} // randomly choose
+                    }
+                }
+            } 
+            // if equal to k -- fill and return
+            if (l1 - a + l2 - b == ck) {
+                for (int i = k - ck; i < k; i++) {
+                    if (a == n1.length) res[i] = n2[b++];
+                    else if (b == n2.length) res[i] = n1[a++];
+                    else res[i] = n1[a] < n2[b] ? n2[b++] : n1[a++];
+                }
+                return res;
+            }        
+            // if longer than k -- fill in res
+            if (l2 == 0 || b == l2 || (l1 != 0 && a < l1 && n1[a] > n2[b])) sta = solve(a, k - ck, n1, true);
+            else if (l1 == 0 || a == l1 || (l2 != 0 && b < l2 && n1[a] < n2[b])) stb = solve(b, k - ck, n2, false);
+            else { // if current max in two arrays identical
+                if (ck > 1) { stb = solve(b, k - ck, n2, false); ck--; } // not res end, add both
+                sta = solve(a, k - ck, n1, true);           // otherwise,  add a random one
+            }
+        }
+        return res;
+    }
+}
+
+class Solution {
+    
+    int[] res, idxm1, idxm2, n1, n2;
+    int l1, l2; 
+    
+    public int solve(int c, int j, int[] n, boolean isa) {
+        res[j] = n[c];
+        if (isa) {
+            if (c == n.length - 1) idxm1[c] = c + 1;
+            if (c < n.length - 1) idxm1[c + 1] = c + 1;
+            for (int i = c + 2; i < idxm1.length && idxm1[i] != i; i++) 
+                idxm1[i] = n[i] > n[idxm1[i - 1]] ? i : idxm1[i - 1];
+        } else {
+            if (c == n.length - 1) idxm2[c] = c + 1;
+            if (c < n.length - 1) idxm2[c + 1] = c + 1;
+            for (int i = c + 2; i < idxm2.length && idxm2[i] != i; i++) 
+                idxm2[i] = n[i] > n[idxm2[i - 1]] ? i : idxm2[i - 1];
+        }
+        return c + 1;
+    }
+    // find a, b that guarantee an output longer than k -- return new a and b without change other inputs
+    public int[] findLoc(int[] ab, int sta, int stb, int ck) {
+        //while (l1 - ab[0] + l2 - ab[1] < ck) {
+            int a = ab[0], b = ab[1];
+            if (a <= sta && b > stb) ab[1] = idxm2[b - 1];
+            else if (b <= stb && a > sta) ab[0] = idxm1[a - 1];
+            // if pointer reach start in neither array
+            else if (n1[a] > n2[b] || (n1[a] == n2[b] && n1[a - 1] < n2[b - 1])) ab[1] = idxm2[b - 1];
+            else if (n1[a] < n2[b] || (n1[a] == n2[b] && n1[a - 1] > n2[b - 1])) ab[0] = idxm1[a - 1];
+            else if (l1 - idxm1[a - 1] + l2 - idxm2[b - 1] < ck) { ab[1] = idxm2[b - 1]; ab[0] = idxm1[a - 1]; }
+            else ab[0] = idxm1[a - 1]; // randomly choose
+        return ab;
+    }
+    
+    public int nextDigt(int sta, int stb, int ck) {
+        int[] ab = new int[2];
+        ab[0] = (ab[0] == l1 || sta == l1) ? l1 : idxm1[l1 - 1];
+        ab[1] = (ab[1] == l2 || stb == l2) ? l2 : idxm2[l2 - 1];
+        while (l1 - ab[0] + l2 - ab[1] < ck - 1) ab = findLoc(ab, sta, stb, ck - 1); // update ab
+        if (sta == l1) return n2[ab[1]];
+        return Math.max(n1[ab[0]], n2[ab[1]]);
+    }
+    
+    public int[] maxNumber(int[] nums1, int[] nums2, int k) {
+        int sta = 0, stb = 0, ck = k + 1; l1 = nums1.length; l2 = nums2.length; // ck- # of digits still need
+        int[] ab = new int[2]; res = new int[k]; idxm1 = new int[l1]; idxm2 = new int[l2]; n1 = nums1; n2 = nums2;
+        for (int i = 1; i < l1; i++) idxm1[i] = n1[i] > n1[idxm1[i - 1]] ? i : idxm1[i - 1];
+        for (int i = 1; i < l2; i++) idxm2[i] = n2[i] > n2[idxm2[i - 1]] ? i : idxm2[i - 1];
+        ab[0] = l1 == 0 ? 0 : l1 - 1; ab[1] = l2 == 0 ? 0 : l2 - 1;
+        while (--ck > 0) {                           
+            ab[0] = ab[0] == l1 ? l1 : idxm1[l1 - 1]; ab[1] = l2 == ab[1] ? l2 : idxm2[l2 - 1];
+            while (l1 - ab[0] + l2 - ab[1] < ck) ab = findLoc(ab, sta, stb, ck);        // if shorter than k
+            if (l1 - ab[0] + l2 - ab[1] == ck) {   // if equal to k
+                for (int i = k - ck; i < k; i++) {
+                    if (ab[0] == l1) res[i] = n2[ab[1]++];
+                    else if (ab[1] == l2) res[i] = n1[ab[0]++];
+                    else if (n1[ab[0]] == n2[ab[1]]) res[i] = nextDigt(ab[0] + 1, stb, ck) < nextDigt(sta, ab[1] + 1, ck) ? n2[ab[1]++] : n1[ab[0]++];
+                    else res[i] = n1[ab[0]] < n2[ab[1]] ? n2[ab[1]++] : n1[ab[0]++];
+                }
+                return res;
+            } // if longer than k
+            int a = ab[0], b = ab[1];
+            if (l2 == 0 || b == l2 || (l1 != 0 && a < l1 && n1[a] > n2[b])) sta = solve(a, k - ck, n1, true);
+            else if (l1 == 0 || a == l1 || (l2 != 0 && b < l2 && n1[a] < n2[b])) stb = solve(b, k - ck, n2, false);
+            else { // n1[a] == n2[b] -- check next digit entailed by each
+                if (nextDigt(a + 1, stb, ck) > nextDigt(sta, b + 1, ck)) sta = solve(a, k - ck, n1, true);
+                else stb = solve(b, k - ck, n2, false);
+            }
+        }
+        return res;
+    }
+}
+
+
+class Solution {
+    
+    int[] res, idxm1, idxm2, n1, n2;
+    int l1, l2; 
+    
+    // update idxm1 & 2
+    public void updateMax(int sta, int stb) {
+        if (sta < l1) idxm1[sta] = sta; 
+        if (stb < l2) idxm2[stb] = stb;
+        for (int i = sta + 1; i < l1 && idxm1[i] != i; i++)
+            idxm1[i] = n1[i] > n1[idxm1[i - 1]] ? i : idxm1[i - 1];
+        for (int i = stb + 1; i < l2 && idxm2[i] != i; i++)
+            idxm2[i] = n2[i] > n2[idxm2[i - 1]] ? i : idxm2[i - 1];
+    }
+    
+    // sta, stb respectively be the new start point of n1 and n2  
+    // find a, b that guarantee an output longer than k -- return new a and b without change other inputs
+    public int[] emulate(int ck, int[] ab) {
+        int sta = ab[0], stb = ab[1];
+        updateMax(sta, stb);
+        ab[0] = ab[0] == l1 ? l1 : idxm1[l1 - 1]; ab[1] = l2 == ab[1] ? l2 : idxm2[l2 - 1];
+        // find ab
+        while (l1 - ab[0] + l2 - ab[1] < ck) {
+            int a = ab[0], b = ab[1];
+            if (a == sta && b > stb) ab[1] = idxm2[b - 1];
+            else if (b <= stb && a > sta) ab[0] = idxm1[a - 1];
+            else if (n1[a] > n2[b] || (n1[a] == n2[b] && n1[a - 1] < n2[b - 1])) ab[1] = idxm2[b - 1];
+            else if (n1[a] < n2[b] || (n1[a] == n2[b] && n1[a - 1] > n2[b - 1])) ab[0] = idxm1[a - 1];
+            else if (l1 - idxm1[a - 1] + l2 - idxm2[b - 1] < ck) { ab[1] = idxm2[b - 1]; ab[0] = idxm1[a - 1]; }
+            else ab[0] = idxm1[a - 1]; // randomly choose
+        return ab;
+    }
+    
+    public int nextDig(int sta, int stb, int ck, int[] idxmc1, int[] idxmc2) {
+        
+    }
+    
+    public boolean n1NextBigger(int sta, int stb, int ck, int[] idxmc1, int[] idxmc2) {
+        if (ab[0] == l1) return false;
+        if (ab[1] == l2) return true;
+        idxmc1[sta]
+        for (int i = sta; i < l1; i++) idxm1[i] = 
+        while (l1 - ab[0] + l2 - ab[1] < ck - 1) ab = findLoc(ab, sta, stb, ck - 1); // update ab
+        if (n1[ab[0]] == n2[ab[1]]) return n1NextBigger(sta, stb, ck);
+        return n1[ab[0]] > n2[ab[1]];
+    }
+    
+    // update res
+    public int[] merge(int ck, int a, int b) {
+        for (int i = k - ck; i < k; i++) {
+            if (a == l1) res[i] = n2[b++];
+            else if (b == l2) res[i] = n1[a++];
+            else if (n1[a] == n2[b]) res[i] = n1NextBigger(ab[0] + 1, stb, ck)? n1[a++] : n2[b++];
+            else res[i] = n1[a] < n2[b] ? n2[b++] : n1[a++];
+        }
+        return res;
+    }
+    
+    public int[] maxNumber(int[] nums1, int[] nums2, int k) {
+        int ck = k + 1; l1 = nums1.length; l2 = nums2.length; n1 = nums1; n2 = nums2; // ck- # of digits still need
+        int[] ab = new int[2]; res = new int[k]; idxm1 = new int[l1]; idxm2 = new int[l2];
+        updateMax(0, 0);
+        ab[0] = l1 == 0 ? 0 : l1 - 1; ab[1] = l2 == 0 ? 0 : l2 - 1;
+        while (--ck > 0) {
+            int sta = ab[0], stb = ab[1], a = ab[0], b = ab[1];
+            while (l1 - a + l2 - b < ck) ab = emulate(ab, sta, stb, ck);     // if shorter than k
+            if (l1 - a + l2 - b == ck) return merge(ck, ab[0], ab[1]);       // if equal to k    
+            if (l2 == 0 || b == l2 || (l1 != 0 && a < l1 && n1[a] > n2[b])) { 
+                res[k - ck] = n1[ab[0]++];
+                ab = emulate(ck - 1, ab);
+            } else if (l1 == 0 || a == l1 || (l2 != 0 && b < l2 && n1[a] < n2[b])) {
+                res[k - ck] = n2[ab[1]++];
+                ab = emulate(ck - 1, ab);
+            } else if (n1NextBigger(a + 1, stb, ck)) {
+                
+            } else stb = solve(b, k - ck, n2, false);
+        }
+        return res;
+    }
+}

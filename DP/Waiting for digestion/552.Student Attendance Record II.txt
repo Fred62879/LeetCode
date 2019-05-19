@@ -1,0 +1,157 @@
+## Specification
+Given a positive integer n, return the number of all possible attendance records with length n, which will be regarded as rewardable. The answer may be very large, return it after mod 10^9 + 7. A student attendance record is a string 
+that only contains the following three characters:
+'A' : Absent.
+'L' : Late.
+'P' : Present.
+A record is regarded as rewardable if it doesn't contain more than one 'A' (absent) or more than two continuous 'L' (late).
+
+Example 1:
+Input: n = 2
+Output: 8 
+Explanation:
+There are 8 records with length 2 will be regarded as rewardable:
+"PP" , "AP", "PA", "LP", "PL", "AL", "LA", "LL"
+Only "AA" won't be regarded as rewardable owing to more than one absent times. 
+
+Note: The value of n won't exceed 100,000.
+
+
+## Ideas
+(3) matrix power
+The final answer is f[n][1][2], which involves multiplying the last row of A^n and the column vector [1 1 1 1 1 1]. Interestingly, it is also equal to A^(n+1)[5][2] as the third column of A is just that vector.
+// comments
+I've seen similar ideas in solving Fibonacci problem, where we could always transfer that problem into matrix's chain multiplication. And use same trick of computing pow(x,n) to reduce the time complexity from O(n) to O(logn).
+
+(2) DP_bottom up
+       ^^^Table 1^^^
+       n = 1     n = 2
+   lt  0 1 2     0 1 2
+  a  0 1 2 2     2 3 4
+     1 2 3 3     5 7 8
+
+Refer to Table 1 & 2.
+For instance, to find dp[2][1][0], first check the addition of 'P'. Since we allow at most 1 'A' right now, we can simply add 'P' to all sequences of one-element long. Then to add 'A' all three conditions on the 1st row can be added with. (dp[i-1][a-1][2] OR dp[i-1][0][2]). To add 'L', 
+However, to find dp[2][0][0], we can only add 'P' to one-element long sequence with at most 0 'A' (dp[1][0][2]) since dp[1][1][2] definitely include the extra # of sequences that possess 1 'A'. No need to add 'A' since we now allow 0 'A'.
+
+
+(1) DP_top-down_derived
+To divide this into subproblems, we should figure out how we can add characters to a subsequence. The way is that we can record the number of A in the subarray and the number of consecutive L(s) the subarray terminates with. There are six
+possibilities in total - A0L0, A0L1, A0L2, A1L0, A1L1, A1L2.
+       ^^^Table 2^^^
+       n = 1     n = 2
+   lt  0 1 2     0 1 2
+  a  0 1 1 0     2 1 1
+     1 1 0 0     3 1 0
+We can maintain an array, recording the # of arrays fitting each category. As we proceed from char 0 to n-1, we update each category.
+A0L0 = A0L0+P / A0L1+P / A0L2+P; A0L1 = A0L0+L; A0L2 = A0L1+L
+A1L0 = A0L0+A / A0L1+A / A0L2+A / A1L0+P / A1L1+P / A1L2+P
+A1L1 = A1L0+L; A1L2 = A1L1+L
+
+
+## Code
+// () matrix power, adapted from bottom-up
+class Solution {
+	final int MOD = 1000000007;
+	final int M = 6;
+
+	int[][] mul(int[][] A, int[][] B) {
+	    int[][] C = new int[M][M];
+	    for (int i = 0; i < M; i++)
+	        for (int j = 0; j < M; j++)
+	            for (int k = 0; k < M; k++)
+        	        C[i][j] = (int) ((C[i][j] + (long) A[i][k] * B[k][j]) % MOD);
+	    return C;
+    }
+
+	int[][] pow(int[][] A, int n) {
+	    int[][] res = new int[M][M];
+	    for (int i = 0; i < M; i++) res[i][i] = 1;
+	    while (n > 0) {
+        	if (n % 2 == 1) res = mul(res, A);
+            	A = mul(A, A);
+	            n /= 2;
+        	}
+	        return res;
+	}
+
+	public int checkRecord(int n) {
+	    int[][] A = {
+            {0, 0, 1, 0, 0, 0},
+            {1, 0, 1, 0, 0, 0},
+            {0, 1, 1, 0, 0, 0},
+            {0, 0, 1, 0, 0, 1},
+            {0, 0, 1, 1, 0, 1},
+            {0, 0, 1, 0, 1, 1},
+        };
+        return pow(A, n + 1)[5][2];
+	}
+}
+
+// bottom-up
+class Solution {
+    
+    int[][][] dp; // dp[i][j][k]
+    // array of length i, containing at most a 'A', and end with at most lt consecutive 'L'
+    int p = 1000000007;
+    
+    public int checkRecord(int n) {
+        dp = new int[n+1][2][3];
+        dp[0] = new int[][]{{1, 1, 1}, {1, 1, 1}};
+        for (int i = 1; i <= n; i++) {
+            for (int a = 0; a < 2; a++) {
+                for (int lt = 0; lt < 3; lt++) {
+                    int cur = dp[i-1][a][2]; // add P
+                    if (a > 0) cur = (cur + dp[i-1][a-1][2]) % p; // add A
+                    if (lt > 0) cur = (cur + dp[i-1][a][lt-1]) % p; // add L
+                    dp[i][a][lt] = cur;
+                }
+            }
+        }
+        return dp[n][1][2];
+    }
+}
+
+// _derived
+class Solution {
+    
+    int[] dp;
+    
+    private int sum(int from, int to) {
+        int ans = 0;
+        for (int i = from; i <= to; i++)
+            ans = (ans + dp[i]) % 1000000007;
+        return ans;
+    }
+    
+    public int checkRecord(int n) {
+        dp = new int[]{1, 1, 0, 1, 0, 0};
+        for (int i = 1; i < n; i++)
+            dp = new int[] {sum(0, 2), dp[0], dp[1], sum(0, 5), dp[3], dp[4]};
+        return sum(0, 5);
+    }
+}
+
+// DP_top-down_derived
+class Solution {
+    
+    int[][][] dp; // dp[i][j][k], array containing i 'P' & k 'A', terminating with j 'L'
+    int p = 1000000007;
+    
+    private int solve(int i, int j, int k) {
+        if (i == 0) return 1;
+        if (dp[i][j][k] != -1) return dp[i][j][k];
+        int ans = solve(i-1, 0, k); // add P
+        if (j <= 1) ans = (ans + solve(i-1, j+1, k)) % p; // add L
+        if (k == 0) ans = (ans + solve(i-1, 0, k+1)) % p; // add A
+        dp[i][j][k] = ans;
+        return dp[i][j][k];
+    }
+    
+    public int checkRecord(int n) {
+        dp = new int[n+1][3][2];
+	for (int i = 0; i <= n; i++) for (int j = 0; j < 3; j++)
+            Arrays.fill(dp[i][j], -1);
+        return solve(n, 0, 0);
+    }
+}

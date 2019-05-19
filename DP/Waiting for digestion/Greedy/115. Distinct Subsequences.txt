@@ -1,0 +1,151 @@
+**** Specification ****
+Given a string S and a string T, count the number of distinct subsequences of S 
+which equals T. A subsequence of a string is a new string which is formed from 
+the original string by deleting some (can be none) of the characters without 
+disturbing the relative positions of the remaining characters. (ie, "ACE" is a 
+subsequence of "ABCDE" while "AEC" is not).
+
+Example 1:
+Input: S = "rabbbit", T = "rabbit"
+Output: 3
+^^^ ^^^
+Example 2:
+Input: S = "babgbag", T = "bag"
+Output: 5
+    ^^^
+
+**** Ideas ****
+// 2nd visit
+dp[i][j] records the # of occurrences of t.substring(0, i) until jth char in s.
+
+
+**** Code ****
+// 2nd visit - Feb 22 2019
+class Solution {
+    
+    public int numDistinct(String s, String t) {
+        int ls = s.length(), lt = t.length();
+        int[][] ref = new int[lt + 1][ls + 1];
+        Arrays.fill(ref[0], 1);
+        for (int i = 1; i <= lt; i++) {
+            for (int j = 1; j <= ls; j++) {
+                if (t.charAt(i-1) != s.charAt(j-1)) ref[i][j] = ref[i][j-1];
+                else ref[i][j] += ref[i-1][j-1] + ref[i][j-1];
+            }
+        }
+        return ref[lt][ls];
+    }
+}
+
+// ** others **
+class Solution {
+    
+    public int numDistinct(String s, String t) {
+        int sl = s.length(), tl = t.length();
+        int[] res = new int[tl + 1];
+        res[0] = 1;
+        for (int i = 1; i <= sl; i++) {
+            for (int j = Math.min(tl, i); j >= 1; j--) {
+                if (s.charAt(i - 1) == t.charAt(j - 1))
+                    res[j] += res[j - 1];
+            }
+        }
+        return res[tl];
+    }
+}
+
+
+//
+class Solution {
+    
+    public int numDistinct(String s, String t) {
+        int[] nums = new int[s.length()];
+        for(int i= 0; i< s.length(); i++)
+            if(s.charAt(i) == t.charAt(0))
+                nums[i]= 1;
+        for(int i= 1; i< t.length(); i++){
+            int n= 0;
+            for(int j= 0; j< s.length(); j++){
+                int temp= nums[j];
+                nums[j]= s.charAt(j)== t.charAt(i) ? n: 0;
+                n += temp;
+            }
+        }
+        int sum= 0;
+        for(int i= 0; i< s.length(); i++)
+            sum+= nums[i];
+        return sum;
+    }
+}
+
+// ** derived **
+class Solution {
+    
+    int[][] m;
+    
+    public int numDistinct(String s, String t) {
+        int sl = s.length(), tl = t.length();
+        if (sl < tl) return 0;
+        m = new int[tl + 1][sl + 1];
+        for (int[] a : m) Arrays.fill(a, -1);
+        return solve(s, t, 0, 0);
+    }
+    
+    public int solve(String s, String t, int sc, int tc) {
+        if (tc == t.length()) return 1;
+        if (sc == s.length()) return 0;
+        int sum = 0;
+        if (s.charAt(sc) == t.charAt(tc)) sum = solve(s, t, sc + 1, tc + 1) + solve(s, t, sc + 1, tc);
+        else sum = solve(s, t, sc + 1, tc);
+        m[tc][sc] = sum;
+        return sum;
+    }
+}
+
+//
+class Solution {
+    
+    int[][] m;
+    
+    public int numDistinct(String s, String t) {
+        int sl = s.length(), tl = t.length();
+        if (sl < tl) return 0;
+        m = new int[tl + 1][sl + 1];
+        for (int[] a : m) Arrays.fill(a, -1);
+        return solve(s, t, 0, 0);
+    }
+    
+    public int solve(String s, String t, int sc, int tc) {
+        if (tc == t.length()) return 1;
+        if (sc == s.length()) return 0;
+	if (m[tc][sc] != -1) return m[tc][sc];
+        int sum = 0;
+        if (s.charAt(sc) == t.charAt(tc)) sum = solve(s, t, sc + 1, tc + 1) + solve(s, t, sc + 1, tc);
+        else sum = solve(s, t, sc + 1, tc);
+        m[tc][sc] = sum;
+        return sum;
+    }
+}
+
+// ** initial **
+class Solution {
+    public int numDistinct(String s, String t) {
+        int sl = s.length(), tl = t.length();
+        if (sl < tl) return 0;
+        int[][] res = new int[tl][sl];
+        res[0][0] = s.charAt(0) == t.charAt(0) ? 1 : 0;
+        for (int j = 1; j < sl; j++)
+             res[0][j] = s.charAt(j) != t.charAt(0) ? res[0][j - 1] : res[0][j - 1] + 1;
+        for (int i = 1; i < tl; i++)
+             res[i][0] = 0;
+        for (int i = 1; i < tl; i++) {
+            for (int j = 1; j < sl; j++) {
+                if (i > j) res[i][j] = 0;
+                else if (s.charAt(j) != t.charAt(i)) res[i][j] = res[i][j - 1];
+                else if (t.charAt(i) == t.charAt(i - 1)) res[i][j] = res[i - 1][j - 1] + res[i][j - 1];
+                else res[i][j] = res[i - 1][j] + res[i][j - 1];
+            }
+        }
+        return res[tl - 1][sl - 1];
+    }
+}

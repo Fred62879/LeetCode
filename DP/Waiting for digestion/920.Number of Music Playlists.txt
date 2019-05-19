@@ -1,0 +1,106 @@
+## Specification
+Your music player contains N different songs and she wants to listen to L (not necessarily different) songs during your trip.  You create a playlist so that:
+(i) Every song is played at least once;
+(ii) A song can only be played again only if K other songs have been played.
+Return the number of possible playlists.  As the answer can be very large, return it modulo 10^9 + 7. 
+
+Example 1:
+Input: N = 3, L = 3, K = 1
+Output: 6
+Explanation: There are 6 possible playlists. [1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1].
+
+Example 2:
+Input: N = 2, L = 3, K = 0
+Output: 6
+Explanation: There are 6 possible playlists. [1, 1, 2], [1, 2, 1], [2, 1, 1], [2, 2, 1], [2, 1, 2], [1, 2, 2]
+
+Example 3:
+Input: N = 2, L = 3, K = 1
+Output: 2
+Explanation: There are 2 possible playlists. [1, 2, 1], [2, 1, 2]
+
+Note:
+0 <= K < N <= L <= 100
+
+
+
+## Ideas
+# (3) Math_Combination
+https://leetcode.com/problems/number-of-music-playlists/discuss/248314/C%2B%2B-O((N-K)*log(L-K)-%2B-N)-solution
+
+https://leetcode.com/problems/number-of-music-playlists/discuss/248397/C%2B%2B-O(L)-solution-or-O((N-K)log(N-K)-*-log(L-K)-%2BN)-in-detail
+
+https://www.geeksforgeeks.org/multiplicative-inverse-under-modulo-m/
+
+If we remove the restriction 'Every song is played at least once', the problem is become quiet easier. Let: R(N, L, K) = the answer of the question, and F(N, L, K) = permutations of musics without the restriction 'Every song is played at least once'. So based on Binomial Transform:
+F(N, L, K) = C(N, N) * R(N, L, K) + C(N, N-1) * R(N-1, L, K) + C(N, N-2) * R(N-2, L, K) ->
+R(N, L, K) = C(N, N) * F(N, L, K) - C(N, N-1) * F(N-1, L, K) + C(N, N-2) * F(N-2, L, K), where F(N, L, K) = P(ermutation)(N, K) * (N - K)^(L - K)
+
+
+
+
+# (2) Math_Official
+**** STAY TUNED ****
+Take N = 5, L = 13, K = 1 for instance. To satisfy the requirement that each song shall be played at least once, we can derive a vector x(x1, x2, ..., x5) with xi specifying the first occurrence id of the i-1\th song.
+Say, we derived a x = (1, 2, 4, 7, 11), then instances can be:
+          _  _     _        _            __
+playlist  1  2  3  4  5  6  7  8  9  10  11  12  13
+song      1  2 *1  3 *2 *1  4 *3 *1  *2   5  *4  *1
+          1  2 *1  3 *1 *3  4 *2 *4  *2   5  *4  *1
+
+where the songs denoted with '*' subject to more than one possibilities. In this case, the above x can incur totally 5 * (4 * 1^1) * (3 * 2^2) * (2 * 3^3) * (1 * 4^2) different playlists, which can be summarized as 
+N * ( (N-1)*(1)^(x3-x2-1) ) * ( (N-2)*(2)^(x4-x3-1) ) * ( (N-3)*(3)^(x5-x4-1) ) * ( (N-4)*(x6-x5-1) ), where we specifically set x6 as 13+1. If K == 2, then x = (1, 2, 3, 7, 11) and one possibility is:
+          _  _  _           _            __
+playlist  1  2  3  4  5  6  7  8  9  10  11  12  13
+song      1  2  3 *1 *2 *3  4 *2 *1  *3   5  *4  *1
+
+in which case, we have totally 5 * 4 * (3 * 1^3) * (2 * 2^3) * (1 * 3^2) 
+= N * (N - 1) * ( (N-2)*(1)^(x4-x3-1) ) * ( (N-3)*(2)^(x5-x4-1) ) * ( (N-4)*(3)^(x6-x5-1) )
+= N * (N-1) * ... * ( (N-k)*(1)^(x_{k+2} - x_{k+1} - 1) ) * 
+       ( (N-k-1)*(2)^(x_{k+3} - x_{k+2} - 1) ) * ... * ( 1*(N-k)^(x_{N+1} - x_{N} - 1) )
+= N! * /SUM(j = 1 to (N-k)) j^(x_{k+j+1} - x_{k+j} - 1)
+**** STAY TUNED ****
+
+
+
+# (1) DP definition
+Let dp[i][j] denotes the # of ways to have songs 0~i being played j times. To make sure all of the first i+1 songs are played, i cannot be larger than j and to make sure the left songs (N-i-1) can be played within the left times (L-j), i <= j && N-i-1 <= L-j. To update dp[i][j] we refer to two conditions - dp[i-1][j-1] & dp[i][j-1]:
+
+// (i) Given song i, the song newly added, is not played before, we simply append song i to each of the original playlists where songs 0~(i-1) are played for j-1 times. However, say i is 3 and j is 4, we only generated 010-2 & 101-2. Actually, take this step as a heuristic, we are not restrained to append only 2 to whatever exist but can also do the same thing for song 0 and 1. As we would like to know how many ways can we generate a playlist of 4 using 3 songs given the last song in the playlist being a unique one, we can apply the above logic to all songs we now have, i.e. song 0, 1, and 2. Although we never approached the condition where songs 0 and 2 are used to generate a playlist of 3, the number of ways would be exactly be the same as that of songs 0 and 1. Thus, simply multiply dp[i-1][j-1] with the # of songs we now have which is (i+1)
+
+// (ii) On the other hand, if the last song in the new playlist should not be a unique one, then we consult dp[i][j-1] which records the # of playlists of length j-1 using i songs. In this case, we shall append all possible last-song to each of these playlist. Actually, this is the only place where we need to evaluate K which denotes the least # of other songs between two identical songs in a playlist. Say, K is now 1, then the tail song can be any song we now have (0~2) apart from that being the last song in the original playlist of length j-1. While if K is 2, then we shall bypass the two ending songs in the original list. Still take K = 1 for instance, to know how many songs can be appended as a new tail, we do not need to know which song exactly is at the end originally. All we need to know is that there is a song at the end of the original list and apart from this one in song 0~2, every other song can be taken which is simply 3-1=2.
+
+
+
+## Code
+# (3) Math
+
+
+# (2) DP_Math
+
+
+
+# (1) DP_bottom-up
+// others_python_one_liner
+def numMusicPlaylists(self, N, L, K):
+            return (math.factorial(N) if N == L or N == K + 1 else self.numMusicPlaylists(N - 1, L - 1, K) * N + self.numMusicPlaylists(N, L - 1, K) * (N - K)) % (10**9 + 7)
+
+// indep
+class Solution {
+public:
+    int numMusicPlaylists(int N, int L, int K) {
+        int q = 1e9 + 7;
+        long dp[N][L + 1]; memset(dp, 0, sizeof(dp));
+        // dp[i][j], # of ways to have the 0~i songs played j times (i <= j && N-i <= L-j)
+        dp[0][1] = 1;
+        if (!K) for (int i = 0; i <= L; i++) dp[0][i] = 1;
+        for (int i = 1; i < N; i++) {
+            long dupli = max(0, i + 1 - K); // # of songs among the first i that can be repeated
+            for (int j = i + 1; j <= L - N + i + 1; j++) {
+		dp[i][j] = (dp[i][j] + dp[i - 1][j - 1] * (i + 1) ) % q;                
+		dp[i][j] = (dp[i][j] + dp[i][j - 1] * dupli ) % q;
+            }
+        }
+        return dp[N-1][L];
+    }
+};

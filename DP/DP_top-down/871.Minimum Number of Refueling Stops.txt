@@ -1,0 +1,81 @@
+## Specification
+Similar: LT55 (Array)
+A car travels from a starting position to a destination which is target miles east of the starting position. Along the way, there are gas stations.  Each station[i] represents a gas station that is station[i][0] miles east of the starting position, and has station[i][1] liters of gas. The car starts with an infinite tank of gas, which initially has startFuel liters of fuel in it.  It uses 1 liter of gas per 1 mile that it drives. When the car reaches a gas station, it may stop and refuel, transferring all the gas from the station into the car. What is the least number of refueling stops the car must make in order to reach its destination?  If it cannot reach the destination, return -1.
+
+Note that if the car reaches a gas station with 0 fuel left, the car can still refuel there. If the car reaches the destination with 0 fuel left, it is still considered to have arrived.
+
+Example 1:
+Input: target = 1, startFuel = 1, stations = []
+Output: 0
+Explanation: We can reach the target without refueling.
+
+Example 2:
+Input: target = 100, startFuel = 1, stations = [[10,100]]
+Output: -1
+Explanation: We can't reach the target (or even the first gas station).
+
+Example 3:
+Input: target = 100, startFuel = 10, stations = [[10,60],[20,30],[30,30],[60,40]]
+Output: 2
+Explanation: 
+We start with 10 liters of fuel. We drive to position 10, expending 10 liters of fuel.  We refuel from 0 liters to 60 liters of gas. Then, we drive from position 10 to position 60 (expending 50 liters of fuel), and refuel from 10 liters to 50 liters of gas.  We then drive to and reach the target. We made 2 refueling stops along the way, so we return 2.
+
+Note:
+1 <= target, startFuel, stations[i][1] <= 10^9
+0 <= stations.length <= 500
+0 < stations[0][0] < stations[1][0] < ... < stations[stations.length-1][0] < target
+
+
+## Ideas
+# (6) Greedy_priority queue (improved from (3))
+
+# (5) Greedy
+
+# (4) Greedy_naive
+
+# (3) DP_bottom-up
+
+# (2) DP_top-down
+// not elegant
+https://leetcode.com/problems/minimum-number-of-refueling-stops/discuss/150489/A-not-very-elegant-DP-solution.
+
+# (1) BFS_TLE
+
+
+## Code
+# (2) DP_top-down
+// others_not elegant
+
+
+// indep_fail
+class Solution {
+public:
+    // closest station at pos
+    int solve(int pos, int fuel, int dist, int t, vector<unordered_map<int, int>> dp, vector<vector<int>>& stations) {
+        if (dp[pos].find(fuel) != dp[pos].end()) return dp[pos][fuel];
+        
+        int ndist = stations[pos][0];
+        if (fuel < ndist - dist) return -1; // cannot reach the closest
+        int bypass = solve(pos + 1, fuel, dist, t, dp, stations);  // bypass the closest station
+        unsigned int cur = bypass == -1 ? INT_MAX : bypass;
+        
+        // refuel at pos\th station
+        int nfuel = fuel - (ndist - dist) + stations[pos][1];
+        if (ndist + nfuel >= t) return 1;
+        for (int i = pos + 1; i < stations.size() && stations[i][0] - dist <= fuel; i++) {
+            unsigned int a = solve(i, nfuel, ndist, t, dp, stations);
+            cur = min(cur, a + 1);   
+        }
+        dp[pos][fuel] = cur;
+        return cur;
+    }    
+    
+    int minRefuelStops(int target, int startFuel, vector<vector<int>>& stations) {
+        if (target <= startFuel) return 0;
+        int n = stations.size(), ans = 1;
+        vector<unordered_map<int, int>> dp;
+        for (int i = 0; i < n; i++) { unordered_map<int, int> cur; dp.push_back(cur); }
+        return solve(0, startFuel, 0, target, dp, stations);
+    }
+};
+

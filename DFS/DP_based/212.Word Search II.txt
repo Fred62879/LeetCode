@@ -1,0 +1,240 @@
+## Specification
+Given a 2D board and a list of words from the dictionary, find all words in the board. Each word must be constructed from letters of sequentially adjacent cell, where "adjacent" cells are those horizontally or vertically neighboring. The same letter cell may not be used more than once in a word. 
+
+Example:
+Input: 
+board = [
+  ['o','a','a','n'],
+  ['e','t','a','e'],
+  ['i','h','k','r'],
+  ['i','f','l','v']
+]
+words = ["oath","pea","eat","rain"]
+Output: ["eat","oath"]
+
+Note:
+All inputs are consist of lowercase letters a-z. The values of words are distinct.
+
+
+## Testcases
+[["o","a","a","n"],["e","t","a","e"],["i","h","k","r"],["i","f","l","v"]]
+["oath","pea","eat","rain"]
+
+[["a"]]
+["a"]
+
+[["b","a","a","b","a","b"],["a","b","a","a","a","a"],["a","b","a","a","a","b"],["a","b","a","b","b","a"],["a","a","b","b","a","b"],["a","a","b","b","b","a"],["a","a","b","a","a","b"]]
+["bbaabaabaaaaabaababaaaaababb","aabbaaabaaabaabaaaaaabbaaaba","babaababbbbbbbaabaababaabaaa","bbbaaabaabbaaababababbbbbaaa","babbabbbbaabbabaaaaaabbbaaab","bbbababbbbbbbababbabbbbbabaa","babababbababaabbbbabbbbabbba","abbbbbbaabaaabaaababaabbabba","aabaabababbbbbbababbbababbaa","aabbbbabbaababaaaabababbaaba","ababaababaaabbabbaabbaabbaba","abaabbbaaaaababbbaaaaabbbaab","aabbabaabaabbabababaaabbbaab","baaabaaaabbabaaabaabababaaaa","aaabbabaaaababbabbaabbaabbaa","aaabaaaaabaabbabaabbbbaabaaa","abbaabbaaaabbaababababbaabbb","baabaababbbbaaaabaaabbababbb","aabaababbaababbaaabaabababab","abbaaabbaabaabaabbbbaabbbbbb","aaababaabbaaabbbaaabbabbabab","bbababbbabbbbabbbbabbbbbabaa","abbbaabbbaaababbbababbababba","bbbbbbbabbbababbabaabababaab","aaaababaabbbbabaaaaabaaaaabb","bbaaabbbbabbaaabbaabbabbaaba","aabaabbbbaabaabbabaabababaaa","abbababbbaababaabbababababbb","aabbbabbaaaababbbbabbababbbb","babbbaabababbbbbbbbbaabbabaa"]
+
+
+## Ideas
+Differing from LT79, we now have multiple words to consider. In this case, using a trie would help sort of integrate all strings into a single entity (integrated string, char at each position can be of several choices) that dfs can be performed over.
+
+For instance, starting at board[0][0], we simply check if the 1st char in the integrated string (trie) would include board[0][0] as a choice, if not we simply return without going any further. Otherwise, we keep going and check chars in adjacent cells to see which could be the 2nd char of the integrated string.
+
+Further improve: I think Trie-based solution may be advanced by using a counter in each Trie node which counts the number of words in its child nodes that haven't been found, so that when a word or perfix appers many times in the board, repeated search can be avoided.
+
+** NEXT TIME **
+try imple idea of (1) follow (2), integrate classes and use an independent method for construction
+
+
+## Code
+# DFS_Trie
+// (3) improve
+class Trie {
+public:    
+    Trie * children[26];
+    bool isLeaf;
+    int wordIdx, prefixCount;
+    
+    Trie() {
+        isLeaf = false;
+        wordIdx = 0;
+        prefixCount = 0;
+        fill_n(children, 26, nullptr);
+    }
+    
+    ~Trie() {
+        for(auto i=0; i<26; ++i) delete children[i];
+    }
+};
+
+class Solution {    
+public:
+    void insertWord(Trie *root,  const vector<string>& words, int idx) {
+        int i, childID, len = words[idx].size();
+        for(i=0, root->prefixCount++ ; i<len; ++i) {
+            childID = words[idx][i]-'a';
+            if(!root->children[childID]) root->children[childID] = new Trie();
+            root = root->children[childID];
+            ++root->prefixCount;
+        }
+        root->isLeaf = true; 
+        root->wordIdx = idx;
+    }
+    
+    Trie *buildTrie(const vector<string> &words) {
+        Trie *root = new Trie();
+        for(int i=0; i < words.size(); ++i) insertWord(root, words, i);
+        return root;
+    }
+    
+    int dfs_Trie(vector<string> &res, Trie *root, vector<vector<char>>& board, vector<string>& words, int row, int col) {
+        int detected = 0, n = board.size(), m = board[0].size();
+        if(root->isLeaf) {
+            ++detected;
+            root->isLeaf = false;
+            res.push_back(words[root->wordIdx]);
+        }
+        int a = !root->children[ board[row][col]-'a'];
+	int b = root->children[ board[row][col]-'a']->prefixCount <= 0;
+        if( row<0 || row>= n || col<0 || col>=m || board[row][col]=='*' || a || b) return detected;
+
+        int curC = board[row][col] - 'a';
+        board[row][col] = '*';
+        detected += 
+		dfs_Trie(res, root->children[curC], board, words, row-1, col) + 
+               dfs_Trie(res, root->children[curC], board, words, row+1, col) +    
+               dfs_Trie(res, root->children[curC], board, words, row, col - 1) +    
+               dfs_Trie(res, root->children[curC], board, words, row, col + 1) ;
+
+        root->prefixCount -=detected;
+        board[row][col] = curC+'a';
+        return detected;
+    }
+
+    vector<string> findWords(vector<vector<char>>& board, vector<string>& words) {
+        int M, N, wordNum = words.size();
+        vector<string> res;
+        if( !(M = board.size()) || !(N = board[0].size()) || !wordNum) return res;
+        Trie *root = buildTrie(words);
+        for(auto i=0; i<M && root->prefixCount; ++i)
+            for(auto j=0; j<N; ++j)
+                dfs_Trie(res, root, board, words, i, j);
+        delete root;
+        return res;
+    }
+};
+
+
+// (2) others_almost identical_faster
+class Solution {
+    struct TrieNode {
+        TrieNode *children[26];
+        string word;
+
+        TrieNode() : word("") {
+            for (int i = 0; i < 26; i++) {
+                children[i] = nullptr;
+            }
+        }
+    };
+
+public:
+    vector<string> findWords(vector<vector<char>> &board, vector<string> &words) {
+        TrieNode *root = buildTrie(words);
+        vector<string> result;
+        for (int i = 0; i < board.size(); i++)
+            for (int j = 0; j < board[0].size(); j++)
+                dfs(board, i, j, root, result);
+        return result;
+    }
+
+    /** Inserts a word into the trie. */
+    TrieNode *buildTrie(vector<string> &words) {
+        TrieNode *root = new TrieNode();
+        for (int j = 0; j < words.size(); j++) {
+            string word = words[j];
+            TrieNode *curr = root;
+            for (int i = 0; i < word.length(); i++) {
+                char c = word[i] - 'a';
+                if (curr->children[c] == nullptr) {
+                    curr->children[c] = new TrieNode();
+                }
+                curr = curr->children[c];
+            }
+            curr->word = word;
+        }
+        return root;
+    }
+
+    void dfs(vector<vector<char>> &board, int i, int j, TrieNode *p, vector<string> &result) {
+        char c = board[i][j];
+        if (c == '#' || !p->children[c - 'a']) return;
+        p = p->children[c - 'a'];
+        if (p->word.size() > 0) {
+            result.push_back(p->word);
+            p->word = "";
+        }
+
+        board[i][j] = '#';
+        if (i > 0) dfs(board, i - 1, j, p, result);
+        if (j > 0) dfs(board, i, j - 1, p, result);
+        if (i < board.size() - 1) dfs(board, i + 1, j, p, result);
+        if (j < board[0].size() - 1) dfs(board, i, j + 1, p, result);
+        board[i][j] = c;
+    }
+};
+
+
+// (1) indep
+class Node {
+public:
+    int isword = 0;
+    Node* child[26];
+    
+    Node() { memset(child, 0, sizeof(child)); }
+};
+
+class Trie {
+public:
+    Node* root;
+    
+    Trie() { root = new Node(); }
+    
+    void insert(string s) {
+        Node* nd = root;
+        for (char c : s) {
+            if (nd -> child[c -'a'] == NULL) nd -> child[c -'a'] = new Node();
+            nd = nd -> child[c -'a'];
+        }
+        nd -> isword = 1;
+    }
+};
+
+class Solution {
+public:
+    int n, m;
+    vector<string> res;
+    
+    void dfs(vector<vector<char>>& board, string cur, Node* x, int i, int j) {
+        char c = board[i][j];
+        if (c == '*' || x -> child[c -'a'] == NULL) return;
+        Node* nxt = x -> child[c -'a'];
+        string ncur = cur + c;
+        // check whether reach a valid word and nullify it to avoid duplicate if were valid
+        if (nxt -> isword) { res.push_back(ncur); nxt -> isword = 0; }
+        // DFS
+        board[i][j] = '*';
+        if (i > 0) dfs(board, ncur, nxt, i - 1, j);
+        if (j > 0) dfs(board, ncur, nxt, i, j - 1);
+        if (j < m - 1) dfs(board, ncur, nxt, i, j + 1);
+        if (i < n - 1) dfs(board, ncur, nxt, i + 1, j);
+        board[i][j] = c;
+    }
+    
+    vector<string> findWords(vector<vector<char>>& board, vector<string>& words) {
+        n = board.size(), m = board[0].size();
+        // Trie constrction
+        Trie* trie = new Trie();
+        for (string w : words) trie -> insert(w);
+        Node* root = trie -> root;
+        // DFS
+        for(int i = 0; i < n; i++)
+            for (int j = 0; j < m; j++) dfs(board, "", root, i, j);
+        delete(trie);
+        return res;
+    }
+};
+
+

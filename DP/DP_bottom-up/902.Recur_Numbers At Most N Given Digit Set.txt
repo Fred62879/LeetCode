@@ -1,0 +1,191 @@
+## Specification
+We have a sorted set of digits D, a non-empty subset of {'1','2','3','4','5','6','7','8','9'}.  (Note that '0' is not included.) Now, we write numbers using these digits, using each digit as many times as we want. For example, if D = {'1','3','5'}, we may write numbers such as '13', '551', '1351315'. Return the number of positive integers that can be written (using the digits of D) that are less than or equal to N. 
+
+Example 1:
+Input: D = ["1","3","5","7"], N = 100
+Output: 20
+Explanation: 
+The 20 numbers that can be written are:
+1, 3, 5, 7, 11, 13, 15, 17, 31, 33, 35, 37, 51, 53, 55, 57, 71, 73, 75, 77.
+
+Example 2:
+Input: D = ["1","4","9"], N = 1000000000
+Output: 29523
+Explanation: 
+We can write 3 one digit numbers, 9 two digit numbers, 27 three digit numbers, 81 four digit numbers, 243 five digit numbers, 729 six digit numbers, 2187 seven digit numbers, 6561 eight digit numbers, and 19683 nine digit numbers.
+In total, this is 29523 integers that can be written using the digits of D.
+
+Note:
+D is a subset of digits '1'-'9' in sorted order.
+1 <= N <= 10^9
+
+
+## Testcases
+["1","3","4","6","7","8"]
+4231
+
+["1","4"]
+10000000000
+
+["1","4"]
+800000000
+
+["1","4","9"]
+1000000000
+
+["7"]
+8
+
+["3","4","8"]
+4
+
+["5","7","8"]
+59
+
+
+## Idea
+(1~3) Resursion
+We first add up 1xxx and 3xxx. Then we find 4xxx <= 4231 via searching for 3-digit numbers smaller than 231. Note this process implicitly add up also all 2/1-digit numbers.
+As a result, we now have xxxx, xx, and x. So we further add xxx.
+
+
+## Code
+// (3) others
+int find(vector<string> &D, char x){
+    int i = 0;
+    while(i < D.size() && x -'0' >= D[i][0] -'0') i++;
+    return i;
+}
+
+int findsmall(int index,int length,int size){
+    if(index >= length) return 0;
+    return pow(size, length - index) + findsmall(index+1, length, size);
+}
+
+int findrecursive(vector<string>&D, int i, string N){
+    int index = find(D, N[i]);
+    if(i == N.length() - 1) return index;
+    if(index == 0) return 0;
+    if(D[index-1][0] == N[i])
+        return (index-f1) * pow(D.size(), N.length()-1-i) + findrecursive(D, i+1, N);
+    return (index)*pow(D.size(), N.length() - 1 - i);
+}
+
+class Solution {
+public:
+    int atMostNGivenDigitSet(vector<string>& D, int N) {
+        string x = to_string(N);
+        return findsmall(1, x.length(), D.size()) + findrecursive(D, 0, x);
+    }
+};
+
+
+// (2) derived_same idea as (1)
+class Solution {
+public:
+    // amount of nums with equal digits
+    int solve(vector<string>& D, string sn) {
+        int less = 0, equal = 0, n = sn.size(), m = D.size(), count = pow(m, n - 1);
+        for (int i = 0; i < m; i++) {
+            if (D[i][0] < sn[0]) less++;
+            if (D[i][0] == sn[0]) equal++;
+        }
+        if (!equal) return less * count;
+        return less * count + (n == 1 ? equal * count : solve(D, sn.substr(1, n)));
+    }
+    
+    int atMostNGivenDigitSet(vector<string>& D, int N) {
+        string sn = to_string(N);
+        int ans = 0, n = sn.size(), m = D.size();
+        for (int i = 1; i < n; i++) ans += pow(m, i); // amount of nums with fewer digits
+        return solve(D, sn) + ans;
+    }
+};
+
+
+// (1) Recursion
+class Solution {
+public:
+    // # of nums of all possible digits generated <= sn
+    int solve(vector<int>& le, vector<int>& count, vector<int>& ref, string sn) {
+        int id = sn.size() - 1, msd = sn[0] - '0';
+        if (id == 0) return le[msd] + ref[msd];
+        int cdc = count[id] - count[id- 1]; // cur digit count
+        if (!ref[msd]) return count[id] + cdc * le[msd]; // msd not in digit set
+        return cdc * le[msd] + solve(le, count, ref, sn.substr(1, id + 1)) + cdc;
+    }
+    
+    int atMostNGivenDigitSet(vector<string>& D, int N) {
+        vector<int> ref(10, 0), le(10, 0);
+        string sn = to_string(N);
+        int n = sn.size(), m = D.size(), accu = 0;
+        for (string sd : D) ref[stoi(sd)] = 1;
+        for (int i = 1; i <= 9; i++) le[i] = ref[i - 1] ? ++accu : accu;
+        //if (n <= 1) return le[N] + ref[N];
+        
+        vector<int> count(n, m); count[0] = 0; // total # of i-digit numbers possible from D
+        for (int i = 2; i < n; i++) count[i] = count[i - 1] * m;
+        for (int i = 2; i < n; i++) count[i] += count[i - 1];
+        return solve(le, count, ref, sn);
+    }
+};
+
+//
+class Solution {
+public:
+    // # of nums of all possible digits generated <= sn
+    int solve(vector<int>& le, vector<int>& count, vector<int>& ref, int n, int t) {
+        string sn = 
+        int id = sn.size() - 1, msd = sn[0] - '0';
+        int cdc = count[id] - count[id- 1]; // cur digit count
+        if (!ref[msd]) return count[id] + cdc * le[msd]; // msd not in digit set
+        return sn[1] - '0';
+        //return cdc * le[msd] + solve(le, count, ref, sn.substr(1, id + 1)) ;//+ cdc;
+    }
+    
+    int atMostNGivenDigitSet(vector<string>& D, int N) {
+        vector<int> ref(10, 0), le(10, 0);
+        string sn = to_string(N);
+        int n = sn.size(), m = D.size(), accu = 0;
+        for (string sd : D) ref[stoi(sd)] = 1;
+        for (int i = 1; i <= 9; i++) le[i] = ref[i - 1] ? accu : accu++;
+        
+        vector<int> count(n, m); count[0] = 0; // total # of i-digit numbers possible from D
+        for (int i = 2; i < n; i++) count[i] = count[i - 1] * m;
+        for (int i = 2; i < n; i++) count[i] += count[i - 1];
+        return solve(le, count, ref, sn);
+        //return stoi(sn);
+    }
+};
+
+// (1) not imle
+class Solution {
+public:
+    int atMostNGivenDigitSet(vector<string>& D, int N) {
+        int cp = N*10, accu = 0, ans = 0;
+        vector<int> ref(10, 0), le(10, 0), num;
+        // e.g. N = 73246:  num[6,4,2,3,7]; 
+        // D = [2,3,4,6,7]: ref[0,1,1,1,0,1,1,0,0]; le[0,1,2,3,3,4,5,5,5]
+        while ((cp /= 10) > 0) num.push_back(cp % 10);
+        for (string sd : D) { int d = stoi(sd); ref[i] = 1; }
+        for (int i = 0; i <= 9; i++) le[i] = ref[i] ? accu : ++accu;
+        
+        int ans = 0, n = num.size(), ini = 0;
+        vector<int> dp(n + 1, 0);     // dp[i], # of i-digit nums <= s[i~0]
+        ans = dp[1] = le[num[0]]; // 1st digit
+        
+        vector<int> combination(n + 1, 0); combination[1] = n;
+        for (int i = 2; i <= n; i++) // C(n,i)
+            combination[i] = combination[i - 1] * (n + 1 - i) / i;
+        
+        for (int i = 2; i < n; i++) { // i-digit number
+            int cd = num[i - 1], cur = 0;
+            if (ref[cd]) cur += dp[i - 1]; // cur digit exists in D
+            cur += le[i] * combination[i];
+            dp[i] = cur;
+        }
+        
+        for (int i = 1; i < n - 1; i++) ans += combination[i]; // i-digit
+        return ans;
+    }
+};

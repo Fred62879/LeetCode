@@ -1,0 +1,155 @@
+## Specification
+Given a positive integer n, find the number of non-negative integers less than or equal to n, whose binary representations do NOT contain consecutive ones.
+
+Example 1:
+Input: 5
+Output: 5
+Explanation: 
+0 : 0
+1 : 1
+2 : 10
+3 : 11
+4 : 100
+5 : 101
+
+Note: 1 <= n <= 109
+
+
+## Ideas
+(2) Without storing Fibonacci series
+level  8 7 6 5 4 3 2 1 0
+bins   1 1 0 0 1 1 1 1 0
+
+If we are currently at digit i, let pv records the # of total valid bins until 
+digit i-2 (as i reaches 8, pv = ~ until level 6), count denotes the local
+total until the most recent 1 preceding i (i = 4, count = ~ until 3), fib2 denotes
+total fibonacci until level_(i-1), 
+
+If cur == 1 && pd == 1, count = pv + fib2, pv = fib2
+If cur == 0 && pd == 1, pv = fib2
+If cur == 1 && pd == 0, count += fib2, pv = fib2
+If cur == 0 && pd == 0, no change
+
+(1)
+level   num   binary
+    0    0     0             4	8  1000
+    1    1     1	        9  1001   
+    2    2     10		10 1010
+         3     11		11 1011
+    3    4     100		12 1100
+         5     101		13 1101
+         6     110		14 1110
+         7     111		15 1111
+ 
+Take 13 for instance. We first calculate its relevant properties n = 8 (first # in the same level), r = 5 (13 - 8), and k = 3 (2^3 = 8). Then we need to calculate immediately to the total # of valid bins until 13's previous level (level k or 3).
+
+After that, we need to find the # of elements smaller than 13 on its same level (4) that has valid binary form. To do this, we notice that this is actually the # of valid elements until level 2 as all elements on level 3 start with 1, making 2 
+consecutive 1s. Therefore, we can input 5 (r) to the whole function again. However, this means that we need to recalculate thru the relatively early levels. To save the time, we record the cumulative number of valid numbers until each level (dp) 
+and check this number immediately in each recursion to dislcose the number represented by r.
+
+
+## Code
+# 2nd visit Mar 26 2019
+class Solution {
+    
+    public int findIntegers(int num) {
+        if (num < 3) return num + 1;
+        ArrayList<Integer> ref = new ArrayList<Integer>();
+        ref.add(1); ref.add(1);
+        int cnum = num, res = 0, first = 1;
+        for (int i = 1, j = 2; i <= cnum; j++) {
+            if (first == 1) ref.add(ref.get(j - 1) + ref.get(j - 2));
+            if (i << 1 <= cnum) { i = i << 1; continue; }
+	    // i same level as cnum
+            res += ref.get(j - 1); // add last level count
+	    // if second to most significant digit is one
+            if ((cnum >> (j - 3) & 1) == 1) return res + ref.get(j - 2);
+	    // otherwise, re-enter for loop and calculate
+            cnum -= i; i = 1; j = 1; first = 0;
+            if (cnum == 0) return res + ref.get(0);
+        }
+        return res;
+    }
+}
+
+# 1st attempt
+// others_concise
+class Solution {
+public:
+    int findIntegers(int v) {
+        int ret = 1;
+	// pv/prev total; pb/prev bit
+        for(int i=0, sh=1, pv = 1, pb = 0, fib1 = 1, fib2 = 1; i<32; i++, sh<<=1, fib2 += fib1, fib1 = fib2 - fib1){
+            if(v & sh){
+                if(pb) ret = pv;
+                ret += (pv = fib2);
+            } else pv = 0;
+            pb = v & sh;
+        }
+        return ret;
+    }
+};
+
+// adapted Fibonacci_fastest, same idea as before_derived
+class Solution {
+    
+    public int findIntegers(int num) {
+        if (num <= 2) return num + 1;
+        int[] dp = new int[32];
+        dp[0] = 1; dp[1] = 1; dp[2] = 1;
+        int count = 1, st = 1, cur = 1, n = num; 
+        for (int i = 3; i < 32; i++) dp[i] = dp[i - 1] + dp[i - 2];
+        while (n > 0) {
+            if (cur * 2 > n) { 
+                n = n - cur >= cur/2 ? cur/2 - 1 : n - cur;
+                st = 1; cur = 1; count++;
+            } else { count += dp[st++]; cur *= 2; }
+        }
+        return count;
+    }
+}
+
+// direct calculation_indep
+class Solution {
+    
+    int[] dp;
+    
+    private int solve(int cnum) {
+        if (cnum <= 2) return cnum + 1;
+        int n = 1, k = 0, r = 0, rest = 0;
+        while (n * 2 <= cnum) { n *= 2; k++; r = cnum - n; }
+        if (r >= n/2) rest = dp[k - 1];
+        else rest = solve(r);
+        return dp[k] + rest;
+    }
+    
+    public int findIntegers(int num) {
+        if (num <= 2) return num + 1;
+        int n = 1, k = 0, r = 0, count = 2, rest; // floor(num) for its exponential
+        while (n * 2 <= num) { n *= 2; k++; r = num - n; }
+        dp = new int[k + 1]; dp[0] = 1; if (r >= 1) dp[1] = 2;
+        int[] ref = new int[]{0, 1};
+        // count until the prev level of num & update dp
+        for (int i = 2; i <= k; i++) {
+            int a = ref[0] + ref[1], b = ref[0];
+            ref[0] = a; ref[1] = b;
+            count += ref[0] + ref[1];
+            if (i <= r) dp[i] = count; // level i
+        }
+        if (r >= n/2) rest = dp[k - 1]; // level k - 1
+        else rest = solve(r);
+        return count + rest;
+    }
+}
+
+// DP_extremely slow; space inefficient, too many overhead
+class Solution {
+    
+    public int findIntegers(int num) {
+        if (num <= 2) return num + 1;
+        int n = 1, k = 0, r = 0; // floor(num) for its exponential
+        while (n*2 <= num) { n *= 2; k++; r = num - n; }
+        int residu = r >= n/2 ? n/2 - 1 : r;
+        return findIntegers(n - 1) + findIntegers(residu);
+    }
+}

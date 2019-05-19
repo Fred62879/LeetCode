@@ -1,0 +1,34 @@
+class Solution {
+    public int maxProfit(int k, int[] prices) {
+        if (prices.length <= 1 || k <= 0) return 0;
+        int[] res = new int[prices.length];
+        //for (int i = 0; i < prices.length - 1; i++)
+          //  res[0][i + 1] = Math.min(res[0][i], prices[i]);
+        int min = prices[0], max = 0;
+        for (int j = 1; j < prices.length; j++) {
+            res[j] = Math.max(res[j - 1], prices[j] - min);
+            max = res[j];
+            min = Math.min(min, prices[j]);
+        }
+        for (int i = 1; i < k; i++) {
+            int s1b2 = -prices[0], ltpd = 0, curmax = 0;
+            // current trans - i
+            for (int j = 1; j < prices.length; j++) {
+                // current day - j
+                // largest accumulated profit for trans i at the end of day j will the larger one between 
+                // the largest until previous day, i.e. sell at/before day j - 1 (res[i][j - 1]) and
+                // the largest if trans j ends right today, i.e. sell at day j (s1b2 + prices[j])
+                ltpd = res[j - 1]; // profit of last trans until previous day, same as res[i - 1][j - 1]
+                res[j - 1] = curmax; // profit of current trans until previous day
+                curmax = Math.max(curmax, s1b2 + prices[j]); // update to today
+                // max accumulated profit after purchase at day j for trans i
+                // when used in next (j + 1) day, become that after purchase at/before previous day (j)
+                s1b2 = Math.max(s1b2, ltpd - prices[j]);
+            }
+            if (curmax == max)
+                return max;
+            max = Math.max(max, curmax);
+        }
+        return max;
+    }
+}

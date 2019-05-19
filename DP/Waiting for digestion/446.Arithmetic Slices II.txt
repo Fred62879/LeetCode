@@ -1,0 +1,209 @@
+**** Specification ****
+A sequence of numbers is called arithmetic if it consists of at least three elements
+and if the difference between any two consecutive elements is the same. For example,
+these are arithmetic sequences:
+
+1, 3, 5, 7, 9
+7, 7, 7, 7
+3, -1, -5, -9
+The following sequence is not arithmetic.
+
+1, 1, 2, 5, 7
+
+A zero-indexed array A consisting of N numbers is given. A subsequence slice of that
+array is any sequence of integers (P0, P1, ..., Pk) such that 0 ¡Ü P0 < P1 < ... 
+< Pk < N. A subsequence slice (P0, P1, ..., Pk) of array A is called arithmetic if 
+the sequence A[P0], A[P1], ..., A[Pk-1], A[Pk] is arithmetic. In particular, this 
+means that k ¡Ý 2.
+
+The function should return the number of arithmetic subsequence slices in the array
+A. The input contains N integers. Every integer is in the range of -231 and 231-1
+and 0 ¡Ü N ¡Ü 1000. The output is guaranteed to be less than 231-1.
+
+
+Example:
+Input: [2, 4, 6, 8, 10]
+Output: 7
+Explanation:
+All arithmetic subsequence slices are:
+[2,4,6]
+[4,6,8]
+[6,8,10]
+[2,4,6,8]
+[4,6,8,10]
+[2,4,6,8,10]
+[2,6,10]
+
+
+**** Testcases ****
+[2,3,7,8,9,1,4,2,6,3,8,10,11,12,14]
+[2,2,4,4,6,6,8,8]
+[1,2,2,3,4,5,6,7]
+[1,3,2,4,5,6,3,5,7,3,4,7]
+
+[0,2000000000,-294967296]
+[2147483638,2147483639,2147483640,2147483641,2147483642,2147483643,2147483644,2147483645,2147483646,2147483647,-2147483648,-2147483647,-2147483646,-2147483645,-2147483644,-2147483643,-2147483642,-2147483641,-2147483640,-2147483639]
+	// long c = 2147483647 - (-2147483648);
+        // if (c >= (long)Math.pow(31, 2)) return -1;
+        // 	return (int) c;
+
+[38,39,40,41,42,43,44,45,46,47,-48,-47,-46,-45,-44,-43,-42,-41,-40,-39]
+[0,1,2,2,2]
+
+**** Ideas ****
+// derived
+Take [2,4,4,6,8] for instance. We start from 8 and check every preceding elements
+in pair with 8. In this case, no further elements and we decrement to 6. We check
+the pair 6,8 which is counted as 0 since 8 has no elements following. We thus 
+increment count by 0. Following this counting step, we increment the pair 6,8 by 1,
+meaning, every following touch to 6 with interval 2 would have at least three
+elements as 6,8 has already been counted as 2.
+
+In particular, when more than one elements of the same value are presented, we need
+to record the condition for each separately. This is implemented by the three layer
+hashmap. The key of the top layer is the element value (2/4/6/8 in this ex). 
+Key of the middle layer is id of the current element. So dp.get(4) would have two 
+submaps, one for element of id 1, the other for id 2.
+Key of the bottom layer is the diff of the current arithemetic sequence. In this case,
+dp.get(4).get(1) would record the # of sequences containing >= 2 elements starting
+from 4 and dp.get(4).get(1).get(2) equals 2 which corresponds to 4,6 & 4,6,8.
+
+
+**** Codes ****
+// almost naive_fail to implement
+class Solution {
+    
+    int[][] dp; // dp[i][k]: size of subarray starts from i with interval k
+    int[] a;
+    
+    private int solve(int i, int j, int k) {
+        int count = 0;
+        for (int m = j + 1, prev = j; m < a.length; m++) {
+            if (a[m] - a[prev] != k) continue;
+            prev = m; count++;
+            if (dp[m][k] != -1) { count += dp[m][k]; break; }
+        }
+        dp[i][k] = count;
+        return dp[i][k];
+    }
+    
+    public int numberOfArithmeticSlices(int[] a) {
+        int n = a.length, count = 0; this.a = a; dp = new int[n][n];
+        for (int i = 0; i < n; i++) Arrays.fill(dp[i], -1);
+        for (int i = 0; i < n - 1; i++) {
+            for (int j = i + 1; j < n; j++) {
+                int k = Math.abs(a[j] - a[i]);
+                if (dp[i][k] != -1) continue;
+                int cur = solve(i, j, k);
+                count += (cur-2) * (cur-1) / 2;
+            }
+        }
+        return count;
+    }
+}
+
+
+// indep
+class Solution {
+    
+    public int numberOfArithmeticSlices(int[] a) {
+        int n = a.length, count = 0;
+        HashMap<Integer, HashMap<Integer, HashMap<Integer, Integer>>> dp = 
+            new HashMap<Integer, HashMap<Integer, HashMap<Integer, Integer>>>(); 
+        
+        for (int i = n - 1; i >= 0; i--) {
+            HashMap<Integer, HashMap<Integer, Integer>> cur = dp.containsKey(a[i]) ?
+                dp.get(a[i]) : new HashMap<Integer, HashMap<Integer, Integer>>();
+            HashMap<Integer, Integer> curid = cur.containsKey(i) ? cur.get(i) : 
+                                              new HashMap<Integer, Integer>();
+            for (int j = i + 1; j < n; j++) {
+                long c = (long)a[j] - a[i];
+                if (c > Integer.MAX_VALUE || c <= Integer.MIN_VALUE) continue;
+                int d = a[j] - a[i];
+                int prev = dp.get(a[j]).get(j).containsKey(d) ?                                                    dp.get(a[j]).get(j).get(d) : 0;
+                count += prev;
+                curid.put(d, (curid.containsKey(d) ? curid.get(d):0) + prev + 1);
+            }
+            cur.put(i, curid);
+            dp.put(a[i], cur);
+        }
+        return count;
+    }
+}
+
+// derived_ds improve
+class Solution {
+    
+    public int numberOfArithmeticSlices(int[] a) {
+        int n = a.length, count = 0;
+        HashMap<Integer, Integer>[] dp = new HashMap[n];
+        
+        for (int i = n - 1; i >= 0; i--) {
+            //HashMap<Integer, Integer> cur = new HashMap<>(i);
+	    dp[i] = new HashMap<>(i);
+            for (int j = i + 1; j < n; j++) {
+                long c = (long)a[j] - a[i];
+                if (c > Integer.MAX_VALUE || c <= Integer.MIN_VALUE) continue;
+                int d = (int) c;
+                int prev = dp[j].getOrDefault(d, 0); // optimized
+                count += prev;
+                //cur.put(d, cur.getOrDefault(d, 0) + prev + 1);
+		dp[i].put(d, cur.getOrDefault(d, 0) + prev + 1);
+            }
+            //dp[i] = cur;
+        }
+        return count;
+    }
+}
+
+// almost same operation, but quicker
+public int numberOfArithmeticSlices(int[] A) {
+    int res = 0;
+    Map<Integer, Integer>[] map = new Map[A.length];
+		
+    for (int i = 0; i < A.length; i++) {
+        map[i] = new HashMap<>(i);
+        	
+        for (int j = 0; j < i; j++) {
+            long diff = (long)A[i] - A[j];
+            if (diff <= Integer.MIN_VALUE || diff > Integer.MAX_VALUE) continue;
+        		
+            int d = (int)diff;
+            int c1 = map[i].getOrDefault(d, 0);
+            int c2 = map[j].getOrDefault(d, 0);
+            res += c2;
+            map[i].put(d, c1 + c2 + 1);
+        }
+    }
+		
+    return res;
+}
+
+// others_quicker
+class Solution {
+
+    public int numberOfArithmeticSlices(int[] A) {
+        int n = A.length, ans = 0;
+        int[][] dp = new int[n][n];
+        Map<Long, List<Integer>> map = new HashMap<>();
+        for (int i = 0; i < n; i++) {
+            if (!map.containsKey((long)A[i]))
+                map.put((long)A[i], new ArrayList<>());
+            map.get((long)A[i]).add(i);
+        }
+        
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < i; j++) {
+                long target = 2 * (long)A[j] - A[i];
+                if (map.containsKey(target)) {
+                    for (int k: map.get(target)) {
+                        if (k < j)
+                            dp[i][j] += (dp[j][k] + 1);
+                    }
+                }
+                ans += dp[i][j];
+            }
+        }
+        return ans;
+    }
+}

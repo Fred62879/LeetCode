@@ -1,0 +1,29 @@
+class Solution {
+    
+    //HashMap<String, boolean> cache = new HashMap<String, boolean>();
+    //ArrayList<String>[] dict = new ArrayList[26];
+    Set<String> set = new HashSet<>();
+    
+    private boolean isConct(String s) {
+        for (int i = 1; i < s.length(); i++) {
+            //if (!dict[s.charAt(0)-'a'].contains(s.substring(0, i))) continue;
+            //if (dict[s.charAt(i)-'a'].contains(s.substring(i)) || isConct(s.substring(i)))
+            if (set.contains(s.substring(0, i))) {
+                if (set.contains(s.substring(i)) || isConct(s.substring(i)))
+                    return true;
+            }
+        }
+        return false;
+    }
+    
+    public List<String> findAllConcatenatedWordsInADict(String[] words) {
+        if (words.length == 0) return null;
+        //for (int i = 0; i < 26; i++) dict[i] = new ArrayList<String>();
+        //for (String w : words) if (!w.equals("")) dict[w.charAt(0) - 'a'].add(w);
+        for (String word : words) set.add(word);
+        List<String> res = new ArrayList<String>();
+        for (int i = 0; i < words.length; i++)
+            if (isConct(words[i])) res.add(words[i]);
+        return res;
+    }
+}

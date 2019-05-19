@@ -1,0 +1,137 @@
+## Specification
+Given an array nums of n integers and an integer target, are there elements a, b, c, and d in nums such that a + b + c + d = target? Find all unique quadruplets in the array which gives the sum of target. Note: The solution set must not contain duplicate quadruplets.
+
+Example:
+Given array nums = [1, 0, -1, 0, -2, 2], and target = 0.
+A solution set is:
+[
+  [-1,  0, 0, 1],
+  [-2, -1, 1, 2],
+  [-2,  0, 0, 2]
+]
+
+
+## Testcases
+[5,5,3,5,1,-5,1,-2]
+4
+
+[0,0,0,0]
+0
+
+[-3-3,-2-2-2-2,-1,-1,0,0,0,0,1,1,2,2,3,3,3,5,6,7,8]
+5
+
+
+## Code
+// n^2logn
+https://www.geeksforgeeks.org/find-four-elements-that-sum-to-a-given-value-set-2/
+
+// others_quick
+class Solution {
+public:
+    vector<vector<int>> fourSum(vector<int>& nums, int target) {
+        vector<vector<int>> total;
+        int n = nums.size();
+        if (n < 4) return total;
+        sort(nums.begin(), nums.end());
+        
+        for(int i = 0; i < n - 3; i++) {
+            if (i > 0 && nums[i] == nums[i - 1]) continue;
+            if (nums[i] + nums[i+1] + nums[i+2] + nums[i+3] > target) break;
+            if (nums[i] + nums[n-3] + nums[n-2] + nums[n-1] < target) continue;
+            
+            for (int j = i + 1; j < n - 2; j++) {
+                if (j > i + 1 && nums[j] == nums[j - 1]) continue;
+                if (nums[i] + nums[j] + nums[j+1] + nums[j+2] > target) break;
+                if (nums[i] + nums[j] + nums[n-2] + nums[n-1] < target) continue;
+                int left = j + 1, right = n - 1;
+                
+                while (left < right) {
+                    int sum = nums[left] + nums[right] + nums[i] + nums[j];
+                    if (sum < target) left++;
+                    else if (sum > target) right--;
+                    else {
+                        total.push_back({nums[i], nums[j], nums[left], nums[right]});
+                        do{ left++; } while (nums[left] == nums[left - 1] && left < right);
+                        do{ right--; } while (nums[right] == nums[right + 1] && left < right);
+                    }
+                }
+            }
+        }
+        return total;
+    }
+};
+
+// recursion_indep_slow
+class Solution {
+public:
+    vector<vector<int>> twoSum(vector<int> nums, int i, int j, int target) {
+        vector<vector<int>> res;
+        if (j - i < 1) return res;
+        for (int lo = i, hi = j; lo < hi; ) {
+            int a = nums[lo], b = nums[hi], sum = a + b;
+            // if (lo == 1 && hi == 2) cout << sum << " " << target;
+            if (sum == target) { 
+                res.push_back({a, b});
+                while (lo < hi && nums[lo] == nums[lo + 1]) lo++;
+                while (lo < hi && nums[hi] == nums[hi - 1]) hi--;
+                lo++; hi--; 
+            }
+            else if (sum < target) lo++;
+            else hi--;
+        }
+        return res;
+    }
+
+    // find all unique set of recur# numbers from i to j sum up to target
+    vector<vector<int>> nsum(vector<int> nums, int i, int j, int target, int recur) {
+        if (recur == 2) return twoSum(nums, i, j, target);
+        vector<vector<int>> res;
+        for (int k = j; k >= i + recur - 1 && nums[k] >= target/recur; k--) {
+            if (k != j && nums[k] == nums[k + 1]) continue; // avoid duplicate
+            vector<vector<int>> cur = nsum(nums, i, k - 1, target - nums[k], recur - 1);
+            for (vector<int> prev : cur) { prev.push_back(nums[k]); res.push_back(prev); }
+        }
+        return res;
+    }
+    
+     vector<vector<int>> fourSum(vector<int>& nums, int target) {
+        sort(nums.begin(), nums.end());
+        return nsum(nums, 0, nums.size() - 1, target, 4);
+        // return twoSum(nums, 0, 2, 0);
+    }
+};
+
+//
+class Solution {
+    
+    List<List<Integer>> res = new LinkedList<>();
+    
+    private void twoSum(int[] nums, int i, int j, int target) {
+        if (i >= j) return;
+        for (int a = nums[i], b = nums[j], lo = i + 1, hi = j - 1; lo < hi; ) {
+            int c = nums[lo], d = nums[hi], sum = a + b + c + d;
+            if (sum == target) { res.add(Arrays.asList(new Integer[]{a, c, d, b})); lo++; hi--; }
+            else if (sum < target) lo++;
+            else hi--;
+            while (lo < hi && nums[lo] == nums[lo + 1]) lo++;
+            while (lo < hi && nums[hi] == nums[hi - 1]) hi--;
+        }
+    }
+    
+    public List<List<Integer>> fourSum(int[] nums, int target) {
+        Arrays.sort(nums);
+        int n = nums.length, t = target / 4, id = Arrays.binarySearch(nums, t);
+        if (id < 0) id = -(id + 1);
+        //solve(nums, 0, 5, target);
+        for (int i = 0;  i <= id; i++) {
+            for (int j = n - 1; j >= id && j >= i + 3; j--) {
+                while (j - i > 3 && nums[i] == nums[i + 1]) i++;
+                while (j - i > 3 && nums[j] == nums[j - 1]) j--;
+                solve(nums, i, j, target);
+            }
+        }
+        System.out.println(id);
+        return res;
+    }
+}

@@ -1,0 +1,87 @@
+## Specification
+Given a non-empty binary tree, find the maximum path sum. For this problem, a path is defined as any sequence of nodes from some starting node to any node in the tree along the parent-child connections. The path must contain at least one node and does not need to go through the root.
+(We are simply finding a single way path starting from some close-to-leaf nodes, transferring at some close-to-root nodes and finally reach some close-to-leaf nodes).
+
+Example 1:
+Input: [1,2,3]
+       1
+      / \
+     2   3
+Output: 6
+
+Example 2:
+Input: [-10,9,20,null,null,15,7]
+   -10
+   / \
+  9  20
+    /  \
+   15   7
+Output: 42
+
+
+## Testcases
+[-2,-1]
+[-2,-1,7,-3,-9,-8,4,5]
+[-10,9,20,null,null,15,7]
+[5,4,8,11,null,13,4,7,2,null,null,null,1] - 48
+
+
+## Ideas
+// (1) indep
+For each node, we have two performances. (I) We first need to check its left and right children and derive the one with largest path weights and sum that up with current node. This sum will be feed up one level for cur's parent's usage (II) Regarding the possibility that the current node may be where the transfer occurrs, we also sum up the cur node weight with both left and right path weights given them being non-negative. This value will be updated to the global int ans which is what we finally return.
+
+
+## Code
+# DFS
+// (2) derived_faster_24ms
+class Solution {
+public:
+    int ans;
+    
+    // return max weight of the two paths (left and right) starting from x
+    int solve(TreeNode* x) {
+        if (!x) return 0;
+        int cur = x->val, res = 0, lft = solve(x->left), rht = solve(x->right);
+        res = cur + max({0, lft, rht}); // (I) max weight for path starting from x
+        ans = max(ans, cur + max(0, lft) + max(0, rht)); // (II) update max given x linking the two paths
+        return res;
+    }
+    
+    int maxPathSum(TreeNode* root) {
+        ans = INT_MIN;
+        solve(root);
+        return ans;
+    }
+};
+
+// (1) indep_40ms
+class Solution {
+public:
+    int ans;
+    
+    // return max weight of the two paths (left and right) starting from x
+    int solve(TreeNode* x) {
+        int lft = INT_MIN, rht = INT_MIN, cur = x->val, res = 0;
+        if (x->left) lft = solve(x->left);
+        if (x->right) rht = solve(x->right);
+        res = cur + max({0, lft, rht}); // (I) max weight for path starting from x
+        ans = max(ans, cur + max(0, lft) + max(0, rht)); // (II) update max given x linking the two paths
+        return res;
+    }
+    
+    int maxPathSum(TreeNode* root) {
+        ans = INT_MIN;
+        solve(root);
+        return ans;
+    }
+};
+
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+ * };
+ */

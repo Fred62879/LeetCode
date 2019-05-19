@@ -1,0 +1,44 @@
+2
+[1,2,4,2,5,7,2,4,9,0]
+
+// for the sequence composing of n monotonic increaseing sub-sequences
+// if k >= n, the maximum total profit would be the sum range of all ss
+
+class Solution {
+    public int maxProfit(int k, int[] prices) {
+        if (prices.length <= 1 || k <= 0) return 0;
+        int[] res = new int[prices.length];
+        int min = prices[0], max = 0, s1b2cp = -prices[0]; // start s1b2 for each trans
+        int mono = 0, st = prices[0], total = 0; // NO of mono 
+        for (int j = 1; j < prices.length; j++) {
+            res[j] = Math.max(res[j - 1], prices[j] - min);
+            if (j <= 2) s1b2cp = Math.max(s1b2cp, res[j - 1] - prices[j]);
+            // [1,2,4,2,5,7,2,4,9,0] / [1,2,4,2,5,7,2,4,9]
+            if (j == prices.length - 1) {
+                if (prices[j] > prices[j - 1]) total += prices[j] - st;
+                else total += prices[j - 1] - st;
+                mono++;
+            } else if (prices[j] < prices[j - 1]) {
+                total += prices[j - 1] - st; mono++; st = prices[j]; 
+            }
+            max = res[j];
+            min = Math.min(min, prices[j]);
+        }
+        if (k >= mono) return total;
+        for (int i = 1; i < k; i++) {
+            int s1b2 = s1b2cp, ltpd = 0, curmax = 0;
+            // since we are not starting fro 0, in each trans, need to calculate initial s1b2 for next trans
+            for (int j = i * 2 + 1; j < prices.length; j++) { // first 2 * i days have same profit as prev trans
+                ltpd = res[j - 1];   // profit of last trans until previous day, same as res[i - 1][j - 1]
+                res[j - 1] = curmax; // profit of current trans until previous day
+                curmax = Math.max(curmax, s1b2 + prices[j]); // update to today
+                s1b2 = Math.max(s1b2, ltpd - prices[j]);
+                if (j == (i + 1) * 2) s1b2cp = s1b2;
+            }
+            if (curmax == max)
+                return max;
+            max = Math.max(max, curmax);
+        }
+        return max;
+    }
+}

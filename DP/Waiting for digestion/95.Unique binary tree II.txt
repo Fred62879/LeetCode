@@ -1,0 +1,77 @@
+
+# Array_recurse
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode(int x) { val = x; }
+ * }
+ */
+class Solution {
+    
+    public List<TreeNode> generateTrees(int n) {
+        if (n == 0) return new ArrayList<TreeNode>();
+        return solve(1, n);
+    }
+    
+    public List<TreeNode> solve(int s, int e) {
+        ArrayList<TreeNode> res = new ArrayList<TreeNode>();
+        if (s > e) {res.add(null); return res;}
+        if (s == e) {res.add(new TreeNode(s)); return res;}
+        for (int i = s; i <= e; i++) {
+            List<TreeNode> left, right;
+            left = solve(s, i - 1);
+            right = solve(i + 1, e);
+            for (TreeNode lnd : left) {
+                for (TreeNode rnd : right) {
+                    TreeNode n = new TreeNode(i);
+                    n.left = lnd; n.right = rnd;
+                    res.add(n);
+                }
+            }
+        }
+        return res;
+    }
+}
+
+# BST
+class Solution {
+    
+    public List<TreeNode> generateTrees(int n) {
+        List<TreeNode>[] res = new List[n + 1];
+        res[0] = new ArrayList<TreeNode>();
+        if (n == 0) return res[0];
+        res[0].add(null);
+        for (int i = 1; i <= n; i++) {
+            res[i] = new ArrayList<TreeNode>();
+            for (int j = 0; j < i; j++) {
+                for (TreeNode lnd : res[j]) {
+                    for (TreeNode rnd : res[i - j - 1]) {
+                        TreeNode root = new TreeNode(j + 1);
+                        root.left = lnd; root.right = clone(rnd, j + 1);
+                        res[i].add(root);
+                    }
+                }
+            }
+        }
+        return res[n];
+    }
+    
+    public TreeNode clone(TreeNode t, int offset) {
+        if (t == null) return null;
+        TreeNode root = new TreeNode(t.val + offset);
+        root.left = clone(t.left, offset);
+        root.right = clone(t.right, offset);
+        return root;
+    }
+
+    // possibly better, not tested
+    private TreeNode clone(TreeNode x, int offset) {
+        if (x.left != null) x.left = clone(x.left, offset);
+        x.val += offset;
+        if (x.right != null) x.right = clone(x.right, offset);
+        return x;
+    }
+}

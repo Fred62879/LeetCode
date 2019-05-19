@@ -1,0 +1,38 @@
+
+
+## Ideas
+
+I am trying to prove the correctness of the Boyer-Moore Majority Vote algorithm searching elements appearing more than n/3 times with an informal explanation. Each element has two ways to update the values of the candidates' counters: increment or decrement. Given a majority element M appearing k (k>n/3) times in the array with s increments and t decrements, i.e., s+t=k. We will prove that the counter for M will be greater than 0. 
+
+When M increases the counter, it will cost another two elements to restore its value. For example, the value of the counter for M is C. An M increases the counter to C+1. To restore M's counter (C+1->C), a distinct element is needed. At the same time, this element will also decrease the value of the other counter. In other words, the decrement of M's counter costs two elements. Similarly, when M decreases the counter, it also costs two elements: the two counters both decrease by 1. 
+
+Since there are t Ms decreasing counters, it will cost 2t elements. Then t+2t <= n -> t<=n/3. Since M is a majority element (k>n/3), we have s>0. Therefore, the number of elements left to restore the s increments is n-3t-s < 2s, which means there are not enough elements to restore the s increments. In other words, the counter for the majority element M will be greater than 0.
+
+
+## Code
+# generic
+  vector<int> majorityElement(vector<int>& nums) {
+   return majorityElement(nums, 3);
+}
+vector<int> majorityElement(vector<int>& nums, const int k) {
+    const int size_n = nums.size();
+    vector<int> result;
+    unordered_map<int, int> cand;
+    for (int i = 0; i < size_n; i++) {
+        cand[nums[i]]++;
+        if (cand.size() == k) {
+            for (auto it = cand.begin(); it != cand.end(); ) {
+                if (--(it->second) == 0) it = cand.erase(it);
+                else it++;
+            }
+        }
+    }
+    for (auto& item : cand) item.second = 0;
+    for (auto& item : nums) {
+        if (cand.count(item) > 0) cand[item]++;
+    }
+    for (auto& item : cand) {
+        if (item.second > size_n / k) result.emplace_back(item.first);
+    }
+    return result;
+}

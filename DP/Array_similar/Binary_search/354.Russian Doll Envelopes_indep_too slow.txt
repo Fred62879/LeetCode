@@ -1,0 +1,142 @@
+**** Specification ****
+You have a number of envelopes with widths and heights given as a pair of integers (w, h). 
+One envelope can fit into another if and only if both the width and height of one envelope 
+is greater than the width and height of the other envelope. What is the maximum number of 
+envelopes can you Russian doll? (put one inside other)
+
+Note:
+Rotation is not allowed.
+
+Example:
+Input: [[5,4],[6,4],[6,7],[2,3]]
+Output: 3 
+Explanation: The maximum number of envelopes you can Russian doll is 3 ([2,3] => [5,4] => [6,7]).
+
+
+**** Testcases ****
+[[4,5],[4,6],[6,7],[2,3],[1,1]]
+[[2,2],[2,3],[2,4],[3,5],[3,6],[3,9],[4,4],[4,8],[4,9],[5,7],[5,9],[5,10],[6,1],[6,3],[6,8],[7,6],[7,7],[7,8],[8,7]]
+[[46,89],[50,53],[52,68],[72,45],[77,81]]
+[[17,19],[36,14],[8,20],[15,24],[24,32],[2,6],[45,21],[11,50],[18,22],[33,46],[43,30],[49,23],[46,44],[18,36],[45,6],[39,34],[5,37],[31,15],[9,8],[43,45],[27,16],[35,13],[20,24],[11,13],[47,4],[25,13],[15,7],[47,11],[8,15],[26,37]]
+
+0 2,6*
+1 5,37
+2 8,15  8,20
+3 9,8* (4)
+4 11,13* (5) 11,50
+5 15,7 (7)  15,24
+6 17,19* (9)
+7 18,22*  18,36
+8 20,24* (12)
+9 24,32*
+10 25,13
+11 26,37*
+12 27,16
+13 31,15
+14 33,46*
+15 35,13
+16 36,14
+17 39,43
+18 43,30   43,45
+19 45,6  45,21
+20 46,44
+21 47,4  47,11
+22 49,23
+
+
+**** Ideas ****
+Elements on the same row have the same first entry in e
+    
+    id        0 1 2
+    e[id][1]  2 3 4    3 4 5   *
+                       5 6 9   6 7 8
+                               4 8 9    9 10 11     **
+                                        7  9 10     12 13 14
+                                                     1  3  8    15 16 17
+                                                                 6  7  8
+    
+    Normally, after getting 0th envelop in row 0, we should only use the smallest envelop
+    in the row 1 that is larger than 0th. However, in case there are qualified envelopes 
+    even smaller in the row 2, the smaller value may worth the bypass of row 1.
+    
+    Nevertheless, for the case of that in row 3 (e[9]) which is even larger than row 1 
+    (e[3]), there is no need to worry about this, since e[9] will be used anyway to 
+    contain e[3].
+    
+    *  Can be a new start point but upon close examination, can be instead included in 
+       the series start from 0
+
+    ** Must be a new start point since it is the smallest so far
+    
+          7 - 10^                                                   cs   pr   pv   th
+         /   14^
+        /   /                                                        0    0  min  max      12   12   min   max
+       3 - 9 - 17^           16^                                     3    1   ..   ..
+      / \                    /                                       6    2   ..   ..
+     /   15 - 17^           /                                       13    4   ..   ..
+    0 -------------13     12
+     \   9 - ..
+      \ /
+       6 - 15 - ..
+        \
+         16^
+
+
+**** Code ****
+class Solution {
+
+    int[] mem, row;
+    int[][] e;
+    int len = 0;
+    
+    public class Comp implements Comparator<int[]> {
+        public int compare(int[] a, int[] b) {
+            if (a[0] == b[0]) return a[1] - b[1];
+            return a[0] - b[0];
+        }
+    }
+    
+    // find the maximum # of RD starting from curStart/th evlp
+    // prevRow - row no. of the most recently RDed evlp
+    // preVal - val of the most recently RDed evlp
+    // thre - given an evlp found smaller than last added one, if <= thre, treat as a new start point
+    private int process(int curStart, int prevRow, int preVal, int thre) {
+        if (mem[curStart] != 0) return mem[curStart]; // if calculated before, return directly
+        if (prevRow == len - 1) return 1; // reach last row
+        int curMax = 1, start = e[curStart][1];
+        for (int curRow = prevRow + 1; curRow < len; curRow++) {
+	    if (curMax >= len - curRow + 1) break;
+            int curVal = e[row[curRow]][1];
+            if (curVal > thre) continue;
+            else if (curVal > start) { // new start
+                curMax = Math.max(curMax, 1 + process(row[curRow], curRow, Integer.MIN_VALUE, Integer.MAX_VALUE));
+                thre = curVal;
+            } else {
+                int end = curRow >= len - 1 ? e.length : row[curRow + 1];
+                for (int curEvlp = row[curRow] + 1; curEvlp < end; curEvlp++) {
+                    if (e[curEvlp][1] <= start || e[curEvlp][1] > thre) continue;
+                    curMax = Math.max(curMax, 1 + process(curEvlp, curRow, Integer.MIN_VALUE, Integer.MAX_VALUE));
+                    thre = e[curEvlp][1];
+                }
+            }
+        }
+        mem[curStart] = curMax;
+        return curMax;
+    }
+    
+    public int maxEnvelopes(int[][] e) {
+        int n = e.length, max = 1, start = 0;
+        if (n == 0) return 0;
+        Arrays.sort(e, new Comp());
+        mem = new int[n]; row = new int[n]; this.e = e;
+        row[len++] = 0;
+        for (int i = 1; i < n; i++) if (e[i][0] != e[i - 1][0]) row[len++] = i;
+        for (int i = 0; i < n; i++) {
+            if (max >= len - i + 1) break; 
+            if (e[row[i]][1] > e[start][1]) continue;
+            max = Math.max(max, process(row[i], i, Integer.MIN_VALUE, Integer.MAX_VALUE));
+            start = row[i];
+        }
+        return max;
+    }
+}

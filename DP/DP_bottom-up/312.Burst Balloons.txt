@@ -1,0 +1,158 @@
+## Specification
+Similar to LT\546
+
+Given n balloons, indexed from 0 to n-1. Each balloon is painted with a number on
+it represented by array nums. You are asked to burst all the balloons. If the you
+burst balloon i you will get nums[left] * nums[i] * nums[right] coins. Here left 
+and right are adjacent indices of i. After the burst, the left and right then 
+becomes adjacent. Find the maximum coins you can collect by bursting the balloons 
+wisely.
+
+Note:
+You may imagine nums[-1] = nums[n] = 1. They are not real therefore you can not 
+burst them.
+0 ¡Ü n ¡Ü 500, 0 ¡Ü nums[i] ¡Ü 100
+
+Example:
+Input: [3,1,5,8]
+Output: 167 
+Explanation: nums = [3,1,5,8] --> [3,5,8] -->   [3,8]   -->  [8]  --> []
+             coins =  3*1*5      +  3*5*8    +  1*3*8      + 1*8*1   = 167
+
+
+## Test cases
+0 1 2 3 4 5 6 7
+[1,4,7,3,2,8,2,9]
+[3,1,5,7,4,2,8,3,1,7]
+[1,4,3,2,7,8,9,1]
+[8,3,4,3,5,0,5,6,6,2,8,5,6,2,3,8,3,5,1,0,2]
+
+
+## Ideas
+// bottom-up
+Let dp[i][j] denotes the maximum coins collected bursting ballons between i and 
+j, with nums[i] and nums[j] be the two extremities not burnable.
+
+
+// naive plan - indep
+we start by pumping out smaller elements until the currently three
+largest elements are adjacent to each other. For the above example,
+we serially pump out 6,4,3,5,2,1,0,7th element.
+
+After deriving such order, we can calculate the ans via maintaining
+two arrays each recording the prev and following id of each element.
+
+// dp plan - derived???
+..., we can recursively sort the two subarrays
+
+// dp - derived
+For each element of the array, we assume it to be the last one burst. This means
+that if we currently set element i as the last burst, the ans would be maxCoins(i-1)
++ 1*nums[i]*1 + maxCoins(i+1). 
+
+As we delve into the inner part of the array, the two extremeties would be updated
+also depending on which element we previously select as the fixed one. For instance,
+when calculating maxCoins(nums[0-->i-1]), first append is still 1 while the last is
+nums[i].
+
+Note that the two extremeties will always be the preceding/following elements of 
+nums[lid/uid]
+
+
+## Code
+// others_DP_bottom-up
+class Solution {
+    
+    public int maxCoins(int[] nums) {
+        int n = nums.length;
+        int[] numss = new int[n+2];
+        for(int i = 1; i <= n; i++) numss[i] = nums[i-1];
+        numss[0] = 1; numss[n+1] = 1;
+        
+        int[][] dp = new int[n+2][n+2];
+        for (int len = 0; len < n; len++) {                // subarray of length len
+            for (int i = 1; i <= n-len; i++) {              // starts from i
+                for (int j = i; j <= i + len; j++) { // last burst ballon j
+                    int burst = numss[i]*numss[j]*numss[i+len-1];
+                    dp[i][j] = Math.max(dp[i][j], dp[i+1][j-1] + burst + dp[j+1][i+len-2]);
+                }
+            }
+        }
+        return dp[1][n];
+    }
+}
+
+
+// indep, Feb 5 2019
+class Solution {
+    
+    public int maxCoins(int[] nums) {
+        int n = nums.length;
+        int[] a = new int[n + 2];
+        for (int i = 0; i < n; i++) a[i + 1] = nums[i];
+        a[0] = 1; a[n + 1] = 1;
+        int[][] dp = new int[n+2][n+2];
+        
+        for (int len = 0; len < n+2; len++) {   // dist between two extremities
+            for (int i = len; i < n+2; i++) {   // back extremety
+                int j = i - len;	        // front extremety
+                for (int c = j+1; c < i; c++) { // last burned char between j and i
+                    int cur = a[j]*a[c]*a[i];   // coins collected from last burn
+                    dp[j][i] = Math.max(dp[j][i], dp[j][c]+cur+dp[c][i]);
+                }
+            }
+        }
+        return dp[0][n+1];
+    }
+}
+// naive - indep, not finished
+class Solution {
+    
+    int[] nums;
+    
+    public int maxCoins(int[] nums) {
+        int count = 0, n = nums.length;  
+        this.nums = nums;
+        Integer[] idx = new Integer[n];
+        for (int i = 0; i < n; i++) idx[i] = i;
+        /*
+        Arrays.sort(idx, (Integer a, Integer b) -> nums[a] - nums[b]);      
+        for (Integer cur : idx) {
+            int pre = cur == 0 ? 1 : nums[cur - 1];
+            int precd = cur == n - 1 ? 1 : nums[cur + 1];
+            count += nums[cur] * pre * precd;
+        }
+        */
+        return count;
+    }
+}
+
+// derived, dp & mem
+class Solution {
+    
+    int[] nums;
+    int[][] dp;
+    
+    // lower/upper: two extremeties of the array, e.g. nums[-1], nums[n]
+    // lid/uid: id of first/last element of the current subarray
+    private int solve(int lower, int upper, int lid, int uid) {
+        if (dp[lid][uid] != 0) return dp[lid][uid];
+        int max = 0;
+        if (uid == lid) return lower*nums[uid]*upper;
+        for (int i = lid; i <= uid; i++) {
+            int front = i == lid ? 0 : solve(lower, nums[i], lid, i-1 >= lid ? i-1 : lid);
+            int last = upper*nums[i]*lower;
+            int back = i == uid ? 0 : solve(nums[i], upper, i+1 <= uid ? i+1 : uid, uid);
+            max = Math.max(max, front + last + back);
+        }
+        dp[lid][uid] = max;
+        return max;
+    }
+    
+    public int maxCoins(int[] nums) {
+        if (nums.length == 0) return 0;
+        this.nums = nums; dp = new int[nums.length][nums.length];
+        return solve(1, 1, 0, nums.length-1);
+    }
+} 
+

@@ -1,0 +1,226 @@
+// correct method
+class Solution {
+    
+    public HashMap<Integer, Integer> getMaxRepetitions(String s1, int n1, String s2, int n2) {
+        int[] ref = new int[n1 + 1];
+        HashMap<Integer, Integer> test = new HashMap<Integer, Integer>();
+        int curNo = 0, st = -1, ed = 0;
+        for (int i = 1, cur = 0, curSt = -1; i <= n1; i++, curSt = -1) {
+            for (int j = 0; j < s1.length(); j++) {
+                if (s1.charAt(j) != s2.charAt(cur)) continue;
+                if (curNo == 0) test.put(cur, j);
+                if (cur == 0) { if (curNo == 0) st = j; curSt = j;  } // test.add(curSt); }
+                if (i != 1 && curSt == st) break; // first loop ended
+                if (++cur == s2.length()) { cur = 0; curNo++; ed = i; }
+            }
+        }
+        return test;
+    }
+    
+    public static String stringToString(String input) {
+            return JsonArray.readFrom("[" + input + "]").get(0).asString();
+    }        
+    
+    public static void main(String[] args) throws IOException {
+        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+        String line;
+        while ((line = in.readLine()) != null) {
+            String s1 = stringToString(line);
+            line = in.readLine();
+            int n1 = Integer.parseInt(line);
+            line = in.readLine();
+            String s2 = stringToString(line);
+            line = in.readLine();
+            int n2 = Integer.parseInt(line);
+            
+            HashMap<Integer, Integer> ret = new Solution().getMaxRepetitions(s1, n1, s2, n2);
+            
+            //String out = String.valueOf(ret);
+            for (int i = 0; i < s2.length(); i++)
+                System.out.print(ret.get(i) + "\n");
+        }
+    }        
+}
+
+
+char id in s1 where each char in s2 is matched
+
+
+15	15
+44	44
+10	44*
+21	21
+24	24
+59	59
+71	71
+87	87
+99	99
+8	8
+14	14
+47	47
+39	47*
+39	39
+49	49
+77	77
+98	98
+40	98*
+26	26
+64	64
+39	64*
+49	7 *
+46	46
+5	46*
+20	20
+47	47
+
+// update to locate char in s1 without iterating thru each
+class Solution {
+    
+    int proceed = 0;
+    int[] ref;
+    
+    private int val(int i, int ed, int n1, int n2, int curNo) {
+        int r = i == ed ? (n1-1) % (ed-1) : n1 % ed;
+        int fold = i == ed ? (n1-1) / (ed-1) : n1 / ed;;
+        int residu = r == 0 ? 0 : ref[r];
+        return (curNo * fold + residu) / n2;
+    }
+    
+    // find char id (curS1) in cur s1 corresponds to cur char in s2
+    private int next(ArrayList<Integer> cur, int curS1) {
+        for (int k = 0; k < cur.size(); k++) {
+            if (cur.get(k) > curS1) return cur.get(k); 
+            else if (k == cur.size()-1) proceed = 1;
+        }
+        return curS1;
+    }
+    
+    public HashMap<Integer, Integer> getMaxRepetitions(String s1, int n1, String s2, int n2) {
+        HashMap<Integer, Integer> test = new HashMap<Integer, Integer>();
+        ref = new int[n1 + 1];
+        ArrayList<Integer>[] dp = new ArrayList[26];
+        for (int i = 0; i < 26; i++) dp[i] = new ArrayList<Integer>();
+        for (int i = 0; i < s1.length(); i++) dp[s1.charAt(i)-'a'].add(i);
+        
+        int curNo = 0, curSt = -1, curS1 = -1, ed = 0, s2st = -1;
+        for (int i = 1; i <= n1; i++, curSt = -1, proceed = 0, curS1 = -1) {
+            for (int j = s2st+1; j < s2.length(); j++) {
+                curS1 = next(dp[s2.charAt(j)-'a'], curS1);
+		if (proceed != 1) test.put(j, curS1);
+                if (proceed == 1) { s2st = j - 1; break; }
+                if (j == s2.length()-1) { test.put(j, curS1); return test; }
+                if (curS1 == s1.length()-1) { s2st = j; break; }
+            }
+            ref[i] = curNo;
+        }
+        return test;
+    }
+    
+    public static String stringToString(String input) {
+            return JsonArray.readFrom("[" + input + "]").get(0).asString();
+    }        
+    
+    public static void main(String[] args) throws IOException {
+        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+        String line;
+        while ((line = in.readLine()) != null) {
+            String s1 = stringToString(line);
+            line = in.readLine();
+            int n1 = Integer.parseInt(line);
+            line = in.readLine();
+            String s2 = stringToString(line);
+            line = in.readLine();
+            int n2 = Integer.parseInt(line);
+            
+            HashMap<Integer, Integer> ret = new Solution().getMaxRepetitions(s1, n1, s2, n2);
+            
+            //String out = String.valueOf(ret);
+            for (int i = 0; i < s2.length(); i++)
+                System.out.print(ret.get(i) + "\n");
+        }
+    }        
+}
+
+
+// update method to calculate loop
+class Solution {
+    
+    int proceed = 0;
+    ArrayList<int[]> st = new ArrayList<int[]>();
+
+     
+    private int val(int n1, int s1id, int curS1) {
+        int preface = -1, loop = 0; ArrayList<Integer> ref = new ArrayList<Integer>();
+        for (int i = 0; i < st.size(); i++) if (st.get(i)[1] == curS1) preface = i;
+        int[] res = {s1id, curS1}; st.add(res);
+        if (preface == -1) return -1;
+        int stid = st.get(preface)[0], curid = 0, rowPreface;
+        for (int i = preface; i < st.size(); i++) {
+            if (st.get(i)[0] == s1id && st.get(i)[1] == curS1) loop = i;
+            curid = st.get(i)[0];
+            if (curid-stid < ref.size()) ref.set(curid-stid, ref.get(curid-stid) + i - preface);
+            else ref.add(i - preface);
+        }
+        if (preface == 0) rowPreface = 0;
+        else rowPreface = st.get(preface - 1)[0] == stid ? st.get(preface - 1)[0] - 1 : st.get(preface - 1)[0];
+        int residue = (n1 - rowPreface) % (curid - stid);
+        int left = residue == 0 ? 0 : ref.get(residue - 1);
+        int fold = (n1 - rowPreface) / (curid - stid);
+        return preface + (loop - preface) * fold + left;
+    }
+    
+    private int next(ArrayList<Integer> cur, int curS1) {
+        for (int k = 0; k < cur.size(); k++) {
+            if (cur.get(k) > curS1) return cur.get(k); 
+            else if (k == cur.size()-1) proceed = 1;
+        }
+        return curS1;
+    }
+    
+    public int getMaxRepetitions(String s1, int n1, String s2, int n2) {
+        ArrayList<Integer>[] dp = new ArrayList[26];
+        for (int i = 0; i < 26; i++) dp[i] = new ArrayList<Integer>();
+        for (int i = 0; i < s1.length(); i++) dp[s1.charAt(i)-'a'].add(i);
+        
+        int curNo = 0, curSt = -1, curS1 = -1, ed = 0, s2st = -1;
+        for (int i = 1; i <= n1; i++, curSt = -1, proceed = 0, curS1 = -1) { // iterate thru s1
+            for (int j = s2st+1; j < s2.length(); j++) {      // check char in s2 under cur s1
+                if (dp[s2.charAt(j)-'a'].isEmpty()) return 0; // if s1 does not contain s2[j]
+                curS1 = next(dp[s2.charAt(j)-'a'], curS1);    // update curS1
+                if (proceed == 1) { s2st = j - 1; break; }
+                if (j == 0) {
+                    int v = val(n1, i, curS1);
+                    if (v != -1) return v / n2;
+                }
+                if (j == s2.length()-1) { curNo++; ed = i; j = -1; }
+                if (curS1 == s1.length()-1) { s2st = j; break; }
+            }
+        }
+        return curNo / n2;
+    }
+    
+    public static String stringToString(String input) {
+            return JsonArray.readFrom("[" + input + "]").get(0).asString();
+    }        
+    
+    public static void main(String[] args) throws IOException {
+        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+        String line;
+        while ((line = in.readLine()) != null) {
+            String s1 = stringToString(line);
+            line = in.readLine();
+            int n1 = Integer.parseInt(line);
+            line = in.readLine();
+            String s2 = stringToString(line);
+            line = in.readLine();
+            int n2 = Integer.parseInt(line);
+            
+            Solution sol = new Solution();
+            int ret = sol.getMaxRepetitions(s1, n1, s2, n2);
+            ArrayList<int[]> st = sol.st;
+            System.out.println(st.size());
+            for (int i = 0; i < st.size(); i++)
+                System.out.print(st.get(i)[0] + ", " + st.get(i)[1] + "\n");
+        }
+    }        
+}

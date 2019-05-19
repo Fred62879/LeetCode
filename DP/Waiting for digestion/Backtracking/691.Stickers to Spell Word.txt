@@ -1,0 +1,277 @@
+## Specification
+We are given N different types of stickers. Each sticker has a lowercase English word on it.
+You would like to spell out the given target string by cutting individual letters from your
+collection of stickers and rearranging them. You can use each sticker more than once if you
+want, and you have infinite quantities of each sticker. What is the minimum number of 
+stickers that you need to spell out the target? If the task is impossible, return -1.
+
+Example 1:
+Input:
+["with", "example", "science"], "thehat"
+Output:
+3
+Explanation:
+We can use 2 "with" stickers, and 1 "example" sticker.
+After cutting and rearrange the letters of those stickers, we can form the target "thehat".
+Also, this is the minimum number of stickers necessary to form the target string.
+
+Example 2:
+Input:
+["notice", "possible"], "basicbasic"
+Output:
+-1
+Explanation:
+We can't form the target "basicbasic" from cutting letters from the given stickers.
+
+Note:
+stickers has length in the range [1, 50].
+stickers consists of lowercase English words (without apostrophes).
+target has length in the range [1, 15], and consists of lowercase English letters.
+In all test cases, all words were chosen randomly from the 1000 most common US English words, 
+and the target was chosen as a concatenation of two random words.
+The time limit may be more challenging than usual. It is expected that a 50 sticker test case 
+can be solved within 35ms on average.
+
+
+## Testcases
+["and","pound","force","human","fair","back","sign","course","sight","world","close","saw","best","fill","late","silent","open","noon","seat","cell","take","between","it","hundred","hat","until","either","play","triangle","stay","separate","season","tool","direct","part","student","path","ear","grow","ago","main","was","rule","element","thing","place","common","led","support","mean"]
+"quietchord"
+
+["heavy","claim","seven","set","had","it","dead","jump","design","question","sugar","dress","any","special","ground","huge","use","busy","prove","there","lone","window","trip","also","hot","choose","tie","several","be","that","corn","after","excite","insect","cat","cook","glad","like","wont","gray","especially","level","when","cover","ocean","try","clean","property","root","wing"]
+"travelbell"
+
+["seven","set","design","question","sugar","dress","any","special","busy"]
+"travelbell"
+
+
+## Ideas
+(5) BFS
+(4) DP_mem
+(3) DP_bitwise_bottom_up
+(2) DFS_backtracking
+Exhaust_search_others. Idea roughly the same. Differ slightly in search()/solve().
+In this implementation, first derive the max # of subtract current sticker can 
+exert on target while manipulate directly on the targetCount. Then, restore this
+targetCount as go-thru-nextSticker is checked.
+
+(1) DFS(Exhaust_search)_indep. An array can be generated recording characters in 
+target together with the freq. Then, all words can be processed to generate a 
+matrix that records the freq of each target char in each word. And words which
+has no larger freq in all chars than any of the other words are discarded. Then
+we can perform a quasi-dp (without mem) as implemented by solve (similar idea as
+LT546).
+
+
+## Code
+# (2) DFS_backtracking
+// targetChar_wise
+// 27ms, 38MB(min)
+class Solution {
+
+    int[][] countMap; // map[i][j], # of char '(j + 'a')' in stickers[i]
+    int cnt = Integer.MAX_VALUE;
+    
+    // increment curCnt to cover target char from \pos onset
+    private void count(int curCnt, int pos, int[] charAvailable, String target, String[] stickers) {
+        if (curCnt >= cnt) return; // prune the search
+        int m = stickers.length, n = target.length();
+        if (pos == n) {
+            cnt = Math.min(cnt, curCnt);
+            return;
+        }
+        char c = target.charAt(pos);
+        if (charAvailable[c - 'a'] > 0) {
+            charAvailable[c - 'a']--; // one usage of sticker cover
+            count(curCnt, pos + 1, charAvailable, target, stickers);
+            charAvailable[c - 'a']++;
+            return;
+        }
+         for (int i = 0; i < m; i++) { // start from each sticker containing c
+             if (countMap[i][c - 'a'] == 0) continue;
+             for(int j = 0; j < 26; j++) charAvailable[j] += countMap[i][j];
+             count(curCnt + 1, pos, charAvailable, target, stickers);
+             for(int j = 0; j < 26; j++) charAvailable[j] -= countMap[i][j];
+         }
+    }
+
+    public int minStickers(String[] stickers, String target) {
+        if (target == null) return -1;
+        if (target.length() == 0) return 0;
+        if (stickers == null || stickers.length == 0) return -1;
+        
+        int m = stickers.length;
+        countMap = new int[m][26];
+        
+        for (int i = 0; i < stickers.length; i++)
+            for (char c : stickers[i].toCharArray())
+                countMap[i][c - 'a']++;
+        count(0, 0, new int[26], target, stickers);
+        return cnt == Integer.MAX_VALUE ? -1 : cnt;
+    }
+}
+
+## (1) DFS_sticker_wise
+class Solution {
+    
+    int best;
+    int[][] stickersCount;
+    int[] targetCount;
+
+    public void search(int ans, int row) {
+        if (ans >= best) return;
+        if (row == stickersCount.length) {
+            for (int c: targetCount) if (c > 0) return;
+            best = ans; return;
+        }
+
+        int used = 0;
+        for (int i = 0; i < stickersCount[row].length; i++)
+            if (targetCount[i] > 0 && stickersCount[row][i] > 0)
+                used = Math.max(used, (targetCount[i] - 1) / stickersCount[row][i] + 1);
+        for (int i = 0; i < stickersCount[row].length; i++)
+            targetCount[i] -= used * stickersCount[row][i];
+        
+        search(ans + used, row + 1);
+        while (used > 0) {
+            for (int i = 0; i < stickersCount[row].length; i++)
+                targetCount[i] += stickersCount[row][i];
+            search(ans + --used, row + 1);
+        }
+    }
+
+    public int minStickers(String[] stickers, String target) {
+        int[] targetNaiveCount = new int[26], index = new int[26];
+        for (char c: target.toCharArray()) targetNaiveCount[c - 'a']++;
+        int t = 0, n = stickers.length;
+        for (int i = 0; i < 26; i++) index[i] = targetNaiveCount[i] > 0 ? t++ : -1;
+        
+        targetCount = new int[t]; stickersCount = new int[n][t]; t = 0;
+        for (int c: targetNaiveCount) if (c > 0) targetCount[t++] = c;
+        for (int i = 0; i < n; i++) {
+            for (char c: stickers[i].toCharArray()) {
+                int j = index[c - 'a'];
+                if (j >= 0) stickersCount[i][j]++;
+            }
+        }
+
+        int anchor = 0; // stickerscoun[0-anchor-1] dominated ones, not checked
+        for (int i = 0; i < n; i++) {
+            for (int j = anchor; j < n; j++) {
+                if (j == i)  continue;
+                boolean dominated = true;
+                for (int k = 0; k < t; k++) {
+                    if (stickersCount[i][k] <= stickersCount[j][k]) continue;
+                    dominated = false; break;
+                }
+                if (dominated) {
+                    int[] tmp = stickersCount[i];
+                    stickersCount[i] = stickersCount[anchor];
+                    stickersCount[anchor++] = tmp;
+                    break;
+                }
+            }
+        }
+        best = target.length() + 1;
+        search(0, anchor);
+        return best <= target.length() ? best : -1;
+    }
+}
+
+
+# Fail
+// indep_DFS_sticker_wise_TLE
+class Solution {
+    
+    int[][] dp;
+    int[] t;
+    int m = 0, ct = 0, ans = Integer.MAX_VALUE;
+    
+    // res[0~m-1], bitwise a-b result
+    // res[m], 0/1 - left all zero or not
+    // res[m+1], 1/0 - b exhausted or not
+    private int[] subtract(int[] a, int[] b) {
+        int[] res = new int[m + 2]; res[m] = 1;
+        for (int i = 0; i < m; i++) {
+            res[i] = a[i] - b[i] > 0 ? a[i] - b[i] : 0;
+            if (res[i] != 0) res[m] = 0;              // whether left all zero
+            if (b[i] != 0 && res[i] != 0) res[m+1] = 1; // whether can still subtract
+        }
+        return res;
+    }
+    
+    // find smallest # of words from st onward to cover t
+    private void solve(int[] t, int st, int sum) {
+        if (st >= ct || sum >= ans - 1) return;
+        int[] rmimd = subtract(t, dp[st]); // remove immediately
+        if (rmimd[m] == 1) { ans = Math.min(ans, sum + 1); return; } // cover succeed
+        solve(t, st + 1, sum); // maintain
+        for (int i = rmimd[m+1] == 0 ? st + 1 : st; i < ct; i++) // imdrm not covered
+            solve(rmimd, i, sum + 1); // keep removing
+    }
+    
+    // whether need clean
+    private int clean(int cur) {
+        for (int i = 0, j; i < cur; i++) {
+            for (j = 0; j < m; j++) if (dp[i][j] < dp[cur][j]) break;
+            if (j == m) return 1;
+        }
+        return 0;
+    }
+    
+    public int minStickers(String[] stickers, String target) {
+        int[] ref = new int[26];
+        for (char c : target.toCharArray()) if (ref[c -'a']++ == 0) m++;
+        t = new int[m]; int n = stickers.length; dp = new int[n][m];
+        for (int i = 0, j = 0; i < 26; i++) {
+            if (ref[i] != 0) { t[j] = ref[i]; ref[i] = ++j; }
+        }
+        for (int i = 0; i < n; i++) {
+            for (char c : stickers[i].toCharArray())
+                if (ref[c -'a'] != 0) dp[ct][ref[c -'a']-1]++;
+            if (clean(ct) == 1) Arrays.fill(dp[ct], 0);
+            else ct++;
+        }
+        solve(t, 0, 0);
+        return ans == Integer.MAX_VALUE ? -1 : ans;
+    }
+}
+
+// cpp_error
+class Solution {
+public:
+    int n, m, ans = INT_MAX;
+    
+    vector<int> subtract(vector<int> &a, vector<int> &b) {
+        vector<int> res; res[m] = 1;
+        for (int i = 0; i < a.size(); i++) {
+            res[i] = a[i] - b[i] > 0 ? a[i] - b[i] : 0;
+            if (res[i] != 0) res[m] = 0;
+            if (b[i] != 0 && res[i] != 0) res[m+1] = 1; // if can still subtract
+        }
+        return res;
+    }
+    
+    void solve(vector<vector<int>> &dp, vector<int> &t, int st, int sum) {
+        if (st >= n || sum >= ans - 1) return;
+        vector<int> rmimd = subtract(t, dp[st]); // remove immediately
+        if (rmimd[m] == 1) { ans = min(ans, sum + 1); return; }
+        solve(dp, t, st + 1, sum); // maintain
+        for (int i = rmimd[m+1] == 0 ? st + 1 : st; i < n; i++)
+            solve(dp, rmimd, i, sum + 1); // keep removing
+    }
+    
+    int minStickers(vector<string>& stickers, string target) {
+        vector<int> ref(26, 0); n = stickers.size();
+        for (char c : target) if (ref[c -'a']++ == 0) m++;
+        vector<int> t(m, 0); vector<vector<int>> dp(n, vector<int>(m));
+        for (int i = 0, j = 0; i < 26; i++) {
+            if (ref[i] != 0) { t[j] = ref[i]; ref[i] = ++j; }
+        }
+        for (int i = 0; i < n; i++) for (char c : stickers[i])
+            if (ref[c -'a'] != 0) dp[i][ref[c -'a']-1]++;
+        solve(dp, t, 0, 0);
+        //return ans == INT_MAX ? -1 : ans;
+        return n;
+    }
+};
+

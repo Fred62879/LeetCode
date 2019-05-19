@@ -1,0 +1,270 @@
+## Specification
+In this problem, a rooted tree is a directed graph such that, there is exactly one node (the root) for which all other nodes are descendants of this node, plus every node has exactly one parent, except for the root node which has no parents.
+
+The given input is a directed graph that started as a rooted tree with N nodes (with distinct values 1, 2, ..., N), with one additional directed edge added. The added edge has two different vertices chosen from 1 to N, and was not an edge that already existed.
+
+The resulting graph is given as a 2D-array of edges. Each element of edges is a pair [u, v] that represents a directed edge connecting nodes u and v, where u is a parent of child v.
+
+Return an edge that can be removed so that the resulting graph is a rooted tree of N nodes. If there are multiple answers, return the answer that occurs last in the given 2D-array.
+
+Example 1:
+Input: [[1,2], [1,3], [2,3]]
+Output: [2,3]
+Explanation: The given directed graph will be like this:
+  1
+ / \
+v   v
+2-->3
+
+Example 2:
+Input: [[1,2], [2,3], [3,4], [4,1], [1,5]]
+Output: [4,1]
+Explanation: The given directed graph will be like this:
+5 <- 1 -> 2
+     ^    |
+     |    v
+     4 <- 3
+
+Note: The size of the input 2D-array will be between 3 and 1000. Every integer represented in the 2D-array will be between 1 and N, where N is the size of the input array.
+
+
+## Testcases
+[[2,3],[3,4],[2,5],[1,2],[1,6],[5,1]]
+[[3,4],[4,5],[2,3],[5,6],[1,6],[1,2]]
+[[3,4],[4,5],[2,3],[5,1],[1,6],[1,2]]
+[[2,1],[3,1],[4,2],[1,4]] - 43/52
+[[2,1],[4,2],[1,4],[3,1]]
+[[3,4],[4,1],[1,2],[2,3],[5,1]] - 48/52
+
+
+## Ideas
+# (4) Trim nodes
+In this problem, an edge being redudant is equivalent to the edge being part of a cycle. To find the cycle, we can repeatedly trim nodes of degree 1 until there are none left. This is similar to the approach commonly used for Minimum Height Trees.
+
+This is the standard solution where we repeatedly remove leaf nodes, but we can XOR the edge IDs together since we only traverse an edge when the corresponding leaf node has only one edge.
+
+https://leetcode.com/problems/minimum-height-trees/discuss/198238/Optimized-C%2B%2B-solution-beats-99
+
+https://leetcode.com/problems/redundant-connection/discuss/223338/C%2B%2B-beats-100%3A-trim-nodes-of-degree-1-similar-to-Minimum-Height-Trees
+
+https://leetcode.com/problems/redundant-connection-ii/discuss/226588/C%2B%2B-beats-100%3A-trim-nodes-of-degree-1-similar-to-Minimum-Height-Trees
+
+
+# (3) Topo sort
+https://leetcode.com/problems/redundant-connection-ii/discuss/188995/Different-solution-using-Topological-Sort
+
+
+# (2) DFS
+
+
+
+# (1) Union
+// others
+https://leetcode.com/problems/redundant-connection-ii/discuss/108058/one-pass-disjoint-set-solution-with-explain
+
+we can apply Disjoint Set (DS) to build the tree in the order the edges are given. We define ds[i] as the parent or ancestor of node i. It will become the root of the whole tree eventually if edges does not have extra edge. When given an edge (a->b), we find node a's ancestor and assign it to ds[b]. Note, in typical DS, we also need to find node b's ancestor and assign a's ancestor as the ancestor of b's ancestor. But in this case, we don't have to, since we skip the second parent edge (see below), it is guaranteed a is the only parent of b.
+
+
+// indep
+Notable points are (i) no more than one node of the graph is pointed by two nodes and all other nodes are pointed by exactly one node or 0 node in case of the root. (ii) There are only two possible violations of the directed graph definition, the first being that one node is pointed by two nodes and the second occurs when a cycle is detected. And these two violations are each edge should be mutually exclusive (if-else). (iii) These two violations may co-exist regarding the graph as a whole (43/52 instance) (iv) We are required to return the lastest edge violating the rule whose removal can restore the graph.
+
+Take 43/52 for instance, as we reach [3,1], we know that two nodes (3 & 2) are now pointing both at 1 and therefore, the answer should definitely be either [2,1] or [3,1]. Since we are required to return the lastest edge, we take [1,3] as the temporary res. However, as we are not sure if the existence of [2,1] may incur further violations, we have to store [2,1] as a candidate and if no violations are violated later, we immediately return res which holds [1,3], the lastest violating edge. Notice, to check further possibilities icurred by [1,2] only, we do not update root to bring 3 in. This can be shown by the left chart below. If we update the root of 1 to be 3, then we cannot detect the cycle incurred by 2.
+
+3   2 <———           |——2<——|
+ \ /      |          v      1 <— 5
+  v       |          3      ^
+  1 ————> 4          |——>4——|
+
+Moreover, if a cycle is detected as the first violation, the we have multiple choices, either remove the most recent edge which confirmed the cycle or any other edges in the cycle. Like the right figure above, if 5 is not presenting, we simply return the latest edge which is [2,3]. However, when we reach [1,5], we are faced agian with a two-pointer vilation with 1 being pointed by 4 and 5. Now, we should either return [4,1] or [5,1]. Since [5,1] is the most recent edge, if no previous violations present (candidate empty), we return [5,1]. As we have detected a cycle previously which do not involve [5,1], it can thus be ascertained that [4,1] can incur other violations apart from sharing the target with 5 and thus should be removed.
+
+Note we store the root of each node as its immediate root rather than any profound roots. This is to ensure that when we detected the two-pointer violation, we trace the other node also pointing to the common target.
+
+
+
+## Code
+# (1) Union Find/ Disjoint Set
+// (ii) slightly different setup
+// others_one pass
+class Solution {
+    public int[] findRedundantDirectedConnection(int[][] edges) {
+        int n = edges.length;
+        int[] parent = new int[n+1], ds = new int[n+1]; // disjoint set
+        Arrays.fill(parent, -1);
+        int first = -1, second = -1, last = -1;
+        for(int i = 0; i < n; i++) {
+            int p = edges[i][0], c = edges[i][1];
+            if (parent[c] != -1) {
+                first = parent[c];
+                second = i;
+                continue;
+            }
+            parent[c] = i;
+            
+            int p1 = find(ds, p);
+            if (p1 == c) last = i;
+            else ds[c] = p1; // profound parent of c
+        }
+	// identical to indep idea
+        if (last == -1) return edges[second]; // no cycle found for first
+        if (second == -1) return edges[last]; // no two-pointer-node
+        return edges[first];
+    }
+    
+    private int find(int[] ds, int i) {
+        return ds[i] == 0 ? i : (ds[i] = find(ds, ds[i]));
+    }
+}
+
+// others_mulitple pass
+class Solution {
+public:
+    vector<int> findRedundantDirectedConnection(vector<vector<int>>& edges) {
+        int n = edges.size();
+        vector<int> parent(n+1, 0), candA, candB;
+        // step 1, check whether there is a node with two parents
+        for (auto &edge:edges) {
+            if (parent[edge[1]] == 0)
+                parent[edge[1]] = edge[0]; 
+            else {
+                candA = {parent[edge[1]], edge[1]};
+                candB = edge;
+		// nullify to avoid evaluate cur edge (most recent) which
+		// by default should be returned
+                edge[1] = 0; 
+            }
+        } 
+        // step 2, union find
+        for (int i = 1; i <= n; i++) parent[i] = i;
+        for (auto &edge : edges) {
+            if (edge[1] == 0) continue; // canB, no need to check
+            int u = edge[0], v = edge[1], pu = root(parent, u);
+            // Now every node only has 1 parent, so root of v is implicitly v
+            if (pu == v) { // for u->v, v also point to u (in)directly
+                if (candA.empty()) return edge; // no two-pointer-node
+                return candA; // loop identified for candA
+            }
+            parent[v] = pu;
+        }
+        return candB;
+    }
+private:
+    int root(vector<int>& parent, int k) {
+        if (parent[k] != k) 
+            parent[k] = root(parent, parent[k]);
+        return parent[k];
+    }
+};
+
+// (i) indep idea
+// others
+function findRedundantDirectedConnection(edges) {
+  const parent = {};
+  let res1, res2;
+  let hasLoop = false;
+  
+  for (let edge of edges) {
+    let [p, c] = edge;
+    const rp = find(p);
+    const rc = find(c);
+    
+    if (rc !== rp) {
+      if (rc !== c) {
+        // dual parent, skip new edge
+        res1 = [parent[c], c];
+        res2 = edge;
+      } else 
+	parent[c] = p; // only update root if no two-pointer-node
+    } else { // loop
+      hasLoop = true;
+      if (res1 === undefined)
+        res1 = edge;
+    }
+  }
+  
+  return hasLoop ? res1 : res2;
+  
+  function find(v) {
+    if (parent[v] === undefined) parent[v] = v;
+    while (v !== parent[v]) v = parent[v];
+    return v;
+  }
+}
+
+// indep_8ms
+class Solution {
+public:
+    vector<int> root;
+    
+    int trace(int i) {
+        while (i != root[i]) i = root[i];
+        return i;
+    }
+    
+    vector<int> findRedundantDirectedConnection(vector<vector<int>>& edges) {
+        vector<int> res, candidate;
+        int n = edges.size();
+        root.assign(n + 1, 0);
+        for (int i = 0; i <= n; i++) root[i] = i;
+        
+        for (int i = 0; i < n; i++) {
+            int v = edges[i][0], u = edges[i][1], ru = trace(u), rv = trace(v);
+            
+            if (root[u] != u) { // two nodes point to one node
+                if (!candidate.empty()) res = {root[u], u};
+                else { candidate = {root[u], u}; res = {v, u}; }
+            } else if (ru == rv) { // cycle detected
+                if (candidate.empty()) candidate = {v, u};
+                else res = candidate;
+            }
+            // update root without any violations
+            if (root[u] == u && ru != rv) root[u] = v;
+        }
+        return res.empty() ? candidate : res;
+    }
+};
+
+
+# (2) DFS
+// others_slow
+Class Solution {
+    
+    public int[] findRedundantDirectedConnection(int[][] edges) {
+        Map<Integer, Set<Integer>> g = new HashMap<>(); // graph, construct as traverse
+        Map<Integer, Integer> p = new HashMap<>(); // p[i], parent of node i
+        int[] c1 = null, c2 = null, last_cycle = null;
+        
+        for(int[] e : edges) {
+            if(p.containsKey(e[1])) {
+                c1 = new int[]{p.get(e[1]), e[1]}; // prev parent
+                c2 = e; // most recent parent of two-pointer-node
+            }
+
+            if(canReach(e[1], e[0], g, new HashSet<>())) last_cycle = e;
+            p.put(e[1], e[0]);
+            g.putIfAbsent(e[0], new HashSet<>());
+            g.get(e[0]).add(e[1]);
+        }
+        
+        if(last_cycle == null) return c2; // no cycle detected
+        if(c2 == null) return last_cycle; // no two-pointer-node
+
+        if(canReach(c2[1], c2[0], g, new HashSet<>())) return c2;
+        return c1;
+    }
+    
+    // whether based on graph (g) so far, path exists from s to t
+    boolean canReach(int s, int t, Map<Integer, Set<Integer>> g, Set<Integer> v) {
+        if(s == t) return true;
+        if(!g.containsKey(s) || g.get(s).size() == 0) return false;
+        
+        for(int nxt : g.get(s)) {
+            if(v.contains(nxt)) continue;
+            v.add(nxt);
+            if(canReach(nxt, t, g, v)) return true;
+        }
+        return false;
+    }
+}
+
+
+# (4) Trim nodes

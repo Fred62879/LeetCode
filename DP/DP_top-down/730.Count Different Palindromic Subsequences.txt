@@ -1,0 +1,186 @@
+## Specification
+Similar: LT132,647,940
+Given a string S, find the number of different non-empty palindromic subsequences in S, and
+return that number modulo 10^9 + 7. A subsequence of a string S is obtained by deleting 0
+or more characters from S. A sequence is palindromic if it is equal to the sequence reversed.
+
+Two sequences A_1, A_2, ... and B_1, B_2, ... are different if there is some i for which A_i != B_i.
+
+Example 1:
+Input: 
+S = 'bccb'
+Output: 6
+Explanation: 
+The 6 different non-empty palindromic subsequences are 'b', 'c', 'bb', 'cc', 'bcb', 'bccb'.
+Note that 'bcb' is counted only once, even though it occurs twice.
+
+Note:
+The length of S will be in the range [1, 1000].
+Each character S[i] will be in the set {'a', 'b', 'c', 'd'}.
+
+
+## Testcases
+"acdbdcba"
+"aaaccbbdd"
+"acdbdcbacdbada"
+"daaaabaadcccbcbbaabdbccbbabccacdacdddacbadbadcadcb"
+"abcdabcdabcdabcdabcdabcdabcdabcddcbadcbadcbadcbadcbadcbadcbadcba"
+
+
+## Ideas
+(2) DP_botom-up
+(1) DP_top-down
+When we first approach the given string, we know that there should exist at most four possibilities, in each of which many shorter strings should be appended by either of a_a/b_b/... Therefore, at the highest level, we shall only find all strings that can be appended by the four letrs. Strings appended by different char can be the same as they are finally appended by different chars. Then we proceed to check progressively lower levels. Notice, to find the new lower and higher bound for recursion, the two directly adjacent to the two appendages suffice.
+
+
+## Code
+// (1) DP_top-down_indep
+class Solution {
+    
+    int q = 1000000007;
+    long[][] dp;
+    
+    private long solve(char[] s, int i, int j) {
+        if (i >= j - 1) return i > j ? 0 : 2 + j - i;
+        if (dp[i][j] != -1) return dp[i][j];
+        
+        long ans = 0; int ct = 0;
+        int[] check = new int[]{-1, -1, -1, -1};
+        for (int lc = i; lc <= j && ct < 4; lc++) {
+            if (check[s[lc] -'a'] == 1) continue;
+            int rm = -1;
+            for (int k = j; k > lc && rm == -1; k--)
+                if (s[k] == s[lc]) rm = k;
+            if (rm != -1) ans = (ans + (lc + 1 <= rm - 1 ? solve(s, lc + 1, rm - 1) : 1)) % q;
+            check[s[lc] -'a'] = 1; ct++;
+        }
+        dp[i][j] = (ans + 1 + ct) % q;
+        return dp[i][j];
+    }
+    
+    public int countPalindromicSubsequences(String S) {
+        dp = new long[S.length()][S.length()];
+        for (int i = 0; i < S.length(); i++) Arrays.fill(dp[i], -1);
+        return (int) solve(S.toCharArray(), 0, S.length() - 1) - 1;
+    }
+}
+
+// Fail
+// indep_dp_no_mem_TLE
+class Solution {
+    
+    HashSet<String> cover = new HashSet<String>();
+    int[] next;
+    int q = 1000000007;
+    long ans = 0;
+    
+    // find # of unique ps within lo-hi (inclusive) appended by fs & bs
+    private void solve(String os, String fs, String bs, int lo, int hi) {
+        if (lo > hi) return;
+        solve(os, fs, bs, lo + 1, hi); // discard lo\th char        
+        for (int j = lo; j <= hi && j != -1; j = next[j]) { // further collect char
+            String nfs = fs + os.charAt(lo), nbs = (lo == j ? "" : os.charAt(j)) + bs, ncs = nfs + nbs;
+            if (!cover.contains(ncs)) { ans = (ans + 1) % q; cover.add(ncs); }
+            solve(os, nfs, nbs, lo + 1, j - 1);
+        }
+    }
+    
+    public int countPalindromicSubsequences(String S) {
+        int n = S.length(); next = new int[n];
+        int[] ref = new int[]{-1, -1, -1, -1};
+        for (int i = n - 1; i >= 0; i--) {
+            next[i] = ref[S.charAt(i) -'a'];
+            ref[S.charAt(i) -'a'] = i;
+        }
+        solve(S, "", "", 0, n - 1);
+        return (int) ans;
+    }
+}
+
+//
+class Solution {
+    
+    int[] next;
+    char[] letr = new char[]{'a','b','c','d'};
+    
+    private int solve(int offset, String S) {
+        int ans = 0, n = S.length();
+        HashSet<String> ss = new HashSet<String>(), nss;
+        HashMap<String, int[][]> bds = new HashMap<String, int[][]>(), nbds;
+        int[][][] ini = new int[4][n][2]; int[] st = new int[4];
+        for (int i = 0; i < 4; i++) for (int j = 0; j < n; j++) Arrays.fill(ini[i][j], -1);
+        // ini setup
+        for (int i = 0; i < n; i++) {
+            int curc = S.charAt(i) -'a';
+            if (offset == 1) ini[curc][st[curc]++] = new int[]{i, i};
+            else for (int j = next[i]; j != -1; j = next[j]) ini[curc][st[curc]++] = new int[]{i, j};
+        }
+        for (int i = 0; i < 4; i++) {
+            if (ini[i][0][0] == -1) continue;
+            String cc = Character.toString(letr[i]);
+            String inis = cc + (offset == 1 ? "" : cc);
+            if (!ss.contains(inis)) { ss.add(inis); ans++; }
+            bds.put(inis, ini[i]);
+        }
+}
+
+//
+class Solution {
+    
+    int[] next; char[] letr = new char[]{'a','b','c','d'};
+    
+    private int solve(int offset, String S) {
+        int ans = 0, n = S.length();
+        HashSet<String> ss = new HashSet<String>(), nss;
+        HashMap<String, ArrayList<int[]>> bds = new HashMap<String, ArrayList<int[]>>(), nbds;
+        ArrayList<ArrayList<int[]>> ini = new ArrayList<ArrayList<int[]>>();
+        for (int i = 0; i < 4; i++) ini.add(new ArrayList<int[]>());
+        
+        // ini setup
+        for (int i = 0; i < n; i++) {
+            ArrayList<int[]> cur = ini.get(S.charAt(i) -'a');
+            if (offset == 1) cur.add(new int[]{i, i});
+            else for (int j = next[i]; j != -1; j = next[j]) cur.add(new int[]{i, j});
+            ini.set(S.charAt(i) -'a', cur);
+        }
+        for (int i = 0; i < 4; i++) {
+            if (ini.get(i).isEmpty()) continue;
+            String cc = Character.toString(letr[i]);
+            String inis = cc + (offset == 1 ? "" : cc);
+            if (!ss.contains(inis)) { ss.add(inis); ans++; }
+            bds.put(inis, ini.get(i));
+        }
+
+
+        // increment string length
+        for (int len = offset + 2; len < n; len += 2) {
+            nss = new HashSet<String>(); nbds = new HashMap<String, ArrayList<int[]>>();
+            for (String s : ss) {             // all unique strings of previous level
+                ArrayList<int[]>[] update = new ArrayList[4]; Arrays.fill(update, new ArrayList<int[]>());
+                for (int[] bd : bds.get(s)) { // boundaries
+                    int lo = 0;
+                    for (int st = bd[0] - 1; st >= lo; st--) // grow by appending new char
+                        if (next[st] != -1 && next[st] <= bd[1])
+                            update[S.charAt(st) -'a'].add(new int[]{st, next[st]});
+                    lo = bd[0] + 1;
+                }
+                for (int i = 0; i < 4; i++) {
+                    if (update[i].isEmpty()) continue;
+                    String nc = Character.toString(letr[i]), ns = nc + s + nc;
+                    nss.add(ns); nbds.put(ns, update[i]);
+                }
+            }
+            ss = nss; bds = nbds; ans += nss.size();
+        }
+        return ans;
+    }
+    
+    public int countPalindromicSubsequences(String S) {
+        int[] ref = new int[]{-1, -1, -1, -1}; next = new int[S.length()];
+        for (int i = S.length() - 1; i >= 0; i--) {
+            next[i] = ref[S.charAt(i) -'a'];
+            ref[S.charAt(i) -'a'] = i;
+        }
+        return solve(1, S) + solve(2, S);
+    }
+}

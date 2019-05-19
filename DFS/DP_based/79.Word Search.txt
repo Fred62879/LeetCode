@@ -1,0 +1,80 @@
+## Specification
+Given a 2D board and a word, find if the word exists in the grid. The word can be constructed from letters of sequentially adjacent cell, where "adjacent" cells are those horizontally or vertically neighboring. The same letter cell may not be used more than once.
+
+Example:
+board =
+[
+  ['A','B','C','E'],
+  ['S','F','C','S'],
+  ['A','D','E','E']
+]
+Given word = "ABCCED", return true.
+Given word = "SEE", return true.
+Given word = "ABCB", return false.
+
+
+## Ideas
+
+
+## Code
+# DFS
+// others_backracking
+class Solution {
+private:
+    int m, n;
+    bool isFound(vector<vector<char> > &board, const char* w, int x, int y) {
+        if(x < 0 || y < 0 || x >= m || y >= n || board[x][y] == '\0' || *w! = board[x][y]) return false;
+        if(*(w + 1) == '\0') return true;
+
+        char t = board[x][y];
+        board[x][y] = '\0';
+        if(isFound(board, w + 1, x - 1, y) || isFound(board, w + 1, x + 1, y) || isFound(board, w + 1, x, y - 1) || isFound(board, w + 1, x, y + 1))
+            return true; 
+        board[x][y] = t;
+        return false;
+    }
+
+public:
+    bool exist(vector<vector<char> > &board, string word) {
+        m = board.size(); n = board[0].size();
+        for(int x = 0; x < m; x++)
+            for(int y = 0; y < n; y++)
+                if(isFound(board,word.c_str(),x,y)) return true;
+        return false;
+    }
+};
+
+// indep
+class Solution {
+public:
+    vector<vector<int>> visited;
+    int n, m;
+    // whether starting from r-c in char table, word.substr[id] exist
+    int dfs(int r, int c, int id, string word, vector<vector<char>>& board) {
+        if (id == word.size()) return 1;
+        vector<vector<int>> col{ {r-1, c}, {r+1, c}, {r, c-1}, {r, c+1} };
+	// probably, the for loop slows down the running efficiency
+        for (vector<int> cur : col) {
+            int cr = cur[0], cc = cur[1];
+            if (cr < 0 || cc < 0 || cr >= n || cc >= m || visited[cr][cc] || board[cr][cc] != word[id]) continue;
+            visited[cr][cc] = 1;
+            if (dfs(cr, cc, id + 1, word, board)) return 1;
+            visited[cr][cc] = 0;
+        }
+        return 0;
+    }
+    
+    bool exist(vector<vector<char>>& board, string word) {
+        n = board.size(); m = board[0].size();
+        visited.assign(n, vector<int>(m, 0));
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                visited[i][j] = 1;
+                if (board[i][j] == word[0] && dfs(i, j, 1, word, board))
+                    return true;
+                visited[i][j] = 0;
+            }
+        }
+        return false;
+    }
+};

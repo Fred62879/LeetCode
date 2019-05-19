@@ -1,0 +1,98 @@
+**** Specification ****
+
+Given a set of non-overlapping intervals, insert a new interval into the intervals (merge 
+if
+necessary). You may assume that the intervals were initially sorted according to their
+ start
+times.
+
+
+Example 1:
+
+Input: intervals = [[1,3],[6,9]], newInterval = [2,5]
+
+Output: [[1,5],[6,9]]
+
+
+
+Example 2:
+
+Input: intervals = [[1,2],[3,5],[6,7],[8,10],[12,16]], newInterval = [4,8]
+
+Output: [[1,2],[3,10],[12,16]]
+
+Explanation: Because the new interval [4,8] overlaps with [3,5],[6,7],[8,10].
+
+
+
+
+
+**** Testcases ****
+[]
+[5,7]
+
+[[1,5]]
+[6,8]
+
+[[9,10]]
+[6,8]
+
+[[9,10]]
+[6,8]
+
+[[3,4],[5,6],[7,8]]
+[1,9]
+
+
+[[1,2],[3,5],[6,7],[8,10],[12,16]]
+[4,8]
+
+
+
+**** Code ****
+
+// binarySearch
+
+/**
+ * Definition for an interval.
+ * public class Interval {
+ *     int start;
+ *     int end;
+ *     Interval() { start = 0; end = 0; }
+ *     Interval(int s, int e) { start = s; end = e; }
+ * }
+ */
+class Solution {
+    
+    private int bounding(List<Interval> intervals, int search, int cho) {
+        int[] ele = new int[intervals.size()];
+        for (int i = 0; i < intervals.size(); i++) {
+            if (cho == 0) ele[i] = intervals.get(i).start;
+            else ele[i] = intervals.get(i).end;
+        }
+        int bd = Arrays.binarySearch(ele, search), n = intervals.size();
+        if (bd < 0) {
+            bd = -(bd + 1);
+            if (cho == 1 && bd < n && search < intervals.get(bd).start) bd--;
+            if (cho == 0 && bd > 0 && search <= intervals.get(bd - 1).end) bd--;
+        }
+        return bd;
+    }
+    
+    // ld/hd: id of 1st/last interval overlap with newInv
+    public List<Interval> insert(List<Interval> intervals, Interval newInterval) {
+        List<Interval> res = new ArrayList<Interval>();
+        if (intervals.size() == 0) { res.add(newInterval); return res; }
+        int n = intervals.size(), nst = newInterval.start, ned = newInterval.end;
+        int lb = bounding(intervals, nst, 0);
+        int hb = bounding(intervals, ned, 1);
+        for (int i = 0; i < lb; i++) res.add(intervals.get(i));
+        if (hb != -1) {
+            int lo = lb >= n ? nst : Math.min(intervals.get(lb).start, nst);
+            int hi = hb >= n ? ned : Math.max(intervals.get(hb).end, ned);
+            res.add(new Interval(lo, hi));
+        } else res.add(newInterval);
+        for (int i = hb + 1; i < n; i++) res.add(intervals.get(i));
+        return res;
+    }
+}

@@ -1,0 +1,260 @@
+## Specification
+Similar: LT964
+Your car starts at position 0 and speed +1 on an infinite number line.  (Your car can go into negative positions.) Your car drives automatically according to a sequence of instructions A (accelerate) and R (reverse). When you get an instruction "A", your car does the following: position += speed, speed *= 2. When you get an instruction "R", your car does the following: if your speed is positive then speed = -1 , otherwise speed = 1.  (Your position stays the same.) For example, after commands "AAR", your car goes to positions 0->1->3->3, and your speed goes to 1->2->4->-1. Now for some target position, say the length of the shortest sequence of instructions to get there.
+
+Example 1:
+Input: 
+target = 3
+Output: 2
+Explanation: 
+The shortest instruction sequence is "AA".
+Your position goes from 0->1->3.
+
+Example 2:
+Input: 
+target = 6
+Output: 5
+Explanation: 
+The shortest instruction sequence is "AAARA".
+Your position goes from 0->1->3->7->7->6.
+
+Note:
+1 <= target <= 10000.
+
+
+
+## Ideas
+# (INTUITION & PROOF)
+// official
+Let A^k denote the command AAAA⋯A (k times). Starting with an "R" command doesn't help, and as the final sequence does not end on an "R", so we have some sequence like R A^{k_1} R A^{k_2} ... R A^{k_n} which could be instead A^{k_2} R A^{k_3} R ... A^{k_n} R R A^{k_1} for the same final position of the car. (Here, ki ≥0, where A^0 means no command.)
+
+So let's suppose our command is always of the form A^{k_1} R A^{k_2} R ... A^{k_n}. Note that under such a command, the car will move to final position (2^{k_1} - 1) - (2^{k_2} - 1) + (2^{k_3} - 1) - ... Without loss of generality, we can say that (k_i, i odd) is monotone decreasing, and (k_i, i even) is also monotone decreasing. Also because terms will cancel out, we can also ignore the possibility that k_i = k_j (for i, ji,j with different parity).
+
+Another key claim is that k_i is bounded by a+1, where a is the smallest integer such that 2^a ≥ target. Basically, if you drive past the target, you don't need to keep driving. This is because it adds another power of two (as 2^{k_i} - 1 = ∑ (j<k_i) 2^j) to the position that must get erased by one or more negative terms later (in whole or in part), as it is not part of the target.
+
+// math proof
+https://leetcode.com/problems/race-car/discuss/147479/Mathematical-proof-on-why-the-DP-solution-works
+
+// overall
+https://leetcode.com/problems/race-car/discuss/124326/Summary-of-the-BFS-and-DP-solutions-with-intuitive-explanation%20is%20a%20better%20alternative.
+
+# (5) Recursion
+
+# (4) DP_bottom-up
+
+# (3) DP_top-down
+
+# (2) BFS
+BFS is very straightforward with two important pruning:
+when current position is negative, there is no need to iterate it
+when current position is bigger than 2 times of target, there is no need to iterate it
+
+# (1) Dijstra's
+
+
+## Code
+# (2) BFS
+// (v) hash for cpp learning
+#define P first
+#define S second
+using PII = pair< int, int >;
+using QPII = queue< PII > ;
+
+class Solution {
+struct hash { 
+    size_t operator()( const PII& x ) const {  return x.P*100000+x.S;  } 
+};
+public:
+    int racecar( int T, QPII q = QPII({ make_pair(0,1) })){
+        unordered_set< PII, hash > V({ q.front() });
+        for(int d = 0, N = (int)q.size(); ;++d, N = (int)q.size()){
+            for(int cur = q.front(); N--; q.pop(), cur = q.front()){
+                if( cur.P == T ) return d;
+ 
+                auto A = make_pair( cur.P + cur.S, cur.S * 2 );
+                if( V.insert( A ).second && abs( A.P - T ) < T ) // prune A by position
+                    q.push( A );
+                
+                auto R = make_pair( cur.P, ( cur.S > 0 )  ?  -1  :  1 );
+                if( V.insert( R ).second )
+                    q.push( R );
+            }
+        }
+    }
+};
+
+// (iv) hash_reversion check
+class Solution {
+    private static final class Position {
+        final int pos, speed;   
+        final String path;
+
+        Position(int pos, int speed, String path) {
+            this.pos = pos;
+            this.speed = speed;
+            this.path = path;
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + pos;
+            result = prime * result + speed;
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null) return false;
+            if (getClass() != obj.getClass()) return false;
+            
+            Position other = (Position) obj;
+            if (pos != other.pos) return false;
+            if (speed != other.speed) return false;
+            return true;
+        }
+    }
+
+    public int racecar(int target) {
+        int min = -1;
+        Queue<Position> q = new LinkedList<>();
+        q.add(new Position(0, 1, ""));
+        Set<Position> visited = new HashSet<>();
+        // BFS
+        while (!q.isEmpty()) {
+            Position head = q.poll();
+            if (visited.contains(head)) continue;
+            visited.add(head);
+            if (head.pos == target) { min = head.path.length(); break; }
+            
+            int nextPos = head.pos + head.speed;
+            if (nextPos >= 0 && nextPos <= 2 * target)
+                q.add(new Position(nextPos, head.speed * 2, head.path + 'A'));
+            if (head.pos >= 0 && head.pos <= 2 * target && !head.path.endsWith("RR"))
+                q.add(new Position(head.pos, head.speed > 0 ? -1 : 1, head.path + 'R'));
+        }
+        return min;
+    }
+}
+
+// (iii) hash_reversion check
+struct hashFunc { 
+    // hash function for pair<int, int>
+    size_t operator() (const pair<int, int> &p) const{
+        return hash<int>()(p.first) + hash<int>()(p.second);
+    }
+};
+
+class Solution {
+public:
+    int racecar(int target) {
+        if(!target) return 0;
+        int res = 0;
+        unordered_set<pair<int, int>, hashFunc> memo;
+        queue<vector<int>> q;
+        q.push({1,0,0,0}); // speed, position, repeat times, # of reversion
+        // BFS
+        while(1) {
+            vector<int> top = q.front(); q.pop();
+            if(top[1] == target) return top[2];
+
+            vector<int> R {top[0] > 0 ? -1 : 1, top[1], top[2] + 1, top[3] + 1};
+            vector<int> A {top[0] * 2, top[1] + top[0], top[2] + 1, 0};
+            pair<int,int> a(A[0], A[1]), r(R[0], R[1]);
+
+            // position cannot be negative nor 2 times larger
+            if(A[1] >= 0 && A[1] <= 2 * target && memo.insert(a).second)
+                q.push(A);
+            // continuous reversion must less than 3 
+            if(R[3] < 3 && R[1] >= 0 && R[1] <= 2 * target && memo.insert(r).second)
+                q.push(R);
+        }
+        return res;
+    }
+};
+
+// (ii) derived_basic
+/* // can be adapted
+struct hashFunc {
+    size_t operator() (const pair<int, int> &p) const{
+        return hash<int>()(p.first) + hash<int>()(p.second);
+    }
+};
+*/
+class Solution {
+public:
+    int racecar(int target) {
+	// unordered_set<pair<int, int>, hashFunc> memo;        
+	unordered_set<string> memo;
+        queue<pair<int,int>> q; q.push({0, 1});
+        
+        int ans = -1;
+        while (true) {
+            ans++;
+            int sz = q.size();
+            for (int i = 0; i < sz; i++) {
+                pair<int,int> cur = q.front(); q.pop();
+                int loc = cur.first, sped = cur.second;
+                if (loc == target) return ans;
+                // A
+                int nloc = loc + sped, nsped = sped * 2;
+                string code = to_string(nloc) + "," + to_string(nsped);
+                if (memo.find(code) == memo.end() && abs(target - nloc) < target) {
+                    q.push({ nloc, nsped }); memo.insert(code);
+                }
+                // R
+                nloc = loc, nsped = sped > 0 ? -1 : 1;
+                code = to_string(nloc) + "," + to_string(nsped);
+                if (memo.find(code) == memo.end() && abs(target - nloc) < target) {
+                    q.push({ nloc, nsped }); memo.insert(code);
+                }
+            }
+            if (q.empty()) return -1;
+        }
+        return ans;
+    }
+};
+
+// (i) indep, TLE
+class Solution {
+public:
+    
+    int grow(vector<int> &npair, unordered_map<int, unordered_set<int>> &cache) {
+        if (cache.find(npair[0]) == cache.end()) {
+            unordered_set<int> a; a.insert(npair[1]);
+            cache[npair[0]] = a; 
+            return 1;
+        }
+        // unordered_set<int> prev = cache.find(npair[0]);
+        auto prev = cache.at(npair[0]);
+        if (prev.find(npair[1]) != prev.end()) return 0;
+        
+        prev.insert(npair[1]); 
+        cache[npair[0]] = prev;
+        return 1;
+    }
+    
+    int racecar(int target) {
+        unordered_set<int> ini; ini.insert(1);
+        unordered_map<int, unordered_set<int>> cache; cache[0] = ini;
+        vector<vector<int>> curl{vector<int>{0, 1}};
+        
+        int ans = 0;
+        while (true) {
+            ans++;
+            vector<vector<int>> ncurl;
+            while (!curl.empty()) {
+                vector<int> pair = curl.front(); curl.erase(curl.begin());
+                vector<int> a{pair[0] + pair[1], 2 * pair[1]};
+                vector<int> b{pair[0], pair[1] > 0 ? -1 : 1};
+                if (a[0] == target || b[0] == target) return ans;
+                if (grow(a, cache)) ncurl.push_back(a);
+                if (grow(b, cache)) ncurl.push_back(b);
+            }
+            curl = ncurl;
+        }
+        return ans;
+    }
+};

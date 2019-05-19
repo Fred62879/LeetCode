@@ -1,0 +1,35 @@
+## Specification
+Similar: LT871 (DP)
+Given an array of non-negative integers, you are initially positioned at the first index of the array. Each element in the array represents your maximum jump length at that position. Determine if you are able to reach the last index.
+
+Example 1:
+Input: [2,3,1,1,4]
+Output: true
+Explanation: Jump 1 step from index 0 to 1, then 3 steps to the last index.
+
+Example 2:
+Input: [3,2,1,0,4]
+Output: false
+Explanation: You will always arrive at index 3 no matter what. Its maximum jump length is 0, which makes it impossible to reach the last index.
+
+
+## Idea
+If all entries are positive, there is no way that we cannot reach the last position, only when 0 entries exist shall we evaluate whether we can reach.
+Similar to refueling, here we first traversing the array until dist not covered by nums[0] and as we going thru, we record the furtherest entry that we can reach based on these new entries. If these new furtherest is the same as nums[0], then we are trapped and unable to reach. Otherwise, we can keep going until the furtherest reachable entry exceed n.
+
+
+## Code
+// indep
+class Solution {
+public:
+    bool canJump(vector<int>& nums) {
+        int n = nums.size(), ncover = 0;
+        for (int i = 1, cover = nums[0]; i < n; i++) {
+            if (cover >= i) { ncover = max(ncover, i + nums[i]); continue; }
+            if (ncover >= n) return true;
+            if (cover == ncover) return false;
+            cover = ncover; i--;
+        }
+        return true;
+    }
+};

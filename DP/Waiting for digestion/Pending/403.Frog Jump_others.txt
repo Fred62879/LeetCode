@@ -1,0 +1,91 @@
+**** Ideas ****
+1) Using stack, at each stone we check the possibilities moving forward via checking all
+three (-1,0,1) jumps possible from that stone. We only record stones exactly reachable 
+from that stone using binarySearch. 
+
+If we find such stone, we then insert the new stone id and the jump used to reach it into 
+the stack(dp). Each time, we pop out the last one which is supposed to be the furthest stone
+in the array and check further.
+
+2) For each stone, check all stones (including non-existing ones) it can reach and record
+the jump to reach that specific stone in location of that stone in map. We may record more
+than real stones but we never check the fake stones.
+
+
+**** Code ****
+// (1) DFS, extremely fast
+class Solution {
+    
+    public boolean canCross(int[] stones) {
+        int n = stones.length;
+        if (stones[n - 1] < n - 1 || stones[n - 1] > n*(n - 1)/2) return false;
+        LinkedList<int[]> dp = new LinkedList<int[]>();
+        dp.add(new int[]{0, 0});
+        while (!dp.isEmpty()) {
+            int[] cur = dp.removeLast();
+            for (int i = -1; i <= 1; i++) {
+                int cj = cur[1] + i;
+                if (cj == 0) continue;
+                int next = Arrays.binarySearch(stones, cur[0], n, cj + stones[cur[0]]);
+                if (next < 0) continue;
+                if (next == n - 1) return true;
+                dp.add(new int[]{next, cj});
+            }
+        }
+        return false;
+    }
+}
+
+// (2) DFS
+Class Solution {
+public:
+    bool canCross(vector<int>& stones) {
+        // To record available last steps to reach current position. Position 0 need 0 step to be reached
+        unordered_map<int, unordered_set<int>> steps = {{0, {0}}};  
+        
+        for (int pos : stones) {
+            for (auto it = steps[pos].begin(); it != steps[pos].end(); it++) {  // record all future reachable positions
+                if (*it - 1) { steps[pos + *it - 1].insert(*it - 1); }
+                steps[pos + *it].insert(*it);
+                steps[pos + *it + 1].insert(*it + 1);
+            }
+        }
+        
+        return steps[stones.back()].size();                                     // check if the last position is reachable
+    }
+};
+
+// (2) Java version-MLE
+class Solution {
+    
+    HashMap<Integer, ArrayList<Integer>> dp = new HashMap<Integer, ArrayList<Integer>>();
+    
+    private void put(int key, int val) {
+        if (!dp.containsKey(key)) dp.put(key, new ArrayList<Integer>());
+        ArrayList<Integer> cur =  dp.get(key);
+        cur.add(val); dp.put(key, cur);
+    }
+    
+    private int[] copy(ArrayList<Integer> a) {
+        int[] res = new int[a.size()];
+        for (int i = 0; i < a.size(); i++)
+            res[i] = a.get(i);
+        return res;
+    }
+    
+    public boolean canCross(int[] stones) {
+        int n = stones.length; put(0, 0);
+        if (stones[n - 1] < n - 1 || stones[n - 1] > n*(n - 1)/2) return false;
+        for (int i = 0; i < n; i++) {
+            if (!dp.containsKey(stones[i])) continue;
+            for (int cj : copy(dp.get(stones[i]))) {  // if iterate over dp.get.., concurrentModification Error 
+                if (cj - 1 != 0) put(cj - 1 + stones[i], cj - 1);
+                put(cj + stones[i], cj);
+                put(cj + 1 + stones[i], cj + 1);
+            }
+        }
+        return dp.containsKey(stones[n-1]) && !dp.get(stones[n-1]).isEmpty();
+    }
+}
+
+// (3)          

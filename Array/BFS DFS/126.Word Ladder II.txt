@@ -1,0 +1,407 @@
+## Specification
+Given two words (beginWord and endWord), and a dictionary's word list, find all shortest
+transformation sequence(s) from beginWord to endWord, such that: Only one letter can be
+changed at a time Each transformed word must exist in the word list. Note that beginWord is
+not a transformed word.
+
+Note:
+Return an empty list if there is no such transformation sequence.
+All words have the same length.
+All words contain only lowercase alphabetic characters.
+You may assume no duplicates in the word list.
+You may assume beginWord and endWord are non-empty and are not the same.
+
+Example 1:
+Input:
+beginWord = "hit",
+endWord = "cog",
+wordList = ["hot","dot","dog","lot","log","cog"]
+Output:
+[
+  ["hit","hot","dot","dog","cog"],
+  ["hit","hot","lot","log","cog"]
+]
+
+Example 2:
+Input:
+beginWord = "hit"
+endWord = "cog"
+wordList = ["hot","dot","dog","lot","log"]
+Output: []
+Explanation: The endWord "cog" is not in wordList, therefore no possible transformation.
+
+
+## Testcases
+"red"
+"tax"
+["ted","tex","red","tax","tad","den","rex","pee"]
+
+
+## Ideas
+(2) Word path search refer to LT127. Path is constructed together with BFS. Each word is 
+stored with the shortest word path reaching it from beignWord. The answer is the path
+stored for endWord when BFS terminate or if no such exist, endWord cannot be reached
+
+(1) Mistakenly think that each BFS should generate words differ in one char from beginWord.
+
+
+## Code
+// (5) BFS on paths
+class Solution {
+public:
+    vector<vector<string>> findLadders(string beginWord, string endWord, vector<string>& wordList) {
+        unordered_set<string> words(wordList.begin(), wordList.end());
+        if (words.find(endWord) == words.end()) return {{}};
+        
+        queue<vector<string>> paths{{beginWord}};
+        while (!paths.empty()) {
+            vector<string> path = paths.pop();
+            int len = path.size();
+            for (char& c : path.back()) {
+                char orig = c;
+                for (char c = 'a'; c <= 'z'; c++) {
+                    if (words.find(path.back()) == words.end()) continue;
+                    
+                }
+                c = orig;
+            }
+        }
+        
+        return {{}};
+    }
+};
+
+// (4) bidirectional BFS, very slow
+
+
+// (3) others BFS(search) + DFS(construct), fastest
+class Solution {
+public:
+    vector<vector<string>> getSeqs(string& word, string& beginWord, unordered_map<string,pair<bool,vector<string>>>& words) {
+        if (beginWord == word) return {{beginWord}};
+        vector<vector<string>> seqs;
+        for (auto& w: words[word].second) {
+            auto w_seqs = getSeqs(w,beginWord,words);
+            for (auto& seq: w_seqs) seq.push_back(word);
+            copy(w_seqs.begin(), w_seqs.end(), back_inserter(seqs));
+        }
+        return seqs;
+    }
+    vector<vector<string>> findLadders(string beginWord, string endWord, vector<string>& wordList) {
+        unordered_map<string,pair<bool,vector<string>>> words;
+        // records whether the word has been visited, and all parents in the shortest paths from beginWord
+        for (auto& s: wordList) words.insert({s,{false,{}}});
+        // if (!words.count(endWord)) return {};
+        
+        vector<string> q = {beginWord};
+        while (!q.empty()) {
+            bool done = false;
+            vector<string> newq;
+            for (auto& w : q)
+                words[w].first = true;
+            for (auto& w : q) {
+                auto word = w;
+                for (auto& c : word) {
+                    auto corig = c;
+                    for (c = 'a'; c <= 'z'; ++c)
+                        // now word is modified and w is the original
+                        if (c != corig) {
+                            auto it = words.find(word);
+                            if (it != words.end() && !it->second.first) {
+                                if (it->second.second.empty())
+                                    newq.push_back(word);
+                                it->second.second.push_back(w);
+                                if (word == endWord) done = true;
+                            }
+                        }
+                    c = corig;
+                }
+            }
+            if (done) {
+                q.clear(); newq.clear();
+                return getSeqs(endWord,beginWord,words);
+            }
+            q = move(newq);
+        }
+        return {};
+    }
+};
+
+// self imple
+// indep implemented, not recorded locally
+class Solution {
+private:
+    unordered_map<string, vector<string>> cache;
+
+public:
+    // all word paths converging at t
+    vector<vector<string>> construct(string t, string start) {
+        vector<vector<string>> res;
+        if (!t.compare(start)) return {{start}};
+        for (string s : cache.at(t)) {
+            vector<vector<string>> cur = construct(s, start);
+            for (vector<string> prev : cur) {
+                prev.push_back(t);
+                res.push_back(prev);
+            }
+        }
+        return res;
+    }
+    
+    vector<vector<string>> findLadders(string beginWord, string endWord, vector<string>& wordList) {
+        unordered_set<string> words(wordList.begin(), wordList.end());
+        if (words.find(endWord) == words.end()) return {};
+        
+        int reach = 0;
+        unordered_set<string> col{beginWord}; words.erase(beginWord);
+        while (!col.empty() && !reach) {
+            unordered_set<string> ncol;
+            for (string s : col) {
+                string cp = s;
+                for (char &c : cp) {
+                    char orig = c;
+                    for (c = 'a'; c <= 'z'; c++) {
+                        if (c == orig || words.find(cp) == words.end()) continue;
+                        if (!cp.compare(endWord)) reach = 1;
+                        if (ncol.find(cp) == ncol.end()) ncol.insert(cp);
+                        cache[cp].push_back(s);
+                    }
+                    c = orig;
+                }
+            }
+            for (string s : ncol) words.erase(s);
+            col = ncol;
+        }
+        return reach ? construct(endWord, beginWord) : {};
+    }
+};
+
+
+// (2) indep BFS bidirectional not fully implemented
+class Solution {
+private:
+    unordered_map<string, vector<vector<string>>> cache;
+
+public:
+    void update(string tbi, string site) {
+        vector<vector<string>> res;
+        if(cache.find(tbi) != cache.end()) res = cache.at(tbi);
+        for (vector<string> prev : cache[site]) {
+            vector<string> cp = prev; cp.push_back(tbi); res.push_back(cp);
+        }
+        cache[tbi] = res;
+    }
+    
+    int bfs(unordered_set<string> &col, unordered_set<string> &col2, int reach) {
+        unordered_set<string> ncol;
+        for (string cur : col) {
+            vector<char> cs(cur.begin(), cur.end());
+            for (int c = 0; c < n; c++) {
+                char orig = cs[c];
+                for (int i = 0; i < 26; i++) {
+                    if (letr[i] == orig) continue;
+                    cs[c] = letr[i]; string ps(cs.begin(), cs.end());
+                    if (words.find(ps) == words.end()) continue;
+                    if (col2.find(ps) != col2.end()) reach = 1;
+                    update(ps, cur); // update word path
+                    if (ncol.find(ps) == ncol.end()) ncol.insert(ps);
+                }
+                cs[c] = orig;
+            }
+        }
+        col = ncol;
+        return reach;
+    }
+    
+    vector<vector<string>> findLadders(string beginWord, string endWord, vector<string>& wordList) {
+        unordered_set<string> words(wordList.begin(), wordList.end());
+        vector<vector<string>> ans;
+        if (words.find(endWord) == words.end()) return ans;
+        
+        vector<string> path {beginWord};
+        vector<vector<string>> init {path};
+        cache[beginWord] = init;
+        
+        string letrs = "abcdefghijklmnopqrstuvwxyz";
+        vector<char> letr(letrs.begin(), letrs.end());
+        words.erase(beginWord); words.erase(endWord);
+        
+        int n = beginWord.size(), reach = 0;
+        unordered_set<string> col1, col2;
+        col1.insert(beginWord); col2.insert(endWord);
+        // BFS
+        while (!col1.empty() && !col2.empty() && !reach) {
+            reach = bfs(col1, col2, 0);
+            if (reach) ;
+            for (string s : col2) words.erase(s);
+            
+            reach = bfs(col2, col1, 0);
+            if (reach) ;
+            for (string s : col1) words.erase(s);
+        }
+        return reach ? cache.at(endWord) : ans;
+    }
+}; 
+
+// (2) indep, BFS(unidirection)
+class Solution {
+private:
+    unordered_map<string, vector<vector<string>>> cache;
+
+public:
+    void update(string tbi, string site) {
+        vector<vector<string>> res;
+        if(cache.find(tbi) != cache.end()) res = cache.at(tbi);
+        for (vector<string> prev : cache[site]) {
+            vector<string> cp = prev; cp.push_back(tbi); res.push_back(cp);
+        }
+        cache[tbi] = res;
+    }
+    
+    vector<vector<string>> findLadders(string beginWord, string endWord, vector<string>& wordList) {
+        unordered_set<string> words(wordList.begin(), wordList.end());
+        vector<vector<string>> ans;
+        if (words.find(endWord) == words.end()) return ans;
+        cache[beginWord] = {{beginWord}};
+        
+        string letrs = "abcdefghijklmnopqrstuvwxyz";
+        vector<char> letr(letrs.begin(), letrs.end());
+        if (words.find(beginWord) != words.end()) words.erase(beginWord);
+        
+        int n = beginWord.size(), ct = 0, reach = 0;
+        unordered_set<string> collect;
+        collect.insert(beginWord);
+        // BFS
+        while (!collect.empty() && !reach) {
+            unordered_set<string> ncol;
+            while (!collect.empty()) {
+                auto itr = collect.begin(); string cur = *itr;
+                collect.erase(collect.begin());
+                vector<char> cs(cur.begin(), cur.end());
+                for (int c = 0; c < n; c++) {
+                    char orig = cs[c];
+                    for (int i = 0; i < 26; i++) {
+                        if (letr[i] == orig) continue;
+                        cs[c] = letr[i]; string ps(cs.begin(), cs.end());
+                        if (words.find(ps) == words.end()) continue;
+                        if (!ps.compare(endWord)) reach = 1;
+                        update(ps, cur); // update word path
+                        if (ncol.find(ps) == ncol.end()) ncol.insert(ps);
+                    }
+                    cs[c] = orig;
+                }
+            }
+            for (string s : ncol) words.erase(s);
+            collect = ncol;
+        }
+        return reach ? cache.at(endWord) : ans;
+    }
+};
+
+// java
+class Solution {
+    
+    HashMap<String, ArrayList<List<String>>> cache = new HashMap<String, ArrayList<List<String>>>();
+    
+    private List<String> clone(List<String> prev) {
+        List<String> res = new ArrayList<String>();
+        for (int i = 0; i < prev.size(); i++) res.add(prev.get(i));
+        return res;
+    }
+    
+    private void add(String a, String b) {
+        ArrayList<List<String>> res = cache.containsKey(b) ? cache.get(b) : new ArrayList<List<String>>();
+        for (List<String> prev : cache.get(a)) { List<String> cp =  clone(prev); cp.add(b); res.add(cp); }
+        cache.put(b, res);
+    }
+    
+    public List<List<String>> findLadders(String beginWord, String endWord, List<String> wordList) {
+        List<List<String>> ans = new ArrayList<List<String>>();
+        HashSet<String> words = new HashSet<String>(wordList);
+        if (!words.contains(endWord)) return ans;
+        
+        ArrayList<List<String>> ini = new ArrayList<List<String>>();
+        ini.add(new ArrayList<String>(Arrays.asList(beginWord)));
+        cache.put(beginWord, ini);
+        
+        char[] letr = "abcdefghijklmnopqrstuvwxyz".toCharArray();
+        if (words.contains(beginWord)) words.remove(beginWord);
+        HashSet<String> collect = new HashSet<String>(), ncol;
+        collect.add(beginWord);
+        // BFS
+        while (!words.isEmpty()) {
+            ncol = new HashSet<String>();
+            for (String s : collect) {
+                char[] cs = s.toCharArray();
+                for (int c = 0; c < beginWord.length(); c++) {
+                    char orig = cs[c];
+                    for (int i = 0; i < 26; i++) {
+                        if (letr[i] == orig) continue;
+                        cs[c] = letr[i]; String ps = new String(cs);
+                        if (!words.contains(ps)) continue;
+                        add(s, ps);
+                        if (!ncol.contains(ps)) ncol.add(ps);
+                    }
+                    cs[c] = orig;
+                }
+            }
+            if (ncol.isEmpty()) return ans;
+            if (cache.containsKey(endWord)) return cache.get(endWord);
+            for (String tbd : ncol) words.remove(tbd);
+            collect = ncol;
+        }
+        return ans;
+    }
+}
+
+// (1)_fail
+class Solution {
+    
+    ArrayList<Integer>[] difs, id;
+    List<String> wordList;
+    
+    private int charDif(int a, int b) {
+        int dif = 0;
+        for (int j = 0; j < 26; j++)
+            dif += words[a][j] - words[b][j] > 0 ? words[a][j] - words[b][j] : 0;
+        return dif;
+    }
+    
+    // 
+    private ArrayList<List<String>> construct(int wid) {
+        ArrayList<List<String>> res = new ArrayList<List<String>>();
+        for (Integer pid : id[wid]) {
+            ArrayList<List<String>> prevall = construct(pid);
+            for (LinkedList<String> wp : prevall) {
+                wp.addLast(wordList.get(pid));
+                res.add(wp);
+            }
+        }
+        return res;
+    }
+    
+    public List<List<String>> findLadders(String beginWord, String endWord, List<String> wordList) {
+        if (!wordList.contains(endWord)) return new ArrayList<List<String>>();
+        // convert all words into int array
+        wordList.add(beginWord); wordList.add(endWord);
+        int n = wordList.size(); int[][] words = new int[n][26];
+        for (int i = 0; i < n; i++) for (char c : wordList.get(i)) words[i][c -'a']++;
+        int m = charDif(words[n - 2], words[n - 1]);
+        
+        // classify words based on how many char they diff from bw
+        difs = new ArrayList[m]; id = new ArrayList[n];
+        for (int i = 0; i < m; i++) difs[i] = new ArrayList<Integer>();
+        for (int i = 0; i < n; i++) id[i] = new ArrayList<Integer>();
+        for (int i = 0; i < n - 2; i++) difs[charDif(n - 2, i)].add(i);
+        
+        // make up
+        for (Integer curid : difs[1]) id[curid].add(0);
+        for (int i = 1; i < m - 1; i++) {// i# char diff from bw
+            for (int nxwd : difs[i + 1]) {
+                for (int curwd : difs[i]) {
+                if (charDif(curwd, nxwd) == 1) id[nxwd].add(curwd);
+        for (int prevwd : difs[m - 2])  // (m-2)# char diff from bw
+            if (charDif(prevwd, n - 1) == 1) id[n - 1].add(prevwd);
+        return construct(n - 1);
+    }
+}

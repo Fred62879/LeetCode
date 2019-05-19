@@ -1,0 +1,215 @@
+## Specification
+There are two sorted arrays nums1 and nums2 of size m and n respectively. Find the
+ median of the two sorted arrays. The overall run time complexity should be O(log (m+n)). You may assume nums1 and nums2 cannot be both empty.
+
+Example 1:
+nums1 = [1, 3]
+nums2 = [2]
+The median is 2.0
+
+Example 2:
+nums1 = [1, 2]
+nums2 = [3, 4]
+The median is (2 + 3)/2 = 2.5
+
+
+
+## Ideas
+# (2) merge two array. Simply merge two arrays and pick immediately the median.
+
+
+# (1) binary search. 
+// others_Implem improved
+Here, we are not targeting to the median but instead try to divide A and B
+into two equal length array (A1+B1, A2+B2) that balance internally. Thus, even if
+in instance below where median is not in A, we can still divide A into two parts
+that satisfies the requirement. We will end up with four elements, each two mark
+the seam of A and B. We only need to compare somehow among these four to figure
+out the media.
+[1,2,3,4,5, 11,12,13,14,18]
+[6,7,8,9, 14,15,16,17]
+
+// indep
+We start by calculating the number of elements expected to exist before the ans.
+If 4 elements in total, then target_mid1 = 2, tmid2 = 1. Then we start checking
+nums1 for the presence of each of the two tmid (if tmid1 found, then return without
+checking tmid2).
+
+The checking is done using binary search. We maintain the lo and hi boundaries
+within which mid is expected to appear. Each time, we calculate mid of st and ed,
+and check if the middle element in nums1 fit in the position in nums2 such that
+total middle is realized. If mid is larger than surrounding elements in nums2, then
+update ed = mid-2, vice versa.
+
+If neither these two occur in nums1, we check nums2 in the same way. Note it is 
+straightforward when odd number in total. If even number of elements, then as we
+obtain the target satisfy a specific amount of elements less than it, we derive
+the other directly ("cal_if(noCheck == 1)").
+
+
+
+## Code
+# (2) merge_equally fast (do not know why)
+// others
+class Solution {
+    
+    public double findMedianSortedArrays(int[] a, int[] b) {
+        int[] temp = new int[a.length + b.length];
+        int totalLenth = temp.length, k = 0, i = 0, j = 0, mid = (totalLenth-1)/2;
+        while (k != totalLenth) {
+	      // we can also parenthesis the two following "||"
+	      // tested that this part can be filled easier, simply one
+	      // by one comparison
+	      if(i == a.length || j != b.length && a[i] > b[j]) {
+                temp[k++] = b[j++];
+                while (j <= b.length-1) {
+                    if (i == a.length || b[j] <= a[i]) temp[k++] = b[j++];
+                    else { temp[k++] = a[i++]; break; }
+                }
+            } else temp[k++] = a[i++];
+        }
+        if (totalLenth % 2 == 1) return (double) temp[mid];
+	return (double) (temp[mid] + temp[mid+1])/2;
+    }
+}
+
+
+# (1) Binary_search
+// others
+class Solution {
+    public double findMedianSortedArrays(int[] A, int[] B) {
+        int m = A.length, n = B.length;
+        if (m > n) { // to ensure m<=n
+            int[] temp = A; A = B; B = temp;
+            int tmp = m; m = n; n = tmp;
+        }
+        int iMin = 0, iMax = m, halfLen = (m + n + 1) / 2;
+        while (iMin <= iMax) {
+            int i = (iMin + iMax) / 2, j = halfLen - i;
+            if (i < iMax && B[j-1] > A[i])
+                iMin = i + 1;   // i is too small
+            else if (i > iMin && A[i-1] > B[j])
+                iMax = i - 1;   // i is too big
+            else {              // i is perfect
+                int maxLeft = 0;
+                if (i == 0) maxLeft = B[j-1];
+                else if (j == 0) maxLeft = A[i-1];
+                else maxLeft = Math.max(A[i-1], B[j-1]);
+                if ( (m + n) % 2 == 1 ) return maxLeft;
+
+                int minRight = 0;
+                if (i == m) minRight = B[j];
+                else if (j == n) minRight = A[i];
+                else minRight = Math.min(B[j], A[i]);
+
+                return (maxLeft + minRight) / 2.0;
+            }
+        }
+        return 0.0;
+    }
+}
+
+// indep
+class Solution {
+    
+    int tmid1, tmid2 = -1;
+    boolean odd;
+    
+    // check if a fits in pos i of t (0-fit; 1-larger; -1-smaller)
+    // fit means a >= t[0:i-1] && a <= t[i:]
+    private int fit(int a, int i, int[] t) {
+        if (i > t.length) return -1;
+        if (i == t.length) return a >= t[i - 1] ? 0 : -1;
+        if (i == 0) return a <= t[0] ? 0 : 1;
+        if (a >= t[i - 1] && a <= t[i]) return 0;
+        return a > t[i] ? 1 : -1;
+    }
+    
+    // check if nums contains element >= tmid# elements. res[0] = -1 fail
+    // res[0] = 1 success. res[1], id of that element in nums; res[2], id of correspond in numsAss
+    private int[] solve(int st, int ed, int tmid, int[] nums, int[] numsAss) {
+        if (st > ed || st >= nums.length || ed < 0) return new int[]{-1};
+        int mid = (st + ed)/2, postu = nums[mid], pos2 = tmid - mid;
+        int f = fit(postu, pos2, numsAss); // check feasibility of mid
+        if (f == 0) return new int[]{1, mid, pos2};
+        if (f == 1) return solve(st, mid-1, tmid, nums, numsAss);
+        st = mid + 1; mid = (st + ed)/2; // current mid < real mid
+        while (mid > tmid) {ed = mid - 1; mid = (st + ed)/2; }
+        return solve(st, ed, tmid, nums, numsAss);
+    }
+    
+    // find median from nums
+    // check two times given !odd && first check failed
+    private double cal(int tmid, int[] nums, int[] numsAss) {
+        int[] a = solve(0, nums.length, tmid, nums, numsAss);
+        if (a[0] == 1) { // current check succeeded
+            if (odd) return nums[a[1]];
+            double adj; int id = a[1], assid = a[2];
+            if (tmid == tmid1) { // first check
+                if (id == 0) adj = numsAss[assid - 1];
+                else if (assid == 0) adj = nums[id - 1];
+                else adj = Math.max(nums[id - 1], numsAss[assid - 1]);
+            } else {
+                if (id+1 >= nums.length) adj = numsAss[assid];
+                else adj = Math.min(nums[id + 1], numsAss[assid]);
+            }
+            return (adj + nums[id]) / 2;
+        } // current check failed
+        if (odd || tmid == tmid2) return -1;
+        return cal(tmid2, nums, numsAss);
+    }
+    
+    private double direct(int[] nums) {
+        int n = nums.length, odd = n % 2, mid = n / 2;
+        if (odd == 1) return nums[mid];
+        else return ((double) nums[mid] + (double) nums[mid - 1]) / 2;
+    }
+    
+    public double findMedianSortedArrays(int[] nums1, int[] nums2) {
+        int l1 = nums1.length, l2 = nums2.length;
+        if (l1 == 0) return direct(nums2);
+        if (l2 == 0) return direct(nums1);
+        tmid1 = (l1 + l2)/2; tmid2 = tmid1 - 1; odd = (l1 + l2) % 2 == 1;
+        double first = cal(tmid1, nums1, nums2);
+        if (first != -1) return first;
+        return cal(tmid1, nums2, nums1);
+    }
+}
+
+
+## Testcases
+[1,2,3,7,9]
+[4,5,6,8,12,14,17]
+
+[1,2,5,9,14,20]
+[3,7,16,31]
+
+[1,3]
+[2]
+
+[1]
+[2,3,4,5]
+
+[1,2]
+[3,4]
+
+[1,2,3,4,5,13,14,15]
+[7,9,10,12,16,17]
+
+[1,2,3,7,9]
+[]
+
+[1,2,3,4,5,6,7,8,9,10,11]
+[12,13,14]
+
+[1,2]
+[1,1]
+
+[1,2,4,5,7,10]
+[1,1,2,3,3,4,5]
+
+[1,1,1,1,1,1]
+[1,1,1,2,2]
+
+[1,2,4]
+[3]

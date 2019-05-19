@@ -1,0 +1,42 @@
+class Solution {
+private:
+    unordered_map<string, vector<vector<string>>> cache;
+
+public:
+    void update(string tbi, string site) {
+        vector<vector<string>> res;
+        if(cache.find(tbi) != cache.end()) res = cache.at(tbi);
+        for (vector<string> prev : cache[site]) {
+            vector<string> cp = prev; cp.push_back(tbi); res.push_back(cp);
+        }
+        cache[tbi] = res;
+    }
+    
+    vector<vector<string>> findLadders(string beginWord, string endWord, vector<string>& wordList) {
+        unordered_set<string> words(wordList.begin(), wordList.end());
+        if (words.find(endWord) == words.end()) return {{}};
+        cache[beginWord] = {{beginWord}};
+        
+        int reach = 0;
+        vector<string> col{beginWord}; words.erase(beginWord);
+        while (!collect.empty() && !reach) {
+            vector<string> ncol;
+            while (!col.empty()) {
+                string cur = col.front(); col.pop(), cp = cur;
+                for (char &c : cp) {
+                    char orig = c;
+                    for (c = 'a'; c <= 'z'; c++) {
+                        if (c == orig || words.find(cp) == words.end()) continue;
+                        if (!ps.compare(endWord)) reach = 1;
+                        update(ps, cur); // update word path
+                        if (ncol.find(ps) == ncol.end()) ncol.insert(ps);
+                    }
+                    c = orig;
+                }
+            }
+            for (string s : ncol) words.erase(s);
+            collect = ncol;
+        }
+        return reach ? cache.at(endWord) : ans;
+    }
+};

@@ -1,0 +1,154 @@
+## Specification
+Given an integer array, return the k-th smallest distance among all the pairs. The distance of a pair (A, B) is defined as the absolute difference between A and B.
+
+Example 1:
+Input:
+nums = [1,3,1]
+k = 1
+Output: 0 
+Explanation:
+Here are all the pairs:
+(1,3) -> 2
+(1,1) -> 0
+(3,1) -> 2
+Then the 1st smallest distance pair is (1,1), and its distance is 0.
+
+Note:
+2 <= len(nums) <= 10000.
+0 <= nums[i] < 1000000.
+1 <= k <= len(nums) * (len(nums) - 1) / 2.
+
+ 
+
+## Ideas
+# (4) It is found that the when performing large scale bs, the number of pairs <= a certain value may entails zero pairs of distance as absolutely that value. So the bs (solve) is modified to emulate the normal bs to return -(#+1) if this does occur. Then to squeeze, the following two Exs can be used. 
+
+dist 0  1 2 3 4  5   6  7   8  9 10 11 12  13 14
+num  0 -1 4 6 8 11 -12 15 -16 17 18 19 20 -21 22 
+
+dist 0  1 2  3 4 5  6  7  8   9 10  11  12 13 14
+num  2 -3 4 -5 5 8 -9 -9 12 -13 15 -16 -16 19 22
+
+
+# (3) 
+
+# (2) Try to find number of pairs with distance <= k. Decrementing k from max (nums[n-1], nums[0]), to 0. 3rd testcase cannot handle
+
+# (1) Indep. Fail
+
+
+
+## Code
+// (4)_2nd visit_Apr 4 2019_derived
+class Solution {
+    
+    // # of pairs with distance <= dist (if none equal dist, then return minus~ + 1)
+    private int solve(int dist, int[] nums) {
+        int ans = 0, allnone = 1;
+        for (int i = 0; i < nums.length - 1; i++) {
+            int loc = Arrays.binarySearch(nums, i + 1, nums.length, dist + nums[i]);
+            if (loc > 0) { 
+                while (loc < nums.length && nums[loc] == dist + nums[i]) loc++;
+                allnone = 0;
+            } else if (loc < 0) loc = -(loc + 1); 
+            ans += loc - i - 1;
+        }
+        return allnone == 1 ? -(ans + 1) : ans;
+    }
+    
+    public int smallestDistancePair(int[] nums, int k) {
+        Arrays.sort(nums);
+        int n = nums.length, m = nums[n - 1] - nums[0];
+        int lo = 0, hi = m;
+        // if (true) return solve(1, nums);
+        while (lo <= hi) {
+            int mid = (lo + hi) / 2, numle = solve(mid, nums);
+            // if (true) return numle;
+            if (numle < 0) {
+                numle = -(numle + 1);
+                if (numle < k) lo = mid + 1;
+                else hi = mid - 1;
+            } else {
+                if (numle < k) lo = mid + 1;
+                else if (numle > k) hi = mid;
+                else return mid;
+            }
+            if (lo == hi) return lo;
+        }
+        return 0;
+    }
+}
+
+// (3)_others
+class Solution {
+    public int smallestDistancePair(int[] nums, int k) {
+        Arrays.sort(nums);//sort input from small to large
+        int n = nums.length, low = 0, high = nums[n-1]-nums[0];
+        while (low < high) {
+            int mid = (low + high)/2, cnt = 0;
+            for (int i = 0, j = 0; i < n; i++) {//2 pointers from begin and end
+                while (j < n && nums[j]-nums[i] <= mid) 
+                    j++;
+                cnt += j-i-1;
+            }
+            if (cnt < k) 
+                low = mid+1;
+            else
+                high = mid;
+        }
+        return low;
+    }
+}
+
+// (2)_update_fail
+class Solution {
+    public int smallestDistancePair(int[] nums, int k) {
+        Arrays.sort(nums);
+        int n = nums.length, count = 0, max = nums[n-1] - nums[0], min = nums[0], cur = n*(n-1)/2;
+        for (int i = max; i >= 0; i--, cur = n*(n-1)/2) {
+            for (int j = n - 1; j > 0 && nums[j] - i >= min; j--) {
+                int t = Arrays.binarySearch(nums, 0, j - 1, nums[j] - i);
+                if (t < 0) t = -(t + 1);
+                cur -= t;
+            }
+            if (cur == k) return i;
+            if (cur < k) return i + 1;
+        }
+        if (cur < k) return 1;
+        return 0;
+    }
+}
+
+// (1)_derived_binarySearch_fail
+class Solution {
+    public int smallestDistancePair(int[] nums, int k) {
+        Arrays.sort(nums);
+        int n = nums.length, count = 0, max = nums[n-1] - nums[0];
+        for (int i = 0; i < max; i++) {
+            for (int j = 0; j < n - 1; j++) {
+                if (Arrays.binarySearch(nums, j+1, n, nums[j]+i) >= 0) count++;
+                if (count >= k) return i;
+            }
+        }
+        return 0;
+    }
+}
+
+
+
+
+## Testcases
+[1,6,1]
+3
+
+[9,10,7,10,6,1,5,4,9,8]
+18
+
+[62,100,4]
+2
+
+[10,6,2,10,5,4,0,1,5,2,5,5,5,0,4,9,8,6,7,9,1,10,4,8,6,3,6,2,1,7,5,0,2,6,10,10,0,3,9,0,8,3,5,9,4,4,5,2,2,7]
+444
+
+[1,3,5,8,10,12,15]
+9

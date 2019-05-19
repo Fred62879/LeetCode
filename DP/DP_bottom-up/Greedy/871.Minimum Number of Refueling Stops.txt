@@ -1,0 +1,84 @@
+## Specification
+Similar: LT55 (Array)
+A car travels from a starting position to a destination which is target miles east of the starting position. Along the way, there are gas stations.  Each station[i] represents a gas station that is station[i][0] miles east of the starting position, and has station[i][1] liters of gas. The car starts with an infinite tank of gas, which initially has startFuel liters of fuel in it.  It uses 1 liter of gas per 1 mile that it drives. When the car reaches a gas station, it may stop and refuel, transferring all the gas from the station into the car. What is the least number of refueling stops the car must make in order to reach its destination?  If it cannot reach the destination, return -1.
+
+Note that if the car reaches a gas station with 0 fuel left, the car can still refuel there. If the car reaches the destination with 0 fuel left, it is still considered to have arrived.
+
+Example 1:
+Input: target = 1, startFuel = 1, stations = []
+Output: 0
+Explanation: We can reach the target without refueling.
+
+Example 2:
+Input: target = 100, startFuel = 1, stations = [[10,100]]
+Output: -1
+Explanation: We can't reach the target (or even the first gas station).
+
+Example 3:
+Input: target = 100, startFuel = 10, stations = [[10,60],[20,30],[30,30],[60,40]]
+Output: 2
+Explanation: 
+We start with 10 liters of fuel. We drive to position 10, expending 10 liters of fuel.  We refuel from 0 liters to 60 liters of gas. Then, we drive from position 10 to position 60 (expending 50 liters of fuel), and refuel from 10 liters to 50 liters of gas.  We then drive to and reach the target. We made 2 refueling stops along the way, so we return 2.
+
+Note:
+1 <= target, startFuel, stations[i][1] <= 10^9
+0 <= stations.length <= 500
+0 < stations[0][0] < stations[1][0] < ... < stations[stations.length-1][0] < target
+
+
+## Ideas
+# (6) Greedy_priority queue (improved from (3))
+
+# (5) Greedy
+Go forward until running out of gas. Then return to search for the station with largest gas storage (all previous stations apart from those already fueled should be checked). Suppose that stations are descending in their gas. Then, we simply need to go thru each station, add up accu gas until the accu >= target. Thus, if there is a need to refuel, then we are only searching for the stations with largest gas and of course, reachable stations with largest gas.
+
+# (4) Greedy_naive
+https://leetcode.com/problems/minimum-number-of-refueling-stops/discuss/240692/Novice-Java-solution-but-still-beats-60
+
+# (3) DP_bottom-up
+
+# (2) DP_top-down
+
+# (1) BFS_TLE
+
+
+## Code
+# (6) Greedy_Priority queue_derived (same idea as (4))
+class Solution {
+public:
+    int minRefuelStops(int target, int startFuel, vector<vector<int>>& stations) {
+        int n = stations.size(), ans = 0;
+        priority_queue<int> pq;
+        for (int i = 0, mxf = startFuel; i <= n; i++) {
+            if (mxf >= target) return ans;
+            if (i < n && stations[i][0] <= mxf) { pq.push(stations[i][1]); continue; }
+            if (pq.empty()) return -1;
+            mxf += pq.top(); pq.pop(); i--; ans++;
+        }
+        return ans;
+    }
+};
+
+# (5) Greedy_derived
+class Solution {
+public:
+    int minRefuelStops(int target, int startFuel, vector<vector<int>>& stations) {
+        int n = stations.size(), ans = 0;
+        unordered_set<int> visited;
+        for (int i = 0, lo = 0, mxFuel = startFuel; i <= n; i++) {
+            if (mxFuel >= target) return ans;
+            if (i < n && stations[i][0] <= mxFuel) continue;
+            int curmxf = -1, xid = i - 1;
+            for (int j = i - 1; j >= 0; j--) {
+                if (curmxf >= stations[j][1] || visited.find(j) != visited.end()) continue;
+                curmxf = stations[j][1]; xid = j;
+            }
+            if (curmxf == -1) return -1; // all reachable station fueled
+            visited.insert(xid); mxFuel += curmxf; ans++; i--;
+            //if (i < n && mxFuel < stations[i][0]) return -1; // still cannot reach closest
+        }
+        return ans;
+    }
+};
+
+# (4) Greedy_naive_others

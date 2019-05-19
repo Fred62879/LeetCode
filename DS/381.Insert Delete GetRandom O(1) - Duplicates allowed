@@ -1,0 +1,134 @@
+## Specification
+From Array
+
+
+## Testcases
+["RandomizedCollection","insert","insert","remove","getRandom"]
+[[],[1],[1],[1],[]]
+
+["RandomizedCollection","insert","insert","insert","getRandom","remove","getRandom"]
+[[],[1],[1],[2],[],[1],[]]
+
+
+## Ideas
+To satisfy getRandom, we maintain an arraylist to record all current elements tracked.
+And as we generate a random number, the correspond element will be picked up as a
+random element.
+
+Corresponding to this basic design, we need to maintain a hashmap to record the all
+locations of each element in the arraylist. 
+
+
+## Code
+// allegedly faster without using cache.remove
+// actually not
+class RandomizedCollection {
+
+    HashMap<Integer, LinkedList<Integer>> pos;
+    List<Integer> cache;
+    int count;
+    
+    /** Initialize your data structure here. */
+    public RandomizedCollection() {
+        pos = new HashMap<Integer, LinkedList<Integer>>();
+        cache = new ArrayList<Integer>();
+        count = 0;
+    }
+    
+    /** Inserts a value to the collection. Returns true if the collection did not already contain the specified element. */
+    public boolean insert(int val) {
+        if (cache.size() > count) cache.set(count, val);
+        else cache.add(val);
+        int a = 0;
+        LinkedList<Integer> cur;
+        if (!pos.containsKey(val)) cur = new LinkedList<Integer>();
+        else { cur = pos.get(val); a = 1; }
+        cur.addLast(count++);
+        pos.put(val, cur);
+        return a == 0;
+    }
+    
+    /** Removes a value from the collection. Returns true if the collection contained the specified element. */
+    public boolean remove(int val) {
+        if (!pos.containsKey(val) || pos.get(val).size() == 0) return false;
+        LinkedList<Integer> tpos = pos.get(val); // id of all val in cache
+        int rm = tpos.removeLast(); // remove the last occurrence of val from cache
+        
+        if (count - 1 != rm) {
+            int lastVal = cache.get(count-1); // val of last element of cache
+            cache.set(rm, lastVal);
+            // update lastVal id
+            LinkedList<Integer> toBeUpdate = pos.get(lastVal); // id of lastVal in cache
+            toBeUpdate.removeFirstOccurrence(count - 1); toBeUpdate.addFirst(rm);
+            pos.replace(lastVal, toBeUpdate);
+        }
+        count--;
+        return true;
+    }
+    
+    /** Get a random element from the collection. */
+    public int getRandom() {
+        Random rand = new Random();
+        int t = rand.nextInt(count);
+        return cache.get(t);
+    }
+}
+
+// indep
+class RandomizedCollection {
+
+    HashMap<Integer, LinkedList<Integer>> pos;
+    List<Integer> cache;
+    int count;
+    
+    /** Initialize your data structure here. */
+    public RandomizedCollection() {
+        pos = new HashMap<Integer, LinkedList<Integer>>();
+        cache = new ArrayList<Integer>();
+        count = 0;
+    }
+    
+    /** Inserts a value to the collection. Returns true if the collection did not already contain the specified element. */
+    public boolean insert(int val) {
+        cache.add(val); int a = 0;
+        LinkedList<Integer> cur;
+        if (!pos.containsKey(val)) cur = new LinkedList<Integer>();
+        else { cur = pos.get(val); a = 1; }
+        cur.addLast(count++);
+        pos.put(val, cur);
+        return a == 0;
+    }
+    
+    /** Removes a value from the collection. Returns true if the collection contained the specified element. */
+    public boolean remove(int val) {
+        if (!pos.containsKey(val) || pos.get(val).size() == 0) return false;
+        LinkedList<Integer> tpos = pos.get(val); // id of all val in cache
+        int rm = tpos.removeLast(); // remove the last occurrence of val from cache
+        
+        if (count - 1 != rm) {
+            int lastVal = cache.get(count-1); // val of last element of cache
+            cache.set(rm, lastVal);
+            // update lastVal id
+            LinkedList<Integer> toBeUpdate = pos.get(lastVal); // id of all lastVal in cache
+            toBeUpdate.removeFirstOccurrence(count - 1); toBeUpdate.addFirst(rm);
+            pos.replace(lastVal, toBeUpdate);
+        }
+        cache.remove(--count);
+        return true;
+    }
+    
+    /** Get a random element from the collection. */
+    public int getRandom() {
+        Random rand = new Random();
+        int t = rand.nextInt(count);
+        return cache.get(t);
+    }
+}
+
+/**
+ * Your RandomizedCollection object will be instantiated and called as such:
+ * RandomizedCollection obj = new RandomizedCollection();
+ * boolean param_1 = obj.insert(val);
+ * boolean param_2 = obj.remove(val);
+ * int param_3 = obj.getRandom();
+ */

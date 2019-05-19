@@ -1,0 +1,136 @@
+## Specification
+We are given N different types of stickers. Each sticker has a lowercase English word on it.
+You would like to spell out the given target string by cutting individual letters from your
+collection of stickers and rearranging them. You can use each sticker more than once if you
+want, and you have infinite quantities of each sticker. What is the minimum number of 
+stickers that you need to spell out the target? If the task is impossible, return -1.
+
+Example 1:
+Input:
+["with", "example", "science"], "thehat"
+Output:
+3
+Explanation:
+We can use 2 "with" stickers, and 1 "example" sticker.
+After cutting and rearrange the letters of those stickers, we can form the target "thehat".
+Also, this is the minimum number of stickers necessary to form the target string.
+
+Example 2:
+Input:
+["notice", "possible"], "basicbasic"
+Output:
+-1
+Explanation:
+We can't form the target "basicbasic" from cutting letters from the given stickers.
+
+Note:
+stickers has length in the range [1, 50].
+stickers consists of lowercase English words (without apostrophes).
+target has length in the range [1, 15], and consists of lowercase English letters.
+In all test cases, all words were chosen randomly from the 1000 most common US English words, 
+and the target was chosen as a concatenation of two random words.
+The time limit may be more challenging than usual. It is expected that a 50 sticker test case 
+can be solved within 35ms on average.
+
+
+## Testcases
+["and","pound","force","human","fair","back","sign","course","sight","world","close","saw","best","fill","late","silent","open","noon","seat","cell","take","between","it","hundred","hat","until","either","play","triangle","stay","separate","season","tool","direct","part","student","path","ear","grow","ago","main","was","rule","element","thing","place","common","led","support","mean"]
+"quietchord"
+
+["heavy","claim","seven","set","had","it","dead","jump","design","question","sugar","dress","any","special","ground","huge","use","busy","prove","there","lone","window","trip","also","hot","choose","tie","several","be","that","corn","after","excite","insect","cat","cook","glad","like","wont","gray","especially","level","when","cover","ocean","try","clean","property","root","wing"]
+"travelbell"
+
+["seven","set","design","question","sugar","dress","any","special","busy"]
+"travelbell"
+
+
+## Ideas
+(5) BFS
+(4) DP_mem
+
+(3) DP_bitwise_bottom_up
+Let n denotes the length of target, then an array (dp) of length m (2^n) is 
+maintained to correspond each of the m subsequences of target. Each id of this 
+array can be treated as of length n. e.g. [0] coins an empty subsequence while
+[2^n-1], consists of #n 1s, coins the intact target (one occurrence for each
+char of target). Each element of dp records the minimum # of stickers used to
+reach the subsequence coined by the id.
+
+Then we try to grow from subseq 0, iterating thru all stickers. For each sticker, 
+we aim to find the 1st occurrence of target char in current sticker that is not
+already presented in current subseq. e.g. let current subseq be 110..., which means
+current subseq lacks the 3rd char of target. If we can find this char from the 
+urrent sticker, we add it to current state which then becomes 111... This is a new 
+subseq its own seat in array will then be updated with the # of stickers used to
+reach it.
+
+Comments: unsigned int is like a magic as both INT_MAX and -1!
+There are three elegant ideas I appreciate most inside this solution:
+1) Applying bits to represent the "status", by the help of restriction where target's
+size is smaller than 15. And if i is a subproblem of j, then must i < j holds.
+2) The dp solution here is bottom-up, so at each turn we can check whether 
+dp[i] == -1 or not to skip useless status. I've written a similar solution after 
+reading dreamoon's codes, but my version is top-down, at each turn I need to check
+many unreachable sub-situations.
+3) Using unsigned_int, so that we can always say "dp[now] = min(dp[now], dp[i]+1)",
+because for uint, -1 is something like INT_MAX.
+
+
+(2) DFS_backtracking
+(1) DFS(Exhaust_search)_indep.
+
+
+## Code
+// (3) DP_bottom-up_bitwise
+class Solution {
+    public int minStickers(String[] stickers, String target) {
+        int N = target.length();
+        int[] dp = new int[1 << N];
+        for (int i = 1; i < 1 << N; i++) dp[i] = -1;
+
+        for (int state = 0; state < 1 << N; state++) {
+            if (dp[state] == -1) continue;
+            for (String sticker: stickers) {
+                int now = state;
+                for (char letter: sticker.toCharArray()) {
+                    for (int i = 0; i < N; i++) {
+                        if (((now >> i) & 1) == 1) continue;
+                        if (target.charAt(i) == letter) {
+                            now |= 1 << i;
+                            break;
+                        }
+                    }
+                }
+                if (dp[now] == -1 || dp[now] > dp[state] + 1) {
+                    dp[now] = dp[state] + 1;
+                }
+            }
+        }
+        return dp[(1 << N) - 1];
+    }
+}
+
+// cpp
+class Solution {
+public:
+    int minStickers(vector<string>& stickers, string target) {
+        int n = target.size(), m = 1 << n; // m = 2^n
+        vector<uint> dp(m, -1); dp[0] = 0;
+        for (int i = 0; i < m; i++) {  // for each subseq
+            if (dp[i] == -1) continue; // if cannot proliferate from 0
+            for (string& s : stickers) {
+                int sup = i; // current subseq
+                for (char c : s) {
+                    for (int r = 0; r < n; r++) {
+                        if (target[r] != c || ((sup >> r) & 1)) continue;
+                        sup |= 1 << r;
+                        break;
+                    }
+                }
+                dp[sup] = min(dp[sup], dp[i] + 1); 
+            }
+        }
+        return dp[m - 1];
+    }
+};
+

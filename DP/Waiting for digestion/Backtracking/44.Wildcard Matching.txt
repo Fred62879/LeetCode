@@ -1,0 +1,291 @@
+## Specification
+Given an input string (s) and a pattern (p), implement wildcard pattern matching with support for '?' and '*'.
+
+'?' Matches any single character.
+'*' Matches any sequence of characters (including the empty sequence).
+The matching should cover the entire input string (not partial).
+
+Note:
+s could be empty and contains only lowercase letters a-z.
+p could be empty and contains only lowercase letters a-z, and characters like ? or *.
+
+Example 1:
+Input:
+s = "aa"
+p = "a"
+Output: false
+Explanation: "a" does not match the entire string "aa".
+
+Example 2:
+Input:
+s = "aa"
+p = "*"
+Output: true
+Explanation: '*' matches any sequence.
+
+Example 3:
+Input:
+s = "cb"
+p = "?a"
+Output: false
+Explanation: '?' matches 'c', but the second letter is 'a', which does not match 'b'.
+
+Example 4:
+Input:
+s = "adceb"
+p = "*a*b"
+Output: true
+Explanation: The first '*' matches the empty sequence, while the second '*' matches the substring "dce".
+
+Example 5:
+Input:
+s = "acdcb"
+p = "a*c?b"
+Output: false
+
+
+## Ideas
+# (3) Two-pointers
+e.g. *abc*aabc  --  abcaaabc. substring within two * are fixed once matched between p & s (abc is guaranteed to match once scanned) however, once mismatch occurred within such a block (*aab -- aaa) need to rescan, i.e.
+									    ^      ^
+return pattern pointer to the 1st letter following previous * in p (abc*aabc) and string pointer to one letter after the guraranteed last match in s (abcaaabc)                        ^
+                                           ^
+# (2/1) Greedy
+Classical greedy (bottom-up DP) setup.
+
+
+
+## Code
+# (3) Two-pointers
+// others
+class Solution {
+    public boolean isMatch(String s, String p) {
+        if (p.length() == 0) return s.length() == 0;
+        // guaranteed match in p; current char in p; id of char in s where * stop deletion; cur char in s
+        int fp = -1, cp = 0, fs = 0, cs = 0;
+        while (cs < s.length()) {
+            if (cp < p.length() && (p.charAt(cp) == '?' || p.charAt(cp) == s.charAt(cs))) {
+                cp++;
+                cs++;
+            }
+            else if (cp < p.length() && p.charAt(cp) == '*') {
+                cp++;
+                while (cp < p.length() && p.charAt(cp) == '*') cp++;
+                fp = cp - 1; // fp at last *
+                fs = cs;
+            }
+            // if pattern terminate before string termination, do the same as if mismatch occurred
+            else if (fp != -1) {
+                cp = fp + 1; // resume pattern pointer from the last *
+                cs = ++fs; // * eat one char in s
+            }
+            else return false;
+        }
+        // if pattern not terminated, left char in pattern must all be *
+        while(cp < p.length() && p.charAt(cp) == '*') cp++;
+        return cp == p.length();
+    }
+}
+
+
+# (2) Greedy_1D
+// derived
+class Solution {
+    public boolean isMatch(String s, String p) {
+        int st = -1;
+        if (p.length() == 0) return s.length() == 0;
+
+	// pre-check
+        while (st < p.length() - 1 && p.charAt(++st) != '*')
+            if (st == s.length() || (p.charAt(st) != s.charAt(st) && p.charAt(st) != '?')) return false;
+        if (st >= 0 && p.charAt(st) != '*')
+            return !(p.length() != s.length() || (s.charAt(st) != p.charAt(st) && p.charAt(st) != '?'));
+
+	// check all
+        boolean[] res = new boolean[p.length() - st];
+        for (int i = st; i < 0 || i < p.length() && p.charAt(i) == '*'; i++) res[i - st] = true;
+        for (int i = st; i < s.length(); i++) {
+            boolean old = true, nw; // old: res[i - 1][j - 1]
+            for (int j = st + 1; j < p.length(); j++) {
+                if (p.charAt(j) == '?' || p.charAt(j) == s.charAt(i)) nw = old;
+                else if (p.charAt(j) == '*')  nw = (res[j - 1 - st] || res[j - st] || old);
+                else nw = false;
+                old = res[j - st];
+                res[j - st] = nw;
+            }
+        }
+        return res[res.length - 1];
+    }
+}
+
+
+# (1) Greedy_2D
+// derived_2nd_visit_May-17-2019
+class Solution {
+public:
+    bool isMatch(string s, string p) {
+        int m = s.size(), n = p.size(), st = 0;
+        vector<vector<int>> dp(n + 1, vector<int>(m + 1, 0));
+        dp[0][0] = 1;
+        while (p[st] == '*') dp[++st][0] = 1;
+        for (int i = 1; i <= n; i++) {
+            for (int j = 1; j <= m; j++) {
+                if (p[i-1] == '?' || p[i-1] == s[j-1]) dp[i][j] = dp[i-1][j-1];
+                else if (p[i-1] == '*') dp[i][j] = dp[i-1][j-1] || dp[i-1][j] || dp[i][j-1];
+            }
+        }
+        return dp[n][m];
+    }
+};
+
+
+## Testcases
+"ho"
+"**ho"
+
+"aa"
+"a"
+
+""
+""
+
+"aa"
+"aa"
+
+"ab"
+"?*"
+
+"a"
+""
+
+"mississippi"
+"m??*ss*?i*pi"
+
+"aabcdedefghijkl"
+"aabc*"
+
+"a"
+"a*"
+
+"b"
+"?*?"
+
+"c"
+"*?*"
+
+"aaaa"
+"***a"
+
+"ab"
+"*a"
+
+"acdcb"
+"a***c**?b"
+
+"acdcb"
+"a***c**?b*****"
+
+
+
+## Failed code
+// TLE
+class Solution {
+    public boolean isMatch(String s, String p) {
+        ArrayList<Integer> state = new ArrayList<Integer>();
+        state.add(0);
+        for (int i = 0; i < p.length(); i++) {
+            if (state.isEmpty()) break;
+            char c = p.charAt(i);
+            ArrayList<Integer> newst = new ArrayList<Integer>();
+            for (int nx : state) {
+                if (c == '*') {
+                    while (i < p.length() - 1 && p.charAt(i + 1) == '*') i++;
+                    for (int j = nx; j <= s.length(); j++) newst.add(j);
+                }
+                else if (nx >= s.length()) continue;
+                else if (c == '?' || s.charAt(nx) == c) newst.add(nx + 1);
+            }
+            state = newst;
+        }
+        for (int a : state) if (a == s.length()) return true;
+        return false;
+    }
+}
+
+// fail to imple
+class Solution {
+    public boolean isMatch(String s, String p) {
+        if (p.length() == 0) return s.length() == 0;
+        char[] pattern = p.toCharArray(), text = s.toCharArray();
+        // idx of last * in first serier of * / next state in DFA / idx of 1st * in the most recent series of *
+        int st = 0, next = 0, x = 0; 
+        while (st < p.length() && pattern[st] != '*') { // now st is idx of 1st *
+            // string shorter than portion of pattern before 1st * OR any mismatch chars between s & p
+            if (st == s.length() || (pattern[st] != text[st] && pattern[st] != '?')) return false;
+            st++;
+        }
+        if (st == p.length()) return p.length() == s.length(); // no * in pattern
+        while (st < p.length() - 1 && pattern[st + 1] == '*') st++;
+        if (st == p.length() - 1) return true; // all *
+        
+        int[][] ref = new int[26][p.length() - st];
+        for (int i = 0; i < p.length() - st; i++) { // column OR state i
+            if (pattern[i + st] == '*') {
+                x = i;
+                for (int j = 0; j < 26; j++) ref[j][i] = i;
+                while (st + i < p.length() && pattern[st + i] == '*') i++; // i is the first letter following *
+                if (i < p.length() - st) {
+                    if (pattern[i + st] != '?') ref[pattern[i + st] - 'a'][x] = 1 + i;
+                    else for (int j = 0; j < 26; j++) ref[j][x] = 1 + i;
+                }
+                else for (int j = 0; j < 26; j++) ref[j][x] = p.length() - st;   // ends with *
+            } else if (pattern[i + st] == '?') for (int j = 0; j < 26; j++) ref[j][i] = i + 1;
+            else {
+                for (int j = 0; j < 26; j++) ref[j][i] = ref[j][x];
+                ref[pattern[i + st] - 'a'][i] = i + 1;
+            }
+        }
+        // check s using dfa constructed
+        for (int i = st; i < s.length(); i++) {
+            next = ref[text[i] - 'a'][next];
+            if (next == p.length() - st && i < s.length() - 1) return false;
+        }
+        while (next < p.length() - st && pattern[next + st] == '*') next++; // go to the last *
+        return next == p.length() - st; // if ends with * true
+    }
+}
+
+
+// no bypass
+class Solution {
+    public boolean isMatch(String s, String p) {
+        if (p.length() == 0) return s.length() == 0;
+        char[] pattern = p.toCharArray(), text = s.toCharArray();
+        int next = 0, x = -1; // next state in DFA / idx of 1st * in the most recent series of *
+        int[][] ref = new int[26][p.length()];
+        for (int i = 0; i < p.length(); i++) { // column OR state i
+            if (pattern[i] == '*') {
+                x = i;
+                for (int j = 0; j < 26; j++) ref[j][i] = i;
+                while (i < p.length() && pattern[i] == '*') i++; // i is the first letter following *
+                if (i < p.length()) {
+                    if (pattern[i] != '?') ref[pattern[i] - 'a'][x] = 1 + i;
+                    else for (int j = 0; j < 26; j++) ref[j][x] = 1 + i;
+                }
+                else for (int j = 0; j < 26; j++) ref[j][x] = p.length();   // ends with *
+            } else if (pattern[i] == '?') for (int j = 0; j < 26; j++) ref[j][i] = i + 1;
+            else {
+                for (int j = 0; j < 26; j++) ref[j][i] = x == -1 ? -1 : ref[j][x];
+                ref[pattern[i] - 'a'][i] = i + 1;
+            }
+        }
+        // check s using dfa constructed
+        for (int i = 0; i < s.length(); i++) {
+            next = ref[text[i] - 'a'][next];
+            if (next == -1) return false;
+            if (next == p.length()) return true;
+        }
+        //if (pattern[next] == '*' && pattern[]) next = ref[0][next]; // if ends with *
+        return false;
+    }
+}

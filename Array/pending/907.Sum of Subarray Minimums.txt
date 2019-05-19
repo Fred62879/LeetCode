@@ -1,0 +1,87 @@
+## Specification
+Given an array of integers A, find the sum of min(B), where B ranges over every contiguous subarray of A. Since the answer may be large, return the answer modulo 10^9 + 7.
+
+Example 1:
+Input: [3,1,2,4]
+Output: 17
+Explanation: Subarrays are [3], [1], [2], [4], [3,1], [1,2], [2,4], [3,1,2], [1,2,4], [3,1,2,4]. 
+Minimums are 3, 1, 2, 4, 1, 1, 2, 1, 1, 1.  Sum is 17.
+
+Note:
+1 <= A.length <= 30000
+1 <= A[i] <= 30000
+
+
+## Testcases
+[8,2,4,3,5,1]
+[3,1,2,4]
+
+
+## Ideas
+
+(2) For each entry in the array, count left and rightward how many subseq has cur element as min. Then multiple that leftward with that rightward gives the total
+
+(1) When traversing thru the array, at each element, we count leftward how many subarrays involve current entry. Via poping out elements, range between cur and the pop termiation site contain all subseq whose min is cur. For further left, the number is the same as that for the termination site entry.
+
+
+## Code
+// (3) idea same as (2)
+int sumSubarrayMins(vector<int>& A) {
+    A.push_back(0); // avoid handle corner cases
+    int N = A.size(),res=0,M=1e9+7;
+    vector<int> stk={-1};
+    for(int i=0;i<N;i++) {
+        while(stk.back()!=-1 && A[i]<A[stk.back()]) {
+            int highest = stk.back();
+            stk.pop_back();
+            int l=stk.back();
+            res=(0LL+res+(highest-l)*(i-highest)*A[highest])%M;
+        }
+        stk.push_back(i);
+    }
+    return res;
+}
+
+// (2) counting for each
+https://leetcode.com/problems/sum-of-subarray-minimums/discuss/170750/C%2B%2BJavaPython-Stack-Solution
+
+class Solution {
+public:
+    int sumSubarrayMins(vector<int>& A) {
+        int n = A.size(), ans = 0, q = 1e9 + 7;
+        stack<int> stk;
+        for (int i = 0; i <= n; i++) {
+            while (!stk.empty() && A[stk.top()] > (i == n ? 0 : A[i])) {
+                int curid = stk.top(); stk.pop();
+                int lb = stk.empty() ? -1 : stk.top(); // left boundary
+                ans = (ans + A[curid] * (curid - lb) * (i - curid)) % q;
+            }
+            stk.push(i);
+        }
+        return ans;
+    }
+};
+
+// (1) stack_indep
+class Solution {
+public:
+    int sumSubarrayMins(vector<int>& A) {
+        int n = A.size(), mod = 1e9 + 7;
+        
+        unsigned int ans = A[0];
+        stack<int> q; q.push(0);
+        vector<int> cache(n, A[0]);
+        
+        for(int i = 1; i < n; i++) { // append i to [0: i-1]
+            int cur = A[i];
+            while (!q.empty() && A[q.top()] > A[i]) q.pop();
+            int range = q.empty() ? i : i - 1 - q.top();
+            cur = (cur + A[i] * range) % mod; // leftward subseq min at i
+            if (!q.empty()) cur = (cur + cache[q.top()]) % mod;
+            
+            q.push(i); cache[i] = cur;
+            ans = (ans + cur) % mod;
+        }
+        return ans;
+    }
+};

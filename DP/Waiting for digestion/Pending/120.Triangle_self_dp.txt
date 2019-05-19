@@ -1,0 +1,12 @@
+class Solution {
+    public int minimumTotal(List<List<Integer>> t) {
+        int len = t.size();
+        for (int i = len - 2; i >= 0; i--) {
+            for (int j = 0; j <= i; j++) {
+                List<Integer> a = t.get(i), b = t.get(i + 1);
+                a.set(j, a.get(j) + Math.min(b.get(j + 1), b.get(j))); 
+            }
+        }
+        return t.get(0).get(0);
+    }
+}

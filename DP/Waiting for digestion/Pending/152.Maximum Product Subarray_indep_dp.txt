@@ -1,0 +1,51 @@
+class Solution {
+        //  1    2   -1   -2   2   1   -2   1   4   -5    4
+        // 1280 1280 640  32  320 160  160  4   4   -20   4  pos
+        // -64  -64  -32 -640 -16  -8  -8  -80 -80  -20   4  neg
+        // 1280 1280 640  320 ....                   4    4  max
+        //
+        // if neg > 0, then pos = neg
+        // if pos < 0, then neg = pos
+        //  -6         -6          -6         2         2
+        //  12   8     48  -8     -12  2     16  8      2  -8  pos
+        // -48  -2     -6  -8     -12  2     16  8    -16  -8  neg
+        //  12   8     48  -8       2  2     16  8      2  -8  max
+    public int maxProduct(int[] nums) {
+        int n = nums.length, pos = nums[n - 1], neg = nums[n - 1], max = nums[n - 1];
+        
+        int cpos, cneg;
+        for (int i = n - 2; i >= 0; i--) {
+            if (nums[i] == 0) {
+                max = Math.max(0, max);
+                continue;
+            }
+            if (nums[i + 1] == 0) {
+                pos = nums[i];
+                neg = nums[i];
+                max = Math.max(pos, max);
+                continue;
+            }
+            cpos = pos; cneg = neg;
+
+	    (1)
+            if (cpos * nums[i] < 0) neg = cpos * nums[i]; // if nums[i] > 0
+            else if (cneg * nums[i] < 0 || nums[i] > 0) neg = cneg * nums[i];
+            else neg = nums[i];
+            
+            if (cpos * nums[i] > 0) pos = cpos * nums[i];
+            else if (cneg * nums[i] > 0 || nums[i] < 0) pos = cneg * nums[i];
+            else pos = nums[i];
+
+	    (2)
+            if (cneg * nums[i] > 0 && nums[i] > 0) neg = cneg * nums[i];
+            else neg = Math.min(cpos * nums[i], Math.min(nums[i], cneg * nums[i]));
+            
+            if (cneg * nums[i] < 0 && nums[i] < 0) pos = cneg * nums[i];
+            else pos = Math.max(cpos * nums[i], Math.max(nums[i], cneg * nums[i]));
+            
+            
+            max = Math.max(pos, max);
+        }
+        return max;
+    }
+}

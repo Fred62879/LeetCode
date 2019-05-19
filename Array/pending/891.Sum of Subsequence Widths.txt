@@ -1,0 +1,108 @@
+## Specification
+Given an array of integers A, consider all non-empty subsequences of A. For any sequence S, let the width of S be the difference between the maximum and minimum element of S. Return the sum of the widths of all subsequences of A. As the answer may be very large, return the answer modulo 10^9 + 7. 
+
+Example 1:
+Input: [2,1,3]
+Output: 6
+Explanation:
+Subsequences are [1], [2], [3], [2,1], [2,3], [1,3], [2,1,3].
+The corresponding widths are 0, 0, 0, 1, 1, 2, 2.
+The sum of these widths is 6.
+
+Note:
+1 <= A.length <= 20000
+1 <= A[i] <= 20000
+
+
+## Testcases
+[5,69,89,92,31,16,25,45,63,40,16,56,24,40,75,82,40,12,50,62,92,44,67,38,92,22,91,24,26,21,100,42,23,56,64,43,95,76,84,79,89,4,16,94,16,77,92,9,30,13]
+[96,87,191,197,40,101,108,35,169,50,168,182,95,80,144,43,18,60,174,13,77,173,38,46,80,117,13,19,11,6,13,118,39,80,171,36,86,156,165,190,53,49,160,192,57,42,97,35,124,200,84,70,145,180,54,141,159,42,66,66,25,95,24,136,140,159,71,131,5,140,115,76,151,137,63,47,69,164,60,172,153,183,6,70,40,168,133,45,116,188,20,52,70,156,44,27,124,59,42,172]
+[2791,15117,2258,5716,15527,14089,16819,18473,14829,6795,16065,1095,12213,17038,3730,13188,10159,12313,4897,13547,17384,18533,12160,14488,14553,6124,15871,9341,12429,10981,15607,10198,10088,2719,7824,16995,12506,9964,5713,10796,8078,15357,19755,19801,13196,19455,7608,4820,4297,15470,11149,1738,11284,10460,12932,16063,12513,19689,11989,8978,739,11700,6534,106,19443,13613,2137,15883,13906,18697,1576,13691,17376,6414,6459,7111,1358,844,13164,19445,5199,4876,11423,11421,8662,12707,10809,781,17682,16704,7013,6758,13879,5883,4292,8605,4866,4027,14391,6069,14078,4802,576,4679,14510,12100,5545,6017,2766,16019,7597,8346,17522,5552,14373,14309,2757,11606,3647,2028,7607,1618,9581,16209,9100,10796,11181,18736,5699,17608,7582,19948,2269,16761,16910,12414,19943,10671,12316,2247,8553,6320,5768,2438,10379,14806,2430,19426,6184,98,14336,600,10199,9463,13665,253,1752,9022,1490,16394,2598,17174,19287,19535,6907,16108,16796,348,295,13465,15454,19770,16367,386,13939,11222,6363,10419,3770,15559,17625,12778,
+
+
+## Ideas
+
+# (1) indep
+We basically count all subsequences that terminate at each i while recording the
+local min and max in two arrays. Take the above ex for instance. We start with 
+>>>>lg: 1(7); sm: 0(0). Then as we reach 2(2), since it is within the former range, 
+all subsequences that start before 1(7) should have the same width when extend to
+2(2) while subsequence starts from 1(7) would be a new one with width 5. Then since
+2(2) is between 1(7) and 3(1), we add it to both lg and sm, knowing that subsequence
+terminate at 3 may have 2(2) as either smallest or largest.
+>>>>lg: 1(7), 2(2); sm: 0(0), 2(2)
+Then as we reach 3(1), since it is small than last element in sm, it means that 
+all previous subequences terminate at 2(2), if would reach 3(1), would increase
+width by 1, this step is accomplished in solve. Note, we need to pump out 2(2) from
+small after calculation and since 0(0) now is smallest, we do not pop further and
+add 3(1) to sm.
+
+
+
+## Code
+// others
+class Solution {
+public:
+    int sumSubseqWidths(vector<int> A) {
+        sort(A.begin(), A.end());
+        long c = 1, res = 0, mod = 1e9 + 7;
+        for (int i = 0; i < A.size(); ++i, c = (c << 1) % mod)
+            res = (res + A[i] * c - A[A.size() - i - 1] * c) % mod;
+        return (res + mod) % mod;
+    }
+};
+
+// indep_TLE
+class Solution {
+public:
+    int sumSubseqWidths(vector<int>& A) {
+        int n = A.size(), q = 1e9 + 7;
+        long ans = 0;
+        sort(A.begin(), A.end());
+        for (int len = 0, c = 1; len < n - 1; len++, c = (c << 1) % q)
+            for (int i = 0; i < n - len - 1; i++)
+                ans = (ans + ( (long)(A[i + len + 1] - A[i]) * c )) % q;
+        return ans;
+    }
+};
+
+// indep_misunderstanding
+// designed for consecutive subsequences
+// not fully implemented, bug exists
+class Solution {
+    
+    long p = 1000000007;
+    long[] count;
+    
+    private void solve(int[] a, ArrayList<Integer> t, int i, int j) {
+        for (; j >= 0 && a[i] < t.get(j); j--) {
+            int offset = Math.abs(a[t.get(j)]-a[i]);
+            int am = j == 0 ? i-1 : Math.max(0, i-2-t.get(j-1));
+            count[i] = (count[i-1] + (long) offset*am + Math.abs(a[i]-a[i-1])) % p;
+        } 
+        //t.removeRange(j+1, t.size()-1); 
+        t.subList(j+1, t.size()).clear();
+        t.add(i); // prevent concurrent modification
+    }
+    
+    public int sumSubseqWidths(int[] a) {
+        ArrayList<Integer> lg = new ArrayList<Integer>(), sm = new ArrayList<Integer>();
+        lg.add(a[0]); sm.add(a[0]);
+        int n = a.length; count = new long[n]; count[0] = 0;
+        for (int i = 1; i < n; i++) { // all subsequences terminate at i
+            if (a[i] == a[i-1]) count[i] = count[i-1];
+            else if (a[i] > sm.get(sm.size()-1) && a[i] < lg.get(lg.size()-1)) {
+                count[i] = (count[i-1] + Math.abs(a[i]-a[i-1])) % p;
+                if (i + 1 < n && a[i] < a[i + 1]) sm.add(i);
+                if (i - 1 >= 0 && a[i] > a[i - 1]) lg.add(i);
+            }
+            else if (a[i] < sm.get(sm.size()-1)) solve(a, sm, i, sm.size()-1);
+            else if (a[i] > lg.get(lg.size()-1)) solve(a, lg, i, lg.size()-1);
+            else count[i] = count[i-1]; // equal cases
+        } long sum = 0;
+        for (long i : count) sum += i;
+        return (int)sum;
+    }
+}
+
+

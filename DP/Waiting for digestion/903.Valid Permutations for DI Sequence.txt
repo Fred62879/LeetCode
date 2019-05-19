@@ -1,0 +1,251 @@
+## Specification
+We are given S, a length n string of characters from the set {'D', 'I'}. (These letters stand for "decreasing" and "increasing".) A valid permutation is a permutation P[0], P[1], ..., P[n] of integers {0, 1, ..., n}, such that for all i:
+If S[i] == 'D', then P[i] > P[i+1], and;
+If S[i] == 'I', then P[i] < P[i+1].
+How many valid permutations are there?  Since the answer may be large, return your answer modulo 10^9 + 7. 
+
+Example 1:
+Input: "DID"
+Output: 5
+Explanation: 
+The 5 valid permutations of (0, 1, 2, 3) are:
+(1, 0, 3, 2)
+(2, 0, 3, 1)
+(2, 1, 3, 0)
+(3, 0, 2, 1)
+(3, 1, 2, 0)
+
+Note:
+1 <= S.length <= 200
+S consists only of characters from the set {'D', 'I'}.
+
+
+
+## Testcases
+"DDIIDDIIIDIDID"
+"DIDDDIIDDIIIIIIIIIIIDDDDDDDDDDDDDDDDDIIIIIIIIIIIDIDIDIDIID"
+
+
+
+## Ideas
+# (3) Divide & Conqur
+Since 0 must appear somewhere, we can simply sum up the # of perms under the presence of 0 at each possible location. At the first run of solve, we first check whether 0 could be at the two boundaries (s[0] = I, s[n-1] = D). If it could, we update the answer summing dp[1: n-1]. Notice that we do not need to multiply anything as we are checking # of perms given the occurrence of 0 somewhere, which means only 0 can be used.
+
+Then, if 0 is presenting somewhere in the middle, it must be located corresponding to a "DI". For instance, if s[5] = D and s[6] = I, then for any perms P of the n+1 numbers, P[6] can be 0. In this case, apart from 0, we still have n numbers (1 ~ n) left and the two sides (0 ~ 5 and 7 ~ n) tend to be independent from each other.
+
+This is the case since the numbers we have are always unique, which means for any possible set of numbers, the number of ways to permute it to satisfy the given DI order would always be the same. Therefore, given 0 being the 6th (0 based) number in the final perm, the # of ways to manipulate the rest n numbers such that the overall DI order is satisfied is the product among *(i)* # of different sets of numbers that can be used for one side (once this is settled, that for the other side can also be decided), *(ii)* # of ways a particular set of numbers for the left side can be permuted, and *(iii)* # of ways a particular set of numbers for the right side can be permuted.
+
+The difficult here is to calculate the combination which easily get overflow. Two suggested ways are *(i)* create a table of binom[n][k] directly, all modulo MOD. Then, use the recurrence C(n,k) = C(n-1,k-1) + C(n-1,k) to populate this table. This solution uses only int. *(ii)* use long. Since every value is modulo MOD, the multiplication of two of those values will fit into a long integer.
+
+
+# (2) DP_bottom-up
+
+# (1) DP_top-down
+
+# (0) DP_definition
+// Divide & Conqur dp
+dp[i][j] is the total # of ways that a particular set of numbers can be permuted to satisfy s[i:j].
+
+// O(n^2)_1D dp
+
+
+// O(n^2)_2D dp
+Adapted from def-II, dp[i][j] stores the # of perms of 0 ~ i end with elements <= j. This enables O(n^2)
+
+
+// O(n^3)_2D dp
+dp[i][j] is total # of perms of 0~i end with j (0 <= j <= i).
+For a particular combination of i-j, to update the answer, we check the perms of i-1 elements. 
+  (i) If 'D' is required, then, apart from the last element in an i-element-perm which is strictly j, the previous i-1 elements should end with elements > j. # of perms fitting this rule is given by dp[i-1][k] (j < k < i).
+However, as we are also introducing a new element i which is the largest so far, we shall also find a place to hold this i. To do this, we can simply increment those among the i-1 elements who are >= j. In this way, i will be taken by the previous i-1 and j is absent now which can be filled with our new tail which is j. (Increment will not change the DI rule among the first i-1 elements as those smaller ones will not be changed maintaining the vallies. And for each of the larger one, those larger than it is incremented simultaneously, maintaining the peaks.)
+  (ii) If 'I' is required, we simply consult those previous perms end with sth < j.
+
+
+// indep_DP-definition
+dp[i][j] is total # of perms starting from j given nums in i (path) taken.
+Very straightforward definition of dp but very slow. And I have implemented this idea using binary number and strings to represent i, all elements covered, neither run off TLE. For this approach, better use a visited vector to record nums checked, instead of maintaining a path.
+
+
+
+
+## Code
+# (3) Divide & Conqur
+// others_stay tuned
+class Solution {
+public:
+    vector<vector<long>> dp;
+    vector<long> fac{1, 1}, facinv{1, 1};
+    int q;
+    
+    // C(n,k)
+    long selection(int n, int i) {
+        return (fac[n] / fac[n-i]) / fac[i];
+    }
+    
+    // total # of perms satisfying s[i:j] using a particular set of numbers
+    int solve(int i, int j, string s) {
+        if (i >= j) return 1;
+        if (dp[i][j] != -1) return dp[i][j];
+        
+        long ans = 0; int n = j - i + 2; // totally n numbers to cover s[i:j]
+        if (s[i] == 'I') ans = solve(i + 1, j, s);
+        if (s[j] == 'D') ans = (ans + solve(i, j - 1, s)) % q;
+        
+        for (int k = i; k < j; k++) {
+            if (s[k] != 'D' || s[k + 1] != 'I') continue;
+            // set kth number as 0
+            long left = solve(i, k - 1, s), right = solve(k + 2, j, s);
+            long combin = (left * right) % q, sel = selection(n - 1, k - i + 1);
+            ans = (ans + (combin * sel) % q) % q;
+        }
+        dp[i][j] = ans;
+        return ans;
+    }
+    
+    int numPermsDISequence(string S) {
+        q = 1e9 + 7;
+        dp.assign(S.size(), vector<long>(S.size(), -1));
+        for (int i = 2; i < 201; i++) {
+            fac.push_back((fac[i-1] * i) % q);
+            facinv.push_back(pow(fac[f], q));
+        }
+        cout << fac[100] << ", " << fac[23] << ", " << fac[77];
+        return solve(0, S.size()-1, S);
+    }
+};
+
+//
+class Solution {
+public:
+    vector<vector<long>> dp, binom;
+    int q;
+    
+    // total # of perms satisfying s[i:j] using a particular set of numbers
+    int solve(int i, int j, string s) {
+        if (i >= j) return 1;
+        if (dp[i][j] != -1) return dp[i][j];
+        
+        long ans = 0; int n = j - i + 2; // totally n numbers to cover s[i:j]
+        if (s[i] == 'I') ans = solve(i + 1, j, s);
+        if (s[j] == 'D') ans = (ans + solve(i, j - 1, s)) % q;
+        
+        for (int k = i; k < j; k++) {
+            if (s[k] != 'D' || s[k + 1] != 'I') continue;
+            
+            long left = solve(i, k - 1, s), right = solve(k + 2, j, s);
+            long combin = (left * right) % q, sel = binom[n - 1][k - i + 1];
+            
+            ans = (ans + (combin * sel) % q) % q;
+        }
+        dp[i][j] = ans;
+        return ans;
+    }
+    
+    int numPermsDISequence(string S) {
+        q = 1e9 + 7;
+        dp.assign(S.size(), vector<long>(S.size(), -1));
+        binom.assign(201, vector<long>(201, 1));
+        for (int i = 2; i < 201; i++)
+            for (int j = 1; j <= i; j++)
+                binom[i][j] = (binom[i-1][j-1] + binom[i-1][j]) % q;
+        cout << binom[100][26];
+        return solve(0, S.size()-1, S);
+    }
+};
+
+# (2) DP_bottom-up
+// (III) O(n^2)_D
+
+// (II) O(n^2)_2D_derived
+class Solution {
+public:
+    int numPermsDISequence(string S) {
+        int n = S.size(), ans = 0, q = 1e9 + 7;
+        // dp[i][j], # of perms of 0 ~ i end with elements <= j
+        long dp[n + 1][n + 1]; memset(dp, 0, sizeof(dp));
+        for (int i = 0; i <= n; i++) dp[0][i] = 1;
+        // DP
+        for (int i = 1; i <= n; i++)
+            for (int j = 0; j <= n; j++)
+                if (j > i)  // end with element <= j
+                    dp[i][j] = dp[i][j-1];
+                else if (S[i - 1] == 'D') // prev ends with num >= j
+                    dp[i][j] = (dp[i][j] + (!j? 0 : dp[i][j-1]) + dp[i-1][i] - (!j? 0 : dp[i-1][j-1]) + q) % q;
+                else if (j) // prev ends with num < j
+                    dp[i][j] = (dp[i][j] + dp[i][j-1] + dp[i-1][j-1]) % q;
+        
+	/* 
+	// print check
+        for (int i = n-2; i <= n; i++) {
+            for (int j = n/2; j <= n; j++)
+                cout << dp[i][j] << ", ";
+            cout << "/n";
+        }
+        */
+        return dp[n][n];
+    }
+};
+
+// (I) O(n^3)_2D_derived
+class Solution {
+public:
+    int numPermsDISequence(string S) {
+        int n = S.size(), ans = 0, q = 1e9 + 7;
+        // dp[i][j], # of perms of 0 ~ i end with j (0 <= j <= i)
+        int dp[n + 1][n + 1]; memset(dp, 0, sizeof(dp));
+        dp[0][0] = 1;
+        // DP
+        for (int i = 1; i <= n; i++) {
+            for (int j = 0; j <= i; j++) {
+                if (S[i - 1] == 'D')
+                    for (int k = j; k < i; k++) // prev ends with nums >= j
+                        dp[i][j] = (dp[i][j] + dp[i - 1][k]) % q;
+                else for (int k = 0; k < j; k++)
+                        dp[i][j] = (dp[i][j] + dp[i - 1][k]) % q;
+            }
+        }
+        for (int i = 0; i <= n; i++)
+            ans = (ans + dp[n][i]) % q;
+        return ans;
+    }
+};
+
+
+# (1) DP_top-down
+// indep_fail
+class Solution {
+private:
+    // dp[i][j], # of valid perms for path i end with num j
+    unordered_map<string, vector<long>> dp;
+    int q = 1e9 + 7, n;
+public:
+    // total # of perms starting from st given nums in path already being taken
+    int solve(string& s, string& path, int st, int nod) {
+        if (nod == n) return 1;
+        if (dp.find(path) != dp.end() && dp[path][st] != -1) return dp[path][st];
+        
+        if (dp.find(path) == dp.end()) { vector<long> col(n + 1, -1); dp[path] = col; }
+        long cur = 0, sign = s[nod] == 'D' ? -1 : 1;
+        
+        for (int i = 0; i <= n; i++) {
+            if (path[i] == '1') continue; // nums already checked
+            if (sign * (i - st) < 0) continue; // violating DI rule
+            path[i] = '1';
+            cur = (cur + solve(s, path, i, nod + 1)) % q;
+            path[i] = '0';
+        }
+        dp[path][st] = cur;
+        return cur;
+    }
+    
+    int numPermsDISequence(string S) {
+        n = S.size(); int ans = 0; string ini(n + 1, '0');
+        // DFS or DP
+        for (int i = 0; i <= n; i++) {
+            ini[i] = '1';
+            ans = (ans + solve(S, ini, i, 0)) % q;
+            ini[i] = '0';
+        }
+        return ans;
+    }
+};

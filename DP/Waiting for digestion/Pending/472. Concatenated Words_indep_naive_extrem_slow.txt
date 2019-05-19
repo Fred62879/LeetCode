@@ -1,0 +1,64 @@
+class Solution {
+    
+    HashMap<String, Integer> cache = new HashMap<String, Integer>();
+    String[] words;
+    
+    private int conct(String s) {
+        if (s.equals("")) return 0;
+        if (cache.get(s) != null) return cache.get(s);
+        for (int i = 0; i < words.length; i++) {
+            if (words[i].equals("") || s.charAt(0) != words[i].charAt(0) || !s.startsWith(words[i])) continue;
+            int cur = conct(s.substring(words[i].length()));
+            if (cur != -1) cur++;
+            if (cache.get(s) == null || cache.get(s) < cur)
+                cache.put(s, cur);
+            if (cache.get(s) >= 2) break;
+        }
+        if (cache.get(s) == null) cache.put(s, -1);
+        return cache.get(s);
+    }
+    
+    public List<String> findAllConcatenatedWordsInADict(String[] words) {
+        if (words.length == 0) return null;
+        this.words = words;
+        List<String> res = new ArrayList<String>();
+        for (int i = 0; i < words.length; i++)
+            if (conct(words[i]) >= 2) res.add(words[i]);
+        return res;
+    }
+}
+
+
+// update dict, improved a bit
+class Solution {
+    
+    HashMap<String, Integer> cache = new HashMap<String, Integer>();
+    ArrayList<String>[] dict = new ArrayList[26];
+    String[] words;
+    
+    private int conct(String s) {
+        if (s.equals("")) return 0;
+        if (cache.get(s) != null) return cache.get(s);
+        ArrayList<String> curdict = dict[s.charAt(0) - 'a'];
+        for (int i = 0; i < curdict.size(); i++) {
+            if (!s.startsWith(curdict.get(i))) continue;
+            int cur = conct(s.substring(curdict.get(i).length()));
+            if (cur != -1) cur++;
+            if (cache.get(s) == null || cache.get(s) < cur)
+                cache.put(s, cur);
+            if (cache.get(s) >= 2) break;
+        }
+        if (cache.get(s) == null) cache.put(s, -1);
+        return cache.get(s);
+    }
+    
+    public List<String> findAllConcatenatedWordsInADict(String[] words) {
+        if (words.length == 0) return null;
+        for (int i = 0; i < 26; i++) dict[i] = new ArrayList<String>();
+        for (String w : words) if (!w.equals("")) dict[w.charAt(0) - 'a'].add(w);
+        List<String> res = new ArrayList<String>();
+        for (int i = 0; i < words.length; i++)
+            if (conct(words[i]) >= 2) res.add(words[i]);
+        return res;
+    }
+}

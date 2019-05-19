@@ -1,0 +1,62 @@
+**** Specification ****
+There is a strange printer with the following two special requirements:
+The printer can 
+only print a sequence of the same character each time. At each turn, the printer can 
+print new characters starting from and ending at any places, and will cover the original
+existing characters. Given a string consists of lower English letters only, your job is
+to count the minimum number of turns the printer needed in order to print it.
+
+Example 1:
+Input: "aaabbb"
+Output: 2
+Explanation: Print "aaa" first and then print "bbb".
+
+Example 2:
+Input: "aba"
+Output: 2
+Explanation: Print "aaa" first and then print "b" from the second place of the string, 
+which will cover the existing character 'a'.
+
+Hint: Length of the given string will not exceed 100.
+
+
+**** Testcases ****
+"acbdeaadb"
+
+
+**** Idea ****
+Same idea as remove boxes
+
+
+**** Code ****
+// derived from remove boxes
+class Solution {
+    
+    int[][] dp;
+    ArrayList<Character> ele;
+    
+    private int solve(int lo, int hi) {
+        if (lo > hi) return 0;
+        if (dp[lo][hi] != 0) return dp[lo][hi];
+        int cur = solve(lo + 1, hi) + 1; // lo inclusive printed ahead of lo+1 onward
+        for (int i = lo + 1; i <= hi; i++) {
+            if (ele.get(lo) != ele.get(i)) continue;
+            int mid = solve(lo + 1, i - 1);
+            int fol = solve(i, hi);
+            cur = Math.min(cur, mid + fol);
+        }
+        dp[lo][hi] = cur;
+        return cur;
+    }
+    
+    public int strangePrinter(String s) {
+        int n = s.length(), m = 0, ans = Integer.MAX_VALUE;
+        ele = new ArrayList<Character>();
+        for (int j = 1, i = 0; j <= n; j++) {
+            if (j != n && s.charAt(i) == s.charAt(j)) continue;
+            ele.add(s.charAt(j-1)); i = j; m++;
+        }
+        dp = new int[m][m];
+        return solve(0, m-1);
+    }
+}

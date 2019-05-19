@@ -1,0 +1,99 @@
+## Specification
+Similar: LT647,730,940
+
+
+## Testcases
+"apjesgpsxoeiokmqmfgvjslcjukbqxpsobyhjpbgdfruqdkeiszrlmtwgfxyfostpqczidfljwfbbrflkgdvtytbgqalguewnhvvmcgxboycffopmtmhtfizxkmeftcucxpobxmelmjtuzigsxnncxpaibgpuijwhankxbplpyejxmrrjgeoevqozwdtgospohznkoyzocjlracchjqnggbfeebmuvbicbvmpuleywrpzwsihivnrwtxcukwplgtobhgxukwrdlszfaiqxwjvrgxnsveedxseeyeykarqnjrtlaliyudpacctzizcftjlunlgnfwcqqxcqikocqffsjyurzwysfjmswvhbrmshjuzsgpwyubtfbnwajuvrfhlccvfwhxfqthkcwhatktymgxostjlztwdxritygbrbibdgkezvzajizxasjnrcjwzdfvdnwwqeyumkamhzoqhnqjfzwzbixclcxqrtniznemxeahfozp"
+
+
+
+## Code
+// (2) 2nd visit Apr-19-2019_TLE
+class Solution {
+public:
+    // min cut needed to palindromize s[lo, hi]
+    int solve(int lo, int hi, string s, vector<vector<int>> &dp) {
+        if (dp[lo][hi] != -1) return dp[lo][hi];
+        int st, ed, ans = INT_MAX;
+        for (st = lo, ed = hi; st <= ed; st++, ed--)
+            if (s[st] != s[ed]) break;
+        if (st > ed) { dp[lo][hi] = 0; return 0; }
+        
+        for (int i = lo; i < hi; i++) // cut at i
+            ans = min(ans, solve(lo, i, s, dp) + solve(i + 1, hi, s, dp) + 1);
+        dp[lo][hi] = ans;
+        return ans;
+    }
+    
+    int minCut(string s) {
+        vector<vector<int>> dp(s.size(), vector<int>(s.size(), -1));
+        return solve(0, s.size() -1, s, dp);
+    }
+};
+
+
+// (1) 1st attempt
+class Solution {
+    
+    public int minCut(String s) {
+        int n = s.length();
+        int[] nocut = new int[n];
+        boolean[][] res = new boolean[n][n];
+        for (int i = n - 2; i >= 0; i--) {
+            int cut = nocut[i + 1] + 1;
+            for (int j = i; j < n; j++) {
+                int c = 0;
+                if (s.charAt(j) == s.charAt(i) && (j - i <= 2 || res[i + 1][j - 1])) {
+                    res[i][j] = true;
+                    c = j == n - 1 ? 0 : 1 + nocut[j + 1];
+                    if (c < cut) cut = c;
+                }
+            }
+            nocut[i] = cut;
+        }
+        return nocut[0];
+    }
+}
+
+// faster
+class Solution {
+    
+    public int minCut(String s) {
+        int n = s.length();
+        char[] c = s.toCharArray();
+        int[] nocut = new int[n];
+        boolean[][] res = new boolean[n][n];
+        for (int i = n - 2; i >= 0; i--) {
+            int cut = nocut[i + 1] + 1;
+            for (int j = i; j < n; j++) {
+                if (c[j] == c[i] && (j - i <= 2 || res[i + 1][j - 1])) {
+                    res[i][j] = true;
+                    cut = j == n - 1 ? 0 : Math.min(1 + nocut[j + 1], cut);
+                }
+            }
+            nocut[i] = cut;
+        }
+        return nocut[0];
+    }
+}
+
+// O(n) space
+class Solution {
+    
+    public int minCut(String s) {
+        int n = s.length();
+        int[] nocut = new int[n], prev = new int[n];
+        boolean[][] res = new boolean[n][n];
+        for (int i = n - 2; i >= 0; i--) {
+            int cut = nocut[i + 1] + 1;
+            for (int j = n - 1; j >= i; j--) {
+                if (s.charAt(j) == s.charAt(i) && (j - i <= 2 || prev[j - 1] == i + 1)) {
+                    prev[j] = i;
+                    cut = j == n - 1 ? 0 : Math.min(1 + nocut[j + 1], cut);
+                }
+            }
+            nocut[i] = cut;
+        }
+        return nocut[0];
+    }
+}

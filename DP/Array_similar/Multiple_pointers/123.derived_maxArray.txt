@@ -1,0 +1,58 @@
+class Solution {
+    public int maxProfit(int[] prices) {
+        if (prices.length < 2) return 0;
+        if (prices.length == 2) return Math.max(0, prices[1] - prices[0]);
+        int[] lf = new int[prices.length];
+        int[] rt = new int[prices.length];
+        int[] forMin = new int[prices.length];
+        int[] bckMax = new int[prices.length];
+        forMin[1] = prices[0];
+        bckMax[prices.length - 2] = prices[prices.length - 1];
+        lf[1] = prices[1] - prices[0];
+        rt[prices.length - 2] = prices[prices.length - 1] - prices[prices.length - 2];
+        for (int i = 2; i < prices.length; i++)
+            forMin[i] = Math.min(prices[i - 1], forMin[i - 1]);
+        for (int i = prices.length - 2; i >= 0; i--)
+            bckMax[i] = Math.max(prices[i + 1], bckMax[i + 1]);
+        for (int i = 2; i < prices.length; i++)
+            lf[i] = Math.max(lf[i - 1], prices[i] - forMin[i]);
+        for (int i = prices.length - 3; i >= 0; i--)
+            rt[i] = Math.max(rt[i + 1], bckMax[i] - prices[i]);
+        int sum = 0;
+        for (int i = 1; i < prices.length - 2; i++)
+            sum = Math.max(sum, lf[i] + rt[i + 1]);
+        return Math.max(0, Math.max(sum, lf[prices.length - 1]));
+    }
+}
+
+// improved
+class Solution {
+    public int maxProfit(int[] prices) {
+        if (prices.length < 2) return 0;
+        int[] lf = new int[prices.length + 1];
+        int[] rt = new int[prices.length + 1];
+        int res = 0;
+        int[] diff = new int[prices.length];
+        for (int i = 1; i < prices.length; i++) diff[i] = prices[i] - prices[i - 1];
+        for (int i = 2; i < lf.length; i++) {
+            // get larger one from largest profit until previous day and selling right today
+            // prices[2] - prices[1] + prices[1] - prices[0] " + " prices[3] - prices[2]
+            lf[i] = Math.max(lf[i - 1], res + diff[i - 1]);
+            // if price is not the smallest, convey previous (e.g. prices[2] - prices[1] + prices[1] - prices[0])
+            // otherwise, clear value to 0, and naturally start from this new smallest
+            // res should equal prices[cur] - prices("smallest so far")
+            res = Math.max(0, res + diff[i - 1]);
+        }
+        // res = Math.max(0, diff[prices.length - 2] + diff[prices.length - 1]);
+        res = 0;
+        for (int i = rt.length - 3; i >= 0; i--) {
+            rt[i] = Math.max(rt[i + 1], res + diff[i + 1]);
+            // res equal prices("largest so far") - prices[cur]
+            res = Math.max(0, res + diff[i + 1]);
+        }
+        int sum = 0;
+        for (int i = 1; i < prices.length + 1; i++)
+            sum = Math.max(sum, lf[i] + rt[i]);
+        return sum;
+    }
+}

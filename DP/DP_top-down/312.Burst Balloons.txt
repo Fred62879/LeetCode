@@ -1,0 +1,76 @@
+## Specification
+Similar to LT\546
+
+Given n balloons, indexed from 0 to n-1. Each balloon is painted with a number on
+it represented by array nums. You are asked to burst all the balloons. If the you
+burst balloon i you will get nums[left] * nums[i] * nums[right] coins. Here left 
+and right are adjacent indices of i. After the burst, the left and right then 
+becomes adjacent. Find the maximum coins you can collect by bursting the balloons 
+wisely.
+
+Note:
+You may imagine nums[-1] = nums[n] = 1. They are not real therefore you can not 
+burst them.
+0 ¡Ü n ¡Ü 500, 0 ¡Ü nums[i] ¡Ü 100
+
+Example:
+Input: [3,1,5,8]
+Output: 167 
+Explanation: nums = [3,1,5,8] --> [3,5,8] -->   [3,8]   -->  [8]  --> []
+             coins =  3*1*5      +  3*5*8    +  1*3*8      + 1*8*1   = 167
+
+
+## Test cases
+0 1 2 3 4 5 6 7
+[1,4,7,3,2,8,2,9]
+[3,1,5,7,4,2,8,3,1,7]
+[1,4,3,2,7,8,9,1]
+[8,3,4,3,5,0,5,6,6,2,8,5,6,2,3,8,3,5,1,0,2]
+
+
+## Ideas
+(2) DP_bottom-up
+(1) DP_top-down
+For each element of the array, we assume it to be the last one burst. This means
+that if we currently set element i as the last burst, the ans would be maxCoins(i-1)
++ 1*nums[i]*1 + maxCoins(i+1). 
+
+As we delve into the inner part of the array, the two extremeties would be updated
+also depending on which element we previously select as the fixed one. For instance,
+when calculating maxCoins(nums[0-->i-1]), first append is still 1 while the last is
+nums[i].
+
+Note that the two extremeties will always be the preceding/following elements of 
+nums[lid/uid]
+
+
+## Code
+// (1) DP_top-down_derived
+class Solution {
+    
+    int[] nums;
+    int[][] dp;
+    
+    // lower/upper: two extremeties of the array, e.g. nums[-1], nums[n]
+    // lid/uid: id of first/last element of the current subarray
+    private int solve(int lower, int upper, int lid, int uid) {
+        if (dp[lid][uid] != 0) return dp[lid][uid];
+        int max = 0;
+        if (uid == lid) return lower*nums[uid]*upper;
+        for (int i = lid; i <= uid; i++) {
+            int front = i == lid ? 0 : solve(lower, nums[i], lid, i-1 >= lid ? i-1 : lid);
+            int last = upper*nums[i]*lower;
+            int back = i == uid ? 0 : solve(nums[i], upper, i+1 <= uid ? i+1 : uid, uid);
+            max = Math.max(max, front + last + back);
+        }
+        dp[lid][uid] = max;
+        return max;
+    }
+    
+    public int maxCoins(int[] nums) {
+        if (nums.length == 0) return 0;
+        this.nums = nums; dp = new int[nums.length][nums.length];
+        return solve(1, 1, 0, nums.length-1);
+    }
+} 
+
