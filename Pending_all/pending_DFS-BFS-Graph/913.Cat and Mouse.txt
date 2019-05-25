@@ -1,0 +1,206 @@
+## Specification
+A game on an undirected graph is played by two players, Mouse and Cat, who alternate turns. The graph is given as follows: graph[a] is a list of all nodes b such that ab is an edge of the graph. Mouse starts at node 1 and goes first, Cat starts at node 2 and goes second, and there is a Hole at node 0. During each player's turn, they must travel along one edge of the graph that meets where they are.  For example, if the Mouse is at node 1, it must travel to any node in graph[1]. Additionally, it is not allowed for the Cat to travel to the Hole (node 0.) Then, the game can end in 3 ways:
+
+If ever the Cat occupies the same node as the Mouse, the Cat wins.
+If ever the Mouse reaches the Hole, the Mouse wins.
+If ever a position is repeated (ie. the players are in the same position as a previous turn, and it is the same player's turn to move), the game is a draw.
+
+Given a graph, and assuming both players play optimally, return 1 if the game is won by Mouse, 2 if the game is won by Cat, and 0 if the game is a draw.
+
+Example 1:
+Input: [[2,5],[3],[0,4,5],[1,4,5],[2,3],[0,2,3]]
+Output: 0
+Explanation:
+4---3---1
+|   |
+2---5
+ \ /
+  0
+
+Note:
+3 <= graph.length <= 50
+It is guaranteed that graph[1] is non-empty.
+It is guaranteed that graph[2] contains a non-zero element. 
+
+
+
+## Testcases
+[[2,5],[3],[0,4,5],[1,4,5],[2,3],[0,2,3]]
+[[4],[3],[3,4],[1,2,4],[0,3]]
+[[3,4],[3,4],[4],[0,1,4],[0,1,2,3]]
+
+[[6],[4],[9],[5],[1,5],[3,4,6],[0,5,10],[8,9,10],[7],[2,7],[6,7]]
+[[2,5],[3],[0,4,5],[1,4,5],[2,3],[0,2,3]]
+
+
+
+## Ideas
+# (III) DFS
+https://leetcode.com/problems/cat-and-mouse/discuss/236775/python-DFS%2BDP-faster-than-95.88-less-than-100easy-to-understandprovide-by-a-Rookie
+
+https://leetcode.com/problems/cat-and-mouse/discuss/230116/C%2B%2B-convert-to-graph-then-dfs
+
+
+# (II) BFS/Min_Max/Topological traversal
+The fact that both sides cat and mouse can optimize their choice complicates the condition. However, a common feature of these kind of problems is there always exist some base cases whose res can be assured immediately. For instance, if mouse is at 0, wherever the cat locates, the mouse wins. Similarly, if mouse and cat locate at the same location (not 0), then cat wins. We can then proliferate from these base case. In detail, for each base case, we trace back one step to access those cases where the mouse-cat location pair would transit to the base case in one move. For instance, if we have 0(mouse)-1(cat), then a previous case 2-1 which can transit to 0-1 via the moving of mouse from 2 to 0 would inherit 0-1's res, being mouse wins.
+
+However, for case 2-3 which can transit to 2-1 via cat's moving from 3 to 1 may not inherit this res. This is simulation of cat's optimization which tend to attain its own wining. Thus, given mouse wins temporarily indicated, we cannot be sure whether this is the best the cat can do and thus, res of 2-3 shall be suspended. And if all possible cases that 2-3 can transit to indicate mouse wins, then mouse will surely win. The "num" array is used to record how many adjacent cases of a particular case has not yet been confirmed with res. And this array will only be used when all base cases traced back to a particular parent case represents a res opposing its preference.
+
+During implementation, for each case/status, we need info including mouse and cat locations and who is moving next. And we are targeting towards its final res, being either 0, 1, or 2. We maintain dp to record such res of each status. Initially, every status/node is assumed to be a draw (0) and in that case, when a draw does occur, dp[1][2][0] will not be touched by our BFS, correctly resulting a draw. Apart from that, both cat and mouse win (1/2) cases will be evaluated by BFS.
+
+For BFS initialization, we first add in all status like the two above whose res can be determined trivially. Then for each of these status, we trace back to find the previos/parent status that can transit to it. For each such parent status, the if checks two conditions:
+(i) If the winner entailed by current node is the highest priority of the parent node (e.g. cur = 0,1,1, then the winner is mouse. Given prev being 2,1,0 which denotes a move of mouse whose highest priority is the winning of itself, then draw and least being cat winning), simply update the winner to prev. 
+(ii) If the winner of current node is the lowest priority of parent (e.g. cur = 1,1,1, cat is the winner; prev = 2,1,0 which is a mouse move, preferring mouse win), then decrement the number of adjacent nodes of prev. If the parent possesses no more adj nodes thereafter, it means all possible "cur" that trace to the particular parent indicate cat win. Thus, wherever the mouse go, it would fail.
+
+
+# (I) DP_top-down
+
+
+
+## Code
+# (II) BFS/Min_Max/Topological traversal
+// optimized_24ms
+class Solution {
+public:
+    int catMouseGame(vector<vector<int>>& graph) {
+        int n = graph.size();
+        // dp[i][j][0/1], final winner given mouse at i, cat at j and mouse/cat for next turn
+        int dp[n][n][2]; memset(dp, 0, sizeof(dp));
+        int num[n][n][2]; memset(num, 0, sizeof(num));
+        queue<vector<int>> q;
+        // initialize
+        for (int i = 0; i < n; i++) {
+            for (int j = 1; j < n; j++) {
+                num[i][j][0] = graph[i].size();
+                num[i][j][1] = graph[j].size();
+                for (int x : graph[j]) if (x == 0)
+                { num[i][j][1]--; break; }
+            }
+        }
+        for (int i = 1; i < n; i++) {
+            dp[0][i][0] = dp[0][i][1] = 1;
+            dp[i][i][0] = dp[i][i][1] = 2;
+            q.push({0, i, 0, 1}); q.push({0, i, 1, 1}); // mouse win
+            q.push({i, i, 0, 2}); q.push({i, i, 1, 2}); // cat win
+        }
+        // BFS
+        while (!q.empty()) {
+            vector<int> node = q.front(); q.pop(); // current node
+            int m = node[0], c = node[1], turn = node[2], res = node[3];
+            if (m == 1 && c == 2 && turn == 0) return res;
+            
+            int turn2 = 1 - turn;
+            for (int adj : graph[turn2 == 1 ? c : m]) {
+                int m2 = turn2 == 1 ? m : adj;
+                int c2 = turn2 == 1 ? adj : c;
+                if (c2 == 0 || dp[m2][c2][turn2] > 0) continue;
+                
+                if (res == turn2 + 1 || --num[m2][c2][turn2] == 0) {
+                    dp[m2][c2][turn2] = res;
+                    q.push({ m2, c2, turn2, res });
+                }
+            }
+        }
+        return dp[1][2][0];
+    }
+};
+
+// derived_540ms
+class Solution {
+public:
+    // find nodes that can reach (m,c,t)
+    vector<vector<int>> trace(int m, int c, int turn, vector<vector<int>>& graph) {
+        vector<vector<int>> res;
+        if (turn == 0) {// previous turn should be 1 - cat move
+            for (int prevc : graph[c]) if (prevc != 0 && prevc != m)
+                res.push_back({ m, prevc, 1 });
+        } else { // previous turn should be 0 - mouse move
+            for (int prevm : graph[m]) if (prevm != 0 && prevm != c)
+                res.push_back({ prevm, c, 0 });
+        }
+        return res;
+    }
+    
+    int catMouseGame(vector<vector<int>>& graph) {
+        int n = graph.size();
+        // dp[i][j][0/1], final winner given mouse at i, cat at j and mouse/cat for next turn
+        int dp[n][n][2]; memset(dp, 0, sizeof(dp));
+        int num[n][n][2]; memset(num, 0, sizeof(num));
+        queue<vector<int>> q;
+        // initialize
+        for (int i = 0; i < n; i++) {
+            for (int j = 1; j < n; j++) {
+                num[i][j][0] = graph[i].size();
+                num[i][j][1] = graph[j].size();
+                for (int x : graph[j]) if (x == 0)
+                { num[i][j][1]--; break; }
+            }
+        }
+        for (int i = 1; i < n; i++) {
+            dp[0][i][0] = dp[0][i][1] = 1;
+            dp[i][i][0] = dp[i][i][1] = 2;
+            q.push({0, i, 0, 1}); q.push({0, i, 1, 1}); // mouse win
+            q.push({i, i, 0, 2}); q.push({i, i, 1, 2}); // cat win
+        }
+        // BFS
+        while (!q.empty()) {
+            vector<int> node = q.front(); q.pop(); // current node
+            int m = node[0], c = node[1], turn = node[2], res = node[3];
+            
+            for (vector<int> prev : trace(m, c, turn, graph)) {
+                int m1 = prev[0], c1 = prev[1], turn1 = prev[2];
+                
+                if (res == turn1 + 1 || --num[m1][c1][turn1] == 0) {
+                    dp[m1][c1][turn1] = res;
+                    q.push({ m1, c1, turn1, res });
+                }
+            }
+        }
+        return dp[1][2][0];
+    }
+};
+
+
+# (I) DP_top-down
+// wrong
+class Solution {
+public:
+    // find the winner given mouse and cat locating at curM and curC with isM moving next
+    int calc(int curM, int curC, int isM, vector<vector<vector<int>>>& dp, vector<vector<int>>& graph) {
+        if (curC == 0 || curM == 0) return 1;
+        if (curC == curM) return 2;
+        if (dp[curM][curC][isM] != -1) return dp[curM][curC][isM];
+        
+        dp[curM][curC][isM] = 0;
+        bool canDraw = false;
+        if (isM) {
+            for (int i = 0; i < graph[curM].size(); i++) // if any neigbor is 0
+                if (graph[curM][i] == 0) { dp[curM][curC][isM] = 1; return 1; }
+            
+            for (int i = 0; i < graph[curM].size(); i++) {
+                int temp = calc(graph[curM][i], curC, 0, dp, graph);
+                if (temp == 1) { dp[curM][curC][isM] = 1; return 1; }
+                if (temp == 0) canDraw = true;
+            }
+            if (!canDraw) dp[curM][curC][isM] = 2;
+            
+        } else {
+            for (int i = 0; i < graph[curC].size(); i++) // if any neighbor is current pos of mouse
+                if(graph[curC][i] == curM) { dp[curM][curC][isM]=2; return 2; }
+            
+            for (int i = 0; i < graph[curC].size(); i++) {
+                int temp = calc(curM, graph[curC][i], 1, dp, graph);
+                if (temp == 2) { dp[curM][curC][isM] = 2; return 2; }
+                if (temp == 0) canDraw = true;
+            }
+            if (!canDraw) dp[curM][curC][isM] = 1;
+        }
+        return dp[curM][curC][isM];
+    }
+    
+    int catMouseGame(vector<vector<int>>& graph) {
+        int n=graph.size();
+        vector<vector<vector<int>>> dp(n, vector<vector<int>>(n, vector<int>(2, -1)));
+        return calc(1, 2, 1, dp, graph);
+    }
+};

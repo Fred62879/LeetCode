@@ -23,6 +23,7 @@ S consists only of characters from the set {'D', 'I'}.
 
 ## Testcases
 "DDIIDDIIIDIDID"
+"IIDIIDDIDDDDIIDDIDIDIDDDDIDDDIIIIDDIDDDDIDIIDDIDID"
 "DIDDDIIDDIIIIIIIIIIIDDDDDDDDDDDDDDDDDIIIIIIIIIIIDIDIDIDIID"
 
 
@@ -73,44 +74,57 @@ Very straightforward definition of dp but very slow. And I have implemented this
 // others_stay tuned
 class Solution {
 public:
-    vector<vector<long>> dp;
-    vector<long> fac{1, 1}, facinv{1, 1};
-    int q;
+    vector<long> fac{ 1, 1 }, fac_inv{ 1, 1 };
+    int mod;
     
-    // C(n,k)
-    long selection(int n, int i) {
-        return (fac[n] / fac[n-i]) / fac[i];
+    long fact(int a) {
+        while (a >= fac.size())
+            fac.push_back(fac.back() * fac.size() % mod);
+        return fac[a];
     }
     
-    // total # of perms satisfying s[i:j] using a particular set of numbers
-    int solve(int i, int j, string s) {
-        if (i >= j) return 1;
-        if (dp[i][j] != -1) return dp[i][j];
-        
-        long ans = 0; int n = j - i + 2; // totally n numbers to cover s[i:j]
-        if (s[i] == 'I') ans = solve(i + 1, j, s);
-        if (s[j] == 'D') ans = (ans + solve(i, j - 1, s)) % q;
-        
-        for (int k = i; k < j; k++) {
-            if (s[k] != 'D' || s[k + 1] != 'I') continue;
-            // set kth number as 0
-            long left = solve(i, k - 1, s), right = solve(k + 2, j, s);
-            long combin = (left * right) % q, sel = selection(n - 1, k - i + 1);
-            ans = (ans + (combin * sel) % q) % q;
+    long fact_inv(int a) {
+        while (a >= fac_inv.size()) {
+            long f = fact(fac_inv.size());
+            fac_inv.push_back(inv(f, mod) % mod);
         }
-        dp[i][j] = ans;
-        return ans;
+        return fac_inv[a];
+    }
+    
+    long inv(int a, int b) {
+        if (b == 1) return 0;
+        int x = 1, y = 0, tmp, q;
+        while (a > 1) {
+            q = a / b;
+            tmp = b, b = a % b, a = tmp;
+            tmp = y, y = x - y * q, x = tmp;
+        }
+        return (x + mod) % mod;
+    }
+    
+    long selection(int n, int k) {
+        return fact(n) * fact_inv(n-k) % mod * fact_inv(k) % mod;
+    }
+    
+    // # of ways to permute a particular set of nums to satisfy s[lo: hi]
+    int solve(int lo, int hi, string s) {
+        if (lo > hi) return 1;
+        int cur = 0, n = hi - lo + 1;
+        if (s[lo] == 'I') cur += solve(lo + 1, hi, s);
+        if (s[hi] == 'D') cur += solve(lo, hi - 1, s) % mod;
+        
+        for (int i = lo; i < hi; i++) { // 0 between i & i+1 
+            if (s[i] != 'D' || s[i + 1] != 'I') continue;
+            long left = solve(lo, i - 1, s), right = solve(i + 2, hi, s);
+            long combin = (left * right) % mod, sel = selection(n, i - lo + 1);
+            cur = (cur + (combin * sel) % mod) % mod;
+        }
+        return (cur + mod) % mod;
     }
     
     int numPermsDISequence(string S) {
-        q = 1e9 + 7;
-        dp.assign(S.size(), vector<long>(S.size(), -1));
-        for (int i = 2; i < 201; i++) {
-            fac.push_back((fac[i-1] * i) % q);
-            facinv.push_back(pow(fac[f], q));
-        }
-        cout << fac[100] << ", " << fac[23] << ", " << fac[77];
-        return solve(0, S.size()-1, S);
+        mod = 1e9 + 7;
+        return solve(0, S.size() - 1, S);
     }
 };
 
@@ -155,6 +169,30 @@ public:
 
 # (2) DP_bottom-up
 // (III) O(n^2)_D
+class Solution { // **** STAY TUNED ****
+public:
+    int numPermsDISequence(string S) {
+        int n = S.size(), ans = 0, q = 1e9 + 7;
+        // dp[i][j], # of perms of 0 ~ i end with elements <= j
+        vector<long> dp(n + 1, 1);
+        // DP
+        for (int i = 1; i <= n; i++)
+            for (int j = 0; j <= n; j++) {
+                vector<long> tmp(n + 1);
+                
+                if (j > i)  // end with element <= j
+                    tmp[j] = tmp[j-1];
+                else if (S[i - 1] == 'D') // prev ends with num >= j
+                    tmp[j] = (tmp[j] + (!j? 0 : tmp[j-1]) + dp[i] - (!j? 0 : dp[j-1]) + q) % q;
+                else if (j) // prev ends with num < j
+                    tmp[j] = (tmp[j] + tmp[j-1] + dp[j-1]) % q;
+                
+                dp = tmp;
+            }
+        return dp[n];
+    }
+};
+
 
 // (II) O(n^2)_2D_derived
 class Solution {
@@ -186,6 +224,7 @@ public:
     }
 };
 
+
 // (I) O(n^3)_2D_derived
 class Solution {
 public:
@@ -207,6 +246,37 @@ public:
         for (int i = 0; i <= n; i++)
             ans = (ans + dp[n][i]) % q;
         return ans;
+    }
+};
+
+// 2nd visit
+class Solution {
+public:
+    int numPermsDISequence(string S) {
+        int n = S.size(), q = 1e9 + 7;
+        // dp[i][j], # of perms of 0~i+1 satisfying S[0:i] end with j
+        int dp[n][n + 1]; memset(dp, 0, sizeof(dp));
+        if (S[0] == 'D') dp[0][0] = 1;
+        else dp[0][1] = 1;
+        
+        for (int i = 1; i < n; i++)
+            for (int j = 0; j <= i + 1; j++) {
+                if (S[i] == 'D')
+                    for (int k = j; k <= i; k++)
+                        dp[i][j] = (dp[i][j] + dp[i-1][k]) % q;
+                else 
+                    for (int k = 0; k <= j - 1; k++)
+                        dp[i][j] = (dp[i][j] + dp[i-1][k]) % q;
+            }
+        long ans = 0;
+        /*
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j <= i + 1; j++)
+                cout << i << "/" << j << "/" << dp[i][j] << endl;
+        */
+        for (int i = 0; i <= n; i++)
+            ans = (ans + dp[n - 1][i]) % q;
+        return (int) ans;
     }
 };
 

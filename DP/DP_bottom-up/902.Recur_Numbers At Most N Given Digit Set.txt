@@ -1,4 +1,6 @@
 ## Specification
+Similar: LT600, 788*, 1012
+
 We have a sorted set of digits D, a non-empty subset of {'1','2','3','4','5','6','7','8','9'}.  (Note that '0' is not included.) Now, we write numbers using these digits, using each digit as many times as we want. For example, if D = {'1','3','5'}, we may write numbers such as '13', '551', '1351315'. Return the number of positive integers that can be written (using the digits of D) that are less than or equal to N. 
 
 Example 1:
@@ -50,7 +52,8 @@ As a result, we now have xxxx, xx, and x. So we further add xxx.
 
 
 ## Code
-// (3) others
+# (1) DP_Math
+// others
 int find(vector<string> &D, char x){
     int i = 0;
     while(i < D.size() && x -'0' >= D[i][0] -'0') i++;
@@ -80,7 +83,7 @@ public:
 };
 
 
-// (2) derived_same idea as (1)
+// derived
 class Solution {
 public:
     // amount of nums with equal digits
@@ -88,7 +91,8 @@ public:
         int less = 0, equal = 0, n = sn.size(), m = D.size(), count = pow(m, n - 1);
         for (int i = 0; i < m; i++) {
             if (D[i][0] < sn[0]) less++;
-            if (D[i][0] == sn[0]) equal++;
+            else if (D[i][0] == sn[0]) equal++;
+	    else break;
         }
         if (!equal) return less * count;
         return less * count + (n == 1 ? equal * count : solve(D, sn.substr(1, n)));
@@ -103,7 +107,7 @@ public:
 };
 
 
-// (1) Recursion
+// indep
 class Solution {
 public:
     // # of nums of all possible digits generated <= sn
@@ -130,7 +134,8 @@ public:
     }
 };
 
-//
+
+# () NOT IMPLE
 class Solution {
 public:
     // # of nums of all possible digits generated <= sn

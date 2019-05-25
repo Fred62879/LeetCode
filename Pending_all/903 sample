@@ -1,0 +1,46 @@
+class Solution {
+public:
+    long fac[200][200]{ 1, 1 };
+    long fac_inv[200][200]{ 1, 1 };
+    int mod;
+    
+    long inv(int a, int b) {
+        if (b == 1) return 0;
+        int x = 1, y = 0, tmp, q;
+        while (a > 1) {
+            q = a / b;
+            tmp = b, b = a % b, a = tmp;
+            tmp = y, y = x - y * q, x = tmp;
+        }
+        return (x + mod) % mod;
+    }
+    /*
+    long selection(int n, int k) {
+        return fac[n] * fac_inv[n-k] % mod * fac_inv[k] % mod;
+    }
+    
+    // # of ways to permute a particular set of nums to satisfy s[lo: hi]
+    int solve(int lo, int hi, string s) {
+        if (lo > hi) return 1;
+        int cur = 0, n = hi - lo + 1;
+        if (s[lo] == 'I') cur += solve(lo + 1, hi, s);
+        if (s[hi] == 'D') cur += solve(lo, hi - 1, s) % mod;
+        
+        for (int i = lo; i < hi; i++) { // 0 between i & i+1 
+            if (s[i] != 'D' || s[i + 1] != 'I') continue;
+            long left = solve(lo, i - 1, s), right = solve(i + 2, hi, s);
+            long combin = (left * right) % mod, sel = selection(n, i - lo + 1);
+            cur = (cur + (combin * sel) % mod) % mod;
+        }
+        return (cur + mod) % mod;
+    }
+    */
+    int numPermsDISequence(string S) {
+        mod = 1e9 + 7;
+        for (long i = 2; i < 201; i++) {
+            fac[i] = (i * fac[i - 1]) % mod;
+            fac_inv[i] = inv(fac[i], mod) % mod;
+        }
+        return 0;//solve(0, S.size() - 1, S);
+    }
+};

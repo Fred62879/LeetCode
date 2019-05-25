@@ -30,8 +30,6 @@ https://leetcode.com/problems/number-of-music-playlists/discuss/248314/C%2B%2B-O
 
 https://leetcode.com/problems/number-of-music-playlists/discuss/248397/C%2B%2B-O(L)-solution-or-O((N-K)log(N-K)-*-log(L-K)-%2BN)-in-detail
 
-https://www.geeksforgeeks.org/multiplicative-inverse-under-modulo-m/
-
 If we remove the restriction 'Every song is played at least once', the problem is become quiet easier. Let: R(N, L, K) = the answer of the question, and F(N, L, K) = permutations of musics without the restriction 'Every song is played at least once'. So based on Binomial Transform:
 F(N, L, K) = C(N, N) * R(N, L, K) + C(N, N-1) * R(N-1, L, K) + C(N, N-2) * R(N-2, L, K) ->
 R(N, L, K) = C(N, N) * F(N, L, K) - C(N, N-1) * F(N-1, L, K) + C(N, N-2) * F(N-2, L, K), where F(N, L, K) = P(ermutation)(N, K) * (N - K)^(L - K)
@@ -74,7 +72,78 @@ Let dp[i][j] denotes the # of ways to have songs 0~i being played j times. To ma
 
 ## Code
 # (3) Math
-
+// derived
+class Solution {
+public:
+    int mod;
+    vector<long> fac{1, 1}, fac_inv{1, 1};
+    /*
+    // multiplicative inverse_1
+    long inv(int a, int m) { 
+        int y = 0, x = 1; 
+        if (m == 1) return 0; 
+        while (a > 1) {
+            int q = a / m, t = m; 
+            m = a % m, a = t; 
+            t = y;
+            y = x - q * y; 
+            x = t; 
+        }
+        if (x < 0) x += mod;
+        return x;
+    }
+    */
+    // multiplicative inverse_2
+    long inv(int a, int b) {
+        int x = 1, y = 0, q, tmp;
+        if (b == 1) return 0;
+        while (a > 1) {
+            q = a / b;
+            // update a & b 
+            tmp = b;   b = a % b;   a = tmp;
+            // update x & y
+            tmp = y;   y = x - q * y;   x = tmp;
+        }
+        return (x + mod) % mod;
+    }
+    
+    long fact(int k) {
+        while (fac.size() <= k)
+            fac.push_back(fac.back() * fac.size() % mod);
+        return fac[k];
+    }
+    
+    long pow(int n, int k) {
+        if (n == 0) return 0;
+        if (k == 0) return 1;
+        long res;
+        if (k % 2) {
+            res = n % mod;
+            res = (res * pow(n, k - 1) % mod) % mod;
+        } else {
+            res = pow(n, k / 2) % mod;
+            res = (res * res) % mod;
+        }
+        return (int) (res + mod) % mod;
+    }
+    
+    long combi(int n, int k) {  
+        return fact(n) * inv(fact(n-k) * fact(k) % mod, mod) % mod;
+    }
+    
+    long F(int n, int l, int k) {
+        if (n < k) return 0; // not sufficient songs
+        return fact(n) * inv(fact(n-k), mod) % mod * pow(n-k, l-k) % mod;
+    }
+    
+    int numMusicPlaylists(int N, int L, int K) {
+        mod = 1e9 +7;
+        long ans = 0;
+        for (int i = N, sign = 1; i >= K; i--, sign *= -1)
+            ans = (ans + mod + sign * combi(N, i) * F(i, L, K) % mod ) % mod;
+        return ans;
+    }
+};
 
 # (2) DP_Math
 

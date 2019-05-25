@@ -1,4 +1,6 @@
 ## Specification
+Similar: LT310, 684
+
 In this problem, a rooted tree is a directed graph such that, there is exactly one node (the root) for which all other nodes are descendants of this node, plus every node has exactly one parent, except for the root node which has no parents.
 
 The given input is a directed graph that started as a rooted tree with N nodes (with distinct values 1, 2, ..., N), with one additional directed edge added. The added edge has two different vertices chosen from 1 to N, and was not an edge that already existed.
@@ -38,27 +40,25 @@ Note: The size of the input 2D-array will be between 3 and 1000. Every integer r
 
 
 ## Ideas
-# (4) Trim nodes
+# (IV) Trim nodes
 In this problem, an edge being redudant is equivalent to the edge being part of a cycle. To find the cycle, we can repeatedly trim nodes of degree 1 until there are none left. This is similar to the approach commonly used for Minimum Height Trees.
 
 This is the standard solution where we repeatedly remove leaf nodes, but we can XOR the edge IDs together since we only traverse an edge when the corresponding leaf node has only one edge.
 
-https://leetcode.com/problems/minimum-height-trees/discuss/198238/Optimized-C%2B%2B-solution-beats-99
 
-https://leetcode.com/problems/redundant-connection/discuss/223338/C%2B%2B-beats-100%3A-trim-nodes-of-degree-1-similar-to-Minimum-Height-Trees
 
 https://leetcode.com/problems/redundant-connection-ii/discuss/226588/C%2B%2B-beats-100%3A-trim-nodes-of-degree-1-similar-to-Minimum-Height-Trees
 
 
-# (3) Topo sort
+# (III) Topo sort
 https://leetcode.com/problems/redundant-connection-ii/discuss/188995/Different-solution-using-Topological-Sort
 
 
-# (2) DFS
+# (II) DFS
 
 
 
-# (1) Union
+# (I) Union
 // others
 https://leetcode.com/problems/redundant-connection-ii/discuss/108058/one-pass-disjoint-set-solution-with-explain
 
@@ -82,7 +82,55 @@ Note we store the root of each node as its immediate root rather than any profou
 
 
 ## Code
-# (1) Union Find/ Disjoint Set
+# (IV) Trim nodes
+
+
+
+
+# (II) DFS
+// others_slow
+Class Solution {
+    
+    public int[] findRedundantDirectedConnection(int[][] edges) {
+        Map<Integer, Set<Integer>> g = new HashMap<>(); // graph, construct as traverse
+        Map<Integer, Integer> p = new HashMap<>(); // p[i], parent of node i
+        int[] c1 = null, c2 = null, last_cycle = null;
+        
+        for(int[] e : edges) {
+            if(p.containsKey(e[1])) {
+                c1 = new int[]{p.get(e[1]), e[1]}; // prev parent
+                c2 = e; // most recent parent of two-pointer-node
+            }
+
+            if(canReach(e[1], e[0], g, new HashSet<>())) last_cycle = e;
+            p.put(e[1], e[0]);
+            g.putIfAbsent(e[0], new HashSet<>());
+            g.get(e[0]).add(e[1]);
+        }
+        
+        if(last_cycle == null) return c2; // no cycle detected
+        if(c2 == null) return last_cycle; // no two-pointer-node
+
+        if(canReach(c2[1], c2[0], g, new HashSet<>())) return c2;
+        return c1;
+    }
+    
+    // whether based on graph (g) so far, path exists from s to t
+    boolean canReach(int s, int t, Map<Integer, Set<Integer>> g, Set<Integer> v) {
+        if(s == t) return true;
+        if(!g.containsKey(s) || g.get(s).size() == 0) return false;
+        
+        for(int nxt : g.get(s)) {
+            if(v.contains(nxt)) continue;
+            v.add(nxt);
+            if(canReach(nxt, t, g, v)) return true;
+        }
+        return false;
+    }
+}
+
+
+# (I) Union Find/ Disjoint Set
 // (ii) slightly different setup
 // others_one pass
 class Solution {
@@ -203,7 +251,7 @@ public:
     vector<int> findRedundantDirectedConnection(vector<vector<int>>& edges) {
         vector<int> res, candidate;
         int n = edges.size();
-        root.assign(n + 1, 0);
+        root.assign(n + 1);
         for (int i = 0; i <= n; i++) root[i] = i;
         
         for (int i = 0; i < n; i++) {
@@ -222,49 +270,3 @@ public:
         return res.empty() ? candidate : res;
     }
 };
-
-
-# (2) DFS
-// others_slow
-Class Solution {
-    
-    public int[] findRedundantDirectedConnection(int[][] edges) {
-        Map<Integer, Set<Integer>> g = new HashMap<>(); // graph, construct as traverse
-        Map<Integer, Integer> p = new HashMap<>(); // p[i], parent of node i
-        int[] c1 = null, c2 = null, last_cycle = null;
-        
-        for(int[] e : edges) {
-            if(p.containsKey(e[1])) {
-                c1 = new int[]{p.get(e[1]), e[1]}; // prev parent
-                c2 = e; // most recent parent of two-pointer-node
-            }
-
-            if(canReach(e[1], e[0], g, new HashSet<>())) last_cycle = e;
-            p.put(e[1], e[0]);
-            g.putIfAbsent(e[0], new HashSet<>());
-            g.get(e[0]).add(e[1]);
-        }
-        
-        if(last_cycle == null) return c2; // no cycle detected
-        if(c2 == null) return last_cycle; // no two-pointer-node
-
-        if(canReach(c2[1], c2[0], g, new HashSet<>())) return c2;
-        return c1;
-    }
-    
-    // whether based on graph (g) so far, path exists from s to t
-    boolean canReach(int s, int t, Map<Integer, Set<Integer>> g, Set<Integer> v) {
-        if(s == t) return true;
-        if(!g.containsKey(s) || g.get(s).size() == 0) return false;
-        
-        for(int nxt : g.get(s)) {
-            if(v.contains(nxt)) continue;
-            v.add(nxt);
-            if(canReach(nxt, t, g, v)) return true;
-        }
-        return false;
-    }
-}
-
-
-# (4) Trim nodes

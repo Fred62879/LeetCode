@@ -1,0 +1,166 @@
+## Specification
+Similar: LT715
+Given a collection of intervals, merge all overlapping intervals.
+
+Example 1:
+Input: [[1,3],[2,6],[8,10],[15,18]]
+Output: [[1,6],[8,10],[15,18]]
+Explanation: Since intervals [1,3] and [2,6] overlaps, merge them into [1,6].
+
+Example 2:
+Input: [[1,4],[4,5]]
+Output: [[1,5]]
+Explanation: Intervals [1,4] and [4,5] are considered overlapping.
+
+
+
+## Testcases
+[[1,4],[2,3]]
+[[2,3],[5,5],[2,2],[3,4],[3,4]]
+
+
+
+## Ideas
+# (IV) TreeSet
+
+# (III) Interval Tree/BST
+https://leetcode.com/problems/merge-intervals/discuss/21452/Share-my-interval-tree-solution-no-sorting
+https://leetcode.com/problems/merge-intervals/discuss/21451/Share-my-BST-interval-tree-solution-C%2B%2B-No-sorting!
+
+
+# (II) TreeMap
+Here's my solution without sorting. I use a tree map to maintain intervals as right -> left. Use lower_bound to find the first interval that has an overlap with the current interval and then merge all intervals that have overlaps. The complexity should still be O(nlogn) and it beats 98%.
+
+Same idea as my indep method of LT715, maintaining a set of non-overapping intervals as traversing the vectors.
+
+
+# (I) Sort
+Trivial
+
+
+## Code
+# (IV) TreeSet
+// cpp_derived
+
+
+        
+        set<vector<int>, decltype(cmp)> tree(cmp);
+        tree.insert({2, 3});
+        tree.insert({5, 5});
+        bool a = tree.find({3, 4}) == tree.end();
+        
+        cout << a;
+        for (auto& i : tree)
+            cout << i[0] << "/" << i[1] << endl;
+        
+        return {{}};
+
+class Solution {
+public:
+    vector<vector<int>> merge(vector<vector<int>>& intervals) {
+        auto cmp = [&intervals](vector<int> a, vector<int> b) { 
+            if (a[1] < b[0]) return -1;
+            return a[0] > b[1] ? 1 : 0;
+        };
+        set<vector<int>, decltype(cmp)> tree(cmp);
+        
+        for (auto& cur : intervals) {
+            cout << cur[0] << ", " << cur[1] << ": ";
+            
+            bool a = tree.find(cur) == tree.end();
+            cout << a << endl;
+            
+            while (tree.find(cur) != tree.end()) {
+                auto it = tree.lower_bound(cur);
+                vector<int> i = *it;
+                cout << i[0] << "/ " << i[1] << endl;
+                cur = { min(cur[0], i[0]), max(cur[1], i[1]) };
+                tree.erase(it);
+            }
+            cout << cur[0] << "| " << cur[1] << endl;
+            tree.insert(cur);
+        }
+
+        int sz = tree.size(), ct = 0;
+        vector<vector<int>> res(sz, vector<int>(2));
+        for (auto& i : tree) res[ct++] = i;
+        return res;
+    }
+};
+
+// others
+class Solution {
+    public int[][] merge(int[][] intervals) {
+        TreeSet<int[]> tree = new TreeSet<int[]>(new Comparator<int[]>() {
+            @Override
+            public int compare(int[] i1, int[] i2) {
+                if (i1[1] < i2[0]) return -1;
+                else if (i1[0] > i2[1]) return 1;
+                else return 0;
+            }
+        });
+        
+        for (int[] i: intervals) {
+            while (tree.contains(i)) {
+                int[] x = tree.ceiling(i);
+                tree.remove(x);
+                i = new int[]{ Math.min(i[0], x[0]), Math.max(i[1], x[1]) };
+            }
+            tree.add(i);
+        }
+
+        int sz = tree.size(), ct = 0;
+        int[][] res = new int[sz][2];
+        for (int[] i : tree) res[ct++] = i;
+        return res;
+    }
+}
+
+# (III) Interval Tree
+
+
+# (II) TreeMap
+// others
+class Solution {
+public:
+    vector<vector<int>> merge(vector<vector<int>>& intervals) {
+        map<int, int> r2l; // key-value: hi-lo
+        for (auto &i : intervals) {
+            int s = i[0], e = i[1];
+            auto it = r2l.lower_bound(i[0]); // retrieve interval with hi >= current lo
+            while (it != r2l.end() && it->second <= i[1]) { // given retrieved lo <= current hi
+                s = min(s, it->second);
+                e = max(e, it->first);
+                it = r2l.erase(it); // increment it to next interval
+            }
+            r2l[e] = s;
+        }
+        vector<vector<int>> ans;
+        for (auto &p: r2l) 
+            ans.push_back( {p.second, p.first} );
+        return ans;
+    }
+};
+
+# (I) Sort
+// indep
+class Solution {
+public:
+    vector<vector<int>> merge(vector<vector<int>>& intervals) {
+        vector<vector<int>> res;
+        int n = intervals.size();
+        if (n == 0) return res;
+        
+        sort(intervals.begin(), intervals.end(), [] (vector<int> a, vector<int> b) {
+            return a[0] < b[0];
+        });
+        vector<int> tmp = intervals[0];
+        for (int i = 1; i < n; i++) {
+            if (tmp[1] >= intervals[i][0]) { tmp[1] = max(tmp[1], intervals[i][1]); continue; }
+            res.push_back(tmp); 
+            tmp = intervals[i];
+        }
+        res.push_back(tmp);
+        return res;
+    }
+};

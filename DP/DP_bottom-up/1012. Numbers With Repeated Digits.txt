@@ -1,0 +1,127 @@
+## Specification
+Similar: LT600, 788*, 902
+
+Given a positive integer N, return the number of positive integers less than or equal to N that have at least 1 repeated digit. 
+
+Example 1:
+Input: 20
+Output: 1
+Explanation: The only positive number (<= 20) with at least 1 repeated digit is 11.
+
+Example 2:
+Input: 100
+Output: 10
+Explanation: The positive numbers (<= 100) with atleast 1 repeated digit are 11, 22, 33, 44, 55, 66, 77, 88, 99, and 100.
+
+Example 3:
+Input: 1000
+Output: 262
+
+Note:
+1 <= N <= 10^9
+
+
+## Testcases
+7834
+27381
+12092138
+
+
+## Ideas
+# (1) DP_Math
+To count the # of numbers with >= 2 repeats, we can do the complementary, counting that of numbers with completely no repeats which can be easily accomplished using permutation. Take 7834 for instance, we first count the # of ints with less than 4 digits that have no repeats. 
+Then, the difficult part comes to calculate ints with 4 digits which can be done progressively. 
+
+digit 1st  2nd   3rd   4th
+      < 7      
+        7  < 8
+	     8   < 3
+		   3   < 4
+			 4
+
+For 7834, we first calculate those that start with a digit smaller than 7, which can be any of 1~6. And the following three digits for these numbers can be freely chosen from 0~9 such that no repeats occur and there are totally A(9, 3) possibilities.
+
+Then as we enter the for loop, we are evaluating numbers whose previous digit align with that in the original number. In the 1st run of the for loop, we are assessing numbers whose 1st digit is 7. In this case, the second digit can be set as either being smaller than 8 or equal to 8. The counting for 7(<8)xx is accomplished in this 1st for loop and 78xx is counted in the 2nd run of for loop. 
+
+For 7(<8)xx, the second digit cannot be freely chosen from 0~7 as the first digit number cannot be used again to avoid repeats. For such reason, a vector set is maintained to record which of 0~9 has already been incorporated as former digits of the current number. As 7 has been used, the second digit for 7(<8)xx has 7 choices from 0~6. And the rest digit possibilities are counted identically as that of the first digit.
+
+Notice that when we have numbers like 12891034 where repeat digits naturally present, we shall return directly after evaluating the second "1" since if we proceed the for loop, further numbers counted all start with "12891" which already possess repeats. And the check condition is put at the end of the for loop because at each for loop run, we are evaluating numbers whose current digit is smaller than that in original number.
+
+Also, note that at the last digit, since we are allowed to have numbers equal to the given number, but at each digit the for loop only counts numbers with digit smaller than the corresponding digit in the given number. To simplify coding, we can simply set N as N+1.
+
+
+
+## Code
+# (2) DP_Backtracking/top-down
+// others_extremely slow
+class Solution {
+public:
+    int uniqueDigits = 0;
+    
+    // find number of ints less than N, larger than cur wit bitmask digit already used
+    void backtrack(long cur, int bitmask, int& N){
+        if(cur > N) return;
+        else uniqueDigits++;
+        
+        for(int digit = 0; digit < 10; digit++){
+            if(bitmask == 0 && digit == 0) continue;
+            if((bitmask & (1<<digit)) > 0) continue; // has repeat digits
+            backtrack(cur*10 + digit, bitmask | (1<<digit), N);
+        }
+    }
+
+    int numDupDigitsAtMostN(int N) {
+        backtrack(0, 0, N);
+        return N - uniqueDigits + 1; // +1 as 0 is counted
+    }
+};
+
+
+# (1) DP_Math
+// derived
+class Solution {
+public:
+    vector<int> fac{ 1, 1 };
+    
+    int fact(int a) {
+        while (a >= fac.size())
+            fac.push_back(fac[fac.size() - 1] * fac.size());
+        return fac[a];
+    }
+
+    /*
+    int A(int m, int n) {
+        return n == 0 ? 1 : A(m, n - 1) * (m - n + 1);
+    }
+    */
+    
+    int numDupDigitsAtMostN(int N) {
+        string s = to_string(N + 1);
+        int m = s.size(), ans = 0; // ans, number of no repeat ints <= N
+        int num[m];
+        for (int i = 0; i < m; i++)  num[i] = s[i] - '0';
+        
+        if (m == 1) return 0;
+        // # of <m digit ints without repeats
+        for (int i = 1; i < m; i++) // i-digit no repeat ints
+            ans += 9 * (fact(9) / fact(9 - i + 1));
+	    // ans += 9 * A(9, i - 1);
+        
+        // # of m-digit ints without repeats
+        vector<int> marked(10, 0);
+        ans += (num[0] - 1) * (fact(9) / fact(10 - m)); // 1st digit
+	// ans += (num[0] - 1) * A(9, m - 1); // 1st digit
+	marked[num[0]] = 1;
+
+        for (int i = 1, del = 0; i < m; i++, del = 0) {
+            for (int j = 0; j < num[i]; j++) // count digits already used
+                if (marked[j]) del++;
+
+            ans += (num[i] - del) * (fact(9 - i) / fact(10 - m));
+	    // ans += (num[i] - del) * A(9 - i, m - i - 1);
+            if (marked[num[i]]) break; // current digit repeat in original number
+            marked[num[i]] = 1;
+        }
+        return N - ans;
+    }
+};

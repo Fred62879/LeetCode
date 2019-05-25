@@ -1,0 +1,240 @@
+## Specification
+Similar: LT684, 685
+
+For an undirected graph with tree characteristics, we can choose any node as the root. The result graph is then a rooted tree. Among all possible rooted trees, those with minimum height are called minimum height trees (MHTs). Given such a graph, write a function to find all the MHTs and return a list of their root labels. 
+
+Format: The graph contains n nodes which are labeled from 0 to n - 1. You will be given the number n and a list of undirected edges (each edge is a pair of labels). You can assume that no duplicate edges will appear in edges. Since all edges are undirected, [0, 1] is the same as [1, 0] and thus will not appear together in edges.
+
+Example 1 :
+Input: n = 4, edges = [[1, 0], [1, 2], [1, 3]]
+        0
+        |
+        1
+       / \
+      2   3 
+Output: [1]
+
+Example 2 :
+Input: n = 6, edges = [[0, 3], [1, 3], [2, 3], [4, 3], [5, 4]]
+     0  1  2
+      \ | /
+        3
+        |
+        4
+        |
+        5 
+Output: [3, 4]
+
+Note:
+According to the definition of tree on Wikipedia: “a tree is an undirected graph in which any two vertices are connected by exactly one path. In other words, any connected graph without simple cycles is a tree.”
+The height of a rooted tree is the number of edges on the longest downward path between the root and a leaf.
+
+
+
+## Testcases
+8
+[[1,2],[2,0],[0,3],[3,4],[3,5],[5,6],[6,7]]
+
+2
+[[1,0]]
+
+3
+[[0,1],[1,2]]
+
+
+
+## Ideas
+# (III) Tree DP
+https://leetcode.com/problems/minimum-height-trees/discuss/76052/Two-O(n)-solutions
+
+
+# (II) Longest Path (DFS/BFS)
+https://leetcode.com/problems/minimum-height-trees/discuss/200941/topic
+
+Proof of "Randomly select a node x as the root, do a dfs/bfs to find the node y that has the longest distance from x. Then y must be one of the endpoints on some longest path."
+x is root of the tree. Longest path in a tree == max(height(node.left)+height(node.right)+1) for all nodes. Let pathLen(node) = height(node.left)+height(node.right) + 1. Let m be the node which has maximum pathLen(node) amongst all nodes. Can m's longest path avoid 'y'?
+	x
+       / \
+      ..... (l1)
+	 lca
+	 / \
+        m  ... (l2)
+       / \   \
+ (ii)-y....   y-(i)
+
+(i) If m's subtree doesn't contain y. Let lca be the Lowest Common Ancestor of m and y, l1 be the length of path from x to lca, and l2 be the length of path from lca to y, then,
+pl(x~y) = l1 + l2 + h(y). 
+
+Since y is the fartherest node from x, it should be larger than pl(x~m_leaf) = l1 + 1 + h(m).
+Thus, l2 + h(y) > 1 + h(m) and pl(lca) = h(m) + l2 + h(y) > 1 + 2 * h(m). Moreover, pl(m) (length of the longest path intersecting at node m) <= 2 * h(m). Thus, we end up with pl(m) <= 2 * h(m) < 2 * h(m) + 1 < l2 + h(y) + h(m) < pl(lca), indicating path transferring at lca being the longest path of the tree. This contradicts the fact the path transferring at m is the longest path of the tree.
+
+(ii) If m's subtree contains y. Since y is the fartherest node from x, y has the greatest depth out of any leaf node. This implies that h(m.left) = pl(y~m). According to the definition of pl, y must be contained in the longest path transferring at m.
+
+
+# (I) BFS/Topo sort
+// optimized_XOR
+Without storing the nodes each node links to, an XOR is performed to record adjacent node info. Initially, adj (graph[i]) for all nodes should be zero. Then, using [[1,0],[1,3],[1,2]] as an instance, graph[0/2/3] = 1. While graph[1] = 1. This info 
+
+// classical vs non-canonical BFS
+In classic setting, we start with a queue of leaf nodes and iteratively add new leaves to the queue in the while loop. While in the other case, we iterate over all nodes at each run of the while loop, select those whose count are 1 (leaf) and update the graph and count.
+
+// basic idea
+Heuristically, given a single path, the node entails the shortest tree height must be the one/two in the middle. Based on this, it can be found that we are somehow targeting at nodes that link to many nodes rather only one or possibly two. More specifically, all nodes that link to only one other node (apart from when we only have two nodes) shall be discarded. Because compared with its direct child (exactly one), the height of a tree rooted at a leaf node is 1 + height(child) which is always larger than max(1, height(child)) which is the case when its child is the root.
+
+As we remove leaf nodes, we shall also update this info to the node they link (reduce the # of nodes these parent nodes have). We recursively remove one-degree nodes until <= 1 nodes are left when we shall return.
+
+
+
+## Code
+# (III) Tree DP
+https://github.com/lydxlx1/LeetCode/blob/master/src/_310_1.java
+
+# (II) Longest Path (DFS/BFS)
+https://leetcode.com/problems/minimum-height-trees/discuss/76077/c-bfs-solution-by-finding-the-longest-path-in-the-tree
+
+
+
+# (I) BFS
+// (ii) Classical BFS
+// optimized_XOR 
+// 44ms, O(n) space
+class Solution {
+public:
+    vector<int> findMinHeightTrees(int n, vector<vector<int>>& edges) {
+        if (edges.empty()) return {0};
+        
+        vector<int> graph(n, 0), res, count(n);
+        for (auto& e : edges) {
+            graph[e[0]] ^= e[1]; graph[e[1]] ^= e[0];
+            count[e[0]]++; count[e[1]]++;
+        }
+        
+        queue<int> q;
+        for (int i = 0; i < n; i++)
+            if (count[i] == 1) q.push(i);
+        // BFS
+        while(!q.empty()) {
+            res.clear();
+            int sz = q.size();
+            for (int i = 0; i < sz; i++) {
+                int leaf = q.front(); q.pop();
+                res.push_back(leaf); count[leaf]--;
+                
+                int adj = graph[leaf];
+                if (count[adj] == 0) continue;
+                if (--count[adj] == 1) q.push(adj);
+                graph[adj] ^= leaf;
+            }
+        }
+        return res;
+    }
+};
+
+// others_discard leaf nodes
+// O(n) 72ms, O(n2) space
+class Solution {
+public:
+    struct Node {
+        unordered_set<int> neighbor;
+        bool isLeaf() const { return neighbor.size() == 1; }
+    };
+    
+    vector<int> findMinHeightTrees(int n, vector<vector<int>>& edges) {
+        vector<int> buffer1, buffer2;
+	// buffer2 for BFS, avoid concurrent modification
+	// better use queue, poping out specified time
+        vector<int>* pB1 = &buffer1; vector<int>* pB2 = &buffer2;
+        if (n == 1) { buffer1.push_back(0); return buffer1; }
+        if (n == 2) { buffer1.push_back(0); buffer1.push_back(1); return buffer1; }
+        
+        vector<Node> nodes(n);
+        for (auto& p : edges) {
+            nodes[p[0]].neighbor.insert(p[1]);
+            nodes[p[1]].neighbor.insert(p[0]);
+        }
+
+        for(int i=0; i<n; ++i)
+            if(nodes[i].isLeaf()) pB1->push_back(i);
+        // BFS
+        while (1) {
+            for (int i : *pB1) {
+                for (auto n: nodes[i].neighbor) {
+                    nodes[n].neighbor.erase(i); // *** Discard leaf nodes ***
+                    if (nodes[n].isLeaf()) pB2->push_back(n);
+                }
+            }
+            if (pB2->empty()) return *pB1;
+            pB1->clear(); swap(pB1, pB2);
+        }
+        return *pB1;
+    }
+};
+
+// others_do not discard leaf
+// O(n^2)_60ms
+class Solution {
+public:
+    vector<int> findMinHeightTrees(int n, vector<vector<int>>& edges) {
+        if (edges.empty()) return {0};
+        
+        vector<vector<int>> graph(n);
+        for (auto& e : edges) {
+            graph[e[0]].push_back(e[1]);
+            graph[e[1]].push_back(e[0]);
+        }
+        vector<int> count(n), res;
+        for (int i = 0; i < n; i++) count[i] = graph[i].size();
+        
+        queue<int> q;
+        for (int i = 0; i < n; i++)
+            if (count[i] == 1) q.push(i);
+        // BFS
+        while(!q.empty()) {
+            res.clear();
+            int sz = q.size();
+            for (int i = 0; i < sz; i++) {
+                int leaf = q.front(); q.pop();
+                res.push_back(leaf); count[leaf]--; // *** Not discard, only decrement count ***
+                for (int adj : graph[leaf]) {
+                    if (count[adj] == 0) continue;
+                    if (count[adj] == 2) q.push(adj);
+                    count[adj]--;
+                }
+            }
+        }
+        return res;
+    }
+};
+
+
+// (i) non-canonical BFS
+// derived_172ms
+class Solution {
+public:
+    vector<int> findMinHeightTrees(int n, vector<vector<int>>& edges) {
+        if (edges.empty()) return {0};
+        
+        vector<unordered_set<int>> graph(n);
+        for (auto& e : edges) {
+            graph[e[0]].insert(e[1]);
+            graph[e[1]].insert(e[0]);
+        }
+        vector<int> count(n), res, cp;
+        for (int i = 0; i < n; i++) count[i] = graph[i].size();
+        // BFS
+        int ct = n;
+        while(ct > 2) { // in casa we have only two nodes
+            cp = count;
+            for (int i = 0; i < n; i++) {
+                if (count[i] != 1) continue;
+                cp[i] = -1; ct--; // remove leaf
+                auto adj = graph[i].begin(); // update parent of leaf
+                cp[*adj]--; graph[*adj].erase(i);
+            }
+            count = cp;
+        }
+        for (int i = 0; i < n; i++)
+            if (count[i] == 0 || count[i] == 1) res.push_back(i);
+        return res;
+    }
+};

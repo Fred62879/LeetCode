@@ -1,0 +1,279 @@
+## Specification
+Two strings X and Y are similar if we can swap two letters (in different positions) of X, so that it equals Y. For example, "tars" and "rats" are similar (swapping at positions 0 and 2), and "rats" and "arts" are similar, but "star" is not similar to "tars", "rats", or "arts". 
+
+Together, these form two connected groups by similarity: {"tars", "rats", "arts"} and {"star"}.  Notice that "tars" and "arts" are in the same group even though they are not similar.  Formally, each group is such that a word is in the group if and only if it is similar to at least one other word in the group.
+
+We are given a list A of strings.  Every string in A is an anagram of every other string in A.  How many groups are there?
+
+Example 1:
+Input: ["tars","rats","arts","star"]
+Output: 2
+Note:
+
+A.length <= 2000
+A[i].length <= 1000
+A.length * A[i].length <= 20000
+All words in A consist of lowercase letters only.
+All words in A have the same length and are anagrams of each other.
+The judging time limit has been increased for this question.
+
+
+
+## Testcases
+["akmjfuyexdbuwienqsolcdess","mcbeedqifoslenwjdauuysxsk","oxdsekdsjbiyamulefenwqusc","felsxokeamdicwjunsqudsbey","yxdsekdsjbioamulefenwqusc","yeobladedijmxusfwukscsqne","lcysbswusdmqaoeuiednfxejk","dxfdeqskeuouymalsjcniesbw","jsnedyewscmsbiudqxkeolfau","ajmxqddueenlsisbfesockuwy","akmjfuyexdbswienqsolcdesu","sdexyedioqsakwlfbsencumuj","lcysbswusdmqaoeuiednxfejk","sdexyedioqsakwlfbsenucmuj","fmsuwbexauqsoeyecdilsjkdn","felsxokeamsicwjundqudsbey","jsnedyiwscmsbeudqxkeolfau","jdiboufslaceuneyqwsdmeskx","lcysbswukdmqaoeuiednxfejs","fkemdoqsdieswusbnlyuaxecj","oxdsekdsjyibamulefenwqusc","ubmsssynixlefaedjecwokduq","ejydqwnksbecildseuaufxmos","kcaxwsisjoquenuflebesymdd","jsnedyiwssmcbeudqxkeolfau"]
+
+
+
+## Ideas
+# (4) BFS
+
+# (3) DFS
+
+# (2) Union find
+// disjoint set class
+
+// union
+Noticable points include the concise recursive imple of trace. Also, the for loop setup enable the differentiation of identical words. The root map is ini as empty and the in the first for loop, each i denotes the child to be checked and the j (0~i) at the second level represents the parent whose root have all been decided.
+
+As we encounter each A[i], we first assume it being an independent group incrementing count. Then, before the 1st similar word A[j] to A[i] is encountered, each root[A[i]] must be itself and once A[j] is approached, count decrement as A[j] is ascertained not to be an independent group anymore. However, as we proceed, when further similar words to A[j] is discovered, if this new A[i] is a child (a == b) of the first A[i], we do nothing. Otherwise, it means A[j] is connecting two independent groups, and to merge this group, count decrement again.
+
+# (1) DFS/Connected Components
+Indep.
+
+
+## Code
+# (4) BFS
+class Solution {
+    private boolean isSimilar(String s1, String s2) {
+        for (int i = 0, ct = 0; i < s1.length(); i++)
+            if (s1.charAt(i) != s2.charAt(i) && ++count > 2) return false;
+        return true;
+    }
+    
+    public int numSimilarGroups(String[] A) {
+        int count = 0, N = A.length;
+        if (N == 0) return 0;
+        
+        Set<String> visited = new HashSet<>();
+        Queue<String> Q = new ArrayDeque<>();
+        for (String a: A) {
+            if (visited.contains(a)) continue;
+            visited.add(a); count++; Q.add(a);
+            
+            while(!Q.isEmpty()) {
+                String u = Q.remove();
+                for (String v: A)
+                    if (!visited.contains(v) && isSimilar(u, v)) { visited.add(v); Q.add(v); }
+            }
+        }
+        return count;
+    }
+}
+
+
+# (3) DFS
+class Solution {
+    
+    private void dfsHelper(String[] A, int i, int[] visited) {
+        for (int j = 0; j < A.length; j++)
+            if (visited[j] == 0 && isSimilar(A[i], A[j])) {
+                visited[j] = 1;
+                dfsHelper(A, j, visited);
+            }
+    } 
+    
+    private boolean isSimilar(String s1, String s2) {
+        for (int i = 0, ct = 0; i < s1.length(); i++)
+            if (s1.charAt(i) != s2.charAt(i) && ++ct > 2) return false;
+        return true;
+    }
+    
+    public int numSimilarGroups(String[] A) {
+        int count = 0, N = A.length;
+        if (N == 0) return count;
+        
+        int[] visited = new int[N];
+        for (int i = 0; i < N; i++) {
+            if (visited[i] == 1) continue;
+            count++; visited[i] = 1;
+            dfsHelper(A, i, visited);
+        }
+        return count;
+    }
+}
+
+
+# (2) Union find
+// others_efficient imple of Disjoint set
+class DS {
+    int[] parent, rank;
+    
+    public DS(int N) {
+        parent = new int[N], rank = new int[N];
+        for (int i = 0; i < N; i++) parent[i] = i;
+    }
+    
+    public int find(int x) {
+        return parent[x] != x ? parent[x] = find(parent[x]) : parent[x];
+    }
+    
+    public boolean union(int x, int y) {
+        int fx = find(x), fy = find(y);
+        if (fx == fy) return false;
+        
+        if (rank[fx] == rank[fy]) { parent[fy] = fx; rank[fx]++; }
+        else if (rank[fx] > rank[fy]) parent[fy] = fx;
+        else parent[fx] = fy;
+        
+        return true;
+    }
+}
+
+class Solution {    
+    private boolean isSimilar(String s1, String s2) {
+        for (int i = 0, ct = 0; i < s1.length(); i++)
+            if (s1.charAt(i) != s2.charAt(i) && ++ct > 2) return false;
+        return true;
+    }
+    
+    public int numSimilarGroups(String[] A) {
+        int N = A.length;
+        if (N == 0) return 0;
+        
+        int count = N;
+        DS set = new DS(N);
+        for (int i = 0; i < N; i++)
+            for (int j = i + 1; j < N; j++)
+                if (isSimilar(A[i], A[j]) && set.union(i, j))
+                    count--;
+        return count;
+    }
+}
+
+// others_Disjoint Set_432ms
+class disjoint_set {
+    vector<int> v;
+    int sz;
+public:
+    disjoint_set(int n) {
+        makeset(n);
+    }
+
+    void makeset(int n) {
+        v.resize(n);
+        iota(v.begin(), v.end(), 0);
+        sz = n;
+    }
+
+    int find(int i) {
+        if (i != v[i])
+            v[i] = find(v[i]);
+        return v[i];
+    }
+    
+    void join(int i, int j) {
+        int ri = find(i), rj = find(j);
+        if (ri != rj) {
+            v[ri] = rj;
+            sz--;
+        }
+    }
+    
+    int size() {
+        return sz;
+    }
+};
+
+class Solution {
+public:
+    bool similar(string &a, string &b) {
+        for (int i = 0, n = 0; i < a.size(); i++)
+            if (a[i] != b[i] && ++n > 2) return false;
+        return true;
+    }
+
+    int numSimilarGroups(vector<string>& A) {
+        disjoint_set ds(A.size());
+        for (int i = 0; i < A.size(); i++)
+            for (int j = i + 1; j < A.size(); j++)
+                if (similar(A[i], A[j])) ds.join(i, j);
+        return ds.size();
+    }
+};
+
+// others_no imple_328ms
+class Solution {
+public:
+    unordered_map<string, string> root;
+    
+    int check(string& a, string& b) {
+        for (int k = 0, n = 0; k < a.size(); k++)
+            if (a[k] != b[k] && ++n > 2) return 0;
+        return 1;
+    }
+    
+    string trace(string cur) {
+        while (root[cur] != cur) {
+            root[cur] = root[root[cur]];
+            cur = root[cur];
+        }
+        return cur;
+    }
+    /* // brilliant equivalent
+    string trace(string cur) {
+        return root[cur] == cur ? cur : root[cur] = trace(root[cur]);
+    }
+    */
+    
+    int numSimilarGroups(vector<string>& A) {
+        int n = A.size(), count = 0;
+        
+        for (int i = 0; i < n; i++) { // child
+            if (root.count(A[i])) continue; // identical words
+            count++;
+            root[A[i]] = A[i];
+            for (int j = 0; j < i; j++) { // parent
+                if (!check(A[i], A[j])) continue;
+                string a = trace(A[i]), b = trace(A[j]);
+                if (a != b) { root[a] = b; count--; }
+            }
+        }
+        return count;
+    }
+};
+
+
+# (1) DFS/Connected Components
+// indep_968ms
+class Solution {
+public:
+    int count, n;
+    vector<int> id;
+    vector<vector<int>> similar;
+    
+    int check(int i, int j, vector<string>& A) {
+        for (int k = 0, n = 0; k < a.size(); k++)
+            if (a[k] != b[k] && ++n > 2) return 0;
+        return 1;
+    }
+    
+    void dfs(int x) {
+        id[x] = count;
+        for (int i = 0; i < n; i++)
+            if (id[i] == -1 && similar[x][i] == 1) dfs(i);
+    }
+    
+    int numSimilarGroups(vector<string>& A) {
+        n = A.size(), count = 0;
+        id.assign(n, -1); 
+        similar.assign(n, vector<int>(n, 0));
+        // pair-wise similarity
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                similar[i][j] = i >= j ? similar[j][i]: check(i, j, A);
+        // DFS/Union
+        for (int i = 0; i < n; i++)
+            if (id[i] == -1) { dfs(i); count++; }
+        return count;
+    }
+};

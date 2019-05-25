@@ -1,0 +1,213 @@
+## Specification
+Similar: LT310, 685
+
+In this problem, a tree is an undirected graph that is connected and has no cycles. The given input is a graph that started as a tree with N nodes (with distinct values 1, 2, ..., N), with one additional edge added. The added edge has two different vertices chosen from 1 to N, and was not an edge that already existed.
+
+The resulting graph is given as a 2D-array of edges. Each element of edges is a pair [u, v] with u < v, that represents an undirected edge connecting nodes u and v. Return an edge that can be removed so that the resulting graph is a tree of N nodes. If there are multiple answers, return the answer that occurs last in the given 2D-array. The answer edge [u, v] should be in the same format, with u < v.
+
+Example 1:
+Input: [[1,2], [1,3], [2,3]]
+Output: [2,3]
+Explanation: The given undirected graph will be like this:
+  1
+ / \
+2 - 3
+
+Example 2:
+Input: [[1,2], [2,3], [3,4], [1,4], [1,5]]
+Output: [1,4]
+Explanation: The given undirected graph will be like this:
+5 - 1 - 2
+    |   |
+    4 - 3
+
+Note:
+The size of the input 2D-array will be between 3 and 1000.
+Every integer represented in the 2D-array will be between 1 and N, where N is the size of the input array.
+
+
+## Testcases
+[[1,3],[3,4],[1,5],[3,5],[2,3]]
+[[1,2],[2,3],[3,4],[1,4],[1,5]]
+
+
+
+## Ideas
+# (III) Union find
+
+# (II) DFS/BFS
+https://leetcode.com/problems/redundant-connection/discuss/112562/My-DFS-and-BSF-solutions
+// DFS
+We progressively build the graph linking adjacent nodes of each encountered edge. At each edge, given both nodes link to certain other nodes, dfs is performed to check if these two nodes already linked with each other. Note, if any one of the node have no adjacent nodes at all we do not need to do dfs as there is no way for an isolated node to be linked with certain others.
+
+And when both nodes possess adjacent nodes, we do not link them before dfs check and if dfs tells their being linked, the newly encountered edge which dictates the linkage of the two nodes will assuredly render the formation of a cycle with itself being the last added edge.
+
+When checking all adjecent nodes of a particular ndoe, to avoid re-check of nodes (for edge 1-5, we dfs on 1 first and 5 as an adj will be dfs again which leads to another check of 1), a visited set can be maintained to record visited nodes. 
+
+Alternatively, since we are actually only preventing, at each run of the for-loop, the double-check of the immediate parent node of the current node that leads us to the current node, we can only record that last parent node.
+
+
+# (I) BFS/Trim nodes
+https://leetcode.com/problems/redundant-connection/discuss/223338/C%2B%2B-beats-100%3A-trim-nodes-of-degree-1-similar-to-Minimum-Height-Trees
+
+
+
+## Code
+# (III) Union find
+// others
+class Solution {
+public:
+    
+    vector<int> findRedundantConnection(vector<vector<int>>& edges) {
+        int n = edges.size();
+        vector<int> root(n + 1, 0), res;
+        for (int i = 1; i <= n; i++) root[i] = i;
+        
+        for (auto& edge : edges) {
+            int v = edge[0], u = edge[1];
+            while (root[v] != v) v = root[v];
+            while (root[u] != u) u = root[u];
+            if (v == u) res = edge;
+            else root[u] = v;
+        }
+        return res;
+    }
+};
+
+
+# (II) DFS/BFS
+// DFS_no visited set_faster
+class Solution {
+public:
+    vector<unordered_set<int>> graph;
+    
+    // evaluate whether u and v are linked
+    int dfs(int u, int v, int prev) {
+        if (u == v) return 1;
+        for (auto& adj : graph[u])
+            if (adj != prev && dfs(adj, v, u)) return 1;
+        return 0;
+    }
+    
+    vector<int> findRedundantConnection(vector<vector<int>>& edges) {
+        int n = edges.size();
+        graph.assign(n + 1, unordered_set<int>());
+        for (auto& edge : edges) {
+            int u = edge[0], v = edge[1];
+            if (!graph[u].empty() && !graph[v].empty() && dfs(u, v, u))
+                return edge;
+            graph[u].insert(v); graph[v].insert(u);
+        }
+        return {};
+    }
+};
+
+// DFS_visited set
+class Solution {
+public:
+    vector<unordered_set<int>> graph;
+    unordered_set<int> visited;
+    
+    // evaluate whether u and v are linked
+    int dfs(int u, int v) {
+        if (visited.count(u)) return 0;
+        visited.insert(u);
+        if (v == u) return 1;
+        for (auto& adj : graph[u])
+            if (dfs(adj, v)) return 1;
+        return 0;
+    }
+    
+    vector<int> findRedundantConnection(vector<vector<int>>& edges) {
+        int n = edges.size();
+        graph.assign(n + 1, unordered_set<int>());
+        for (auto& edge : edges) {
+            visited.clear();
+            int u = edge[0], v = edge[1];
+            if (!graph[u].empty() && !graph[v].empty() && dfs(u, v))
+                return edge;
+            graph[u].insert(v); graph[v].insert(u);
+        }
+        return {};
+    }
+};
+
+
+// BFS
+
+
+# (I) BFS/Trim nodes
+// adapted_O(N)
+class Solution {
+public:
+    
+    vector<int> findRedundantConnection(vector<vector<int>>& edges) {
+        int n = edges.size(), ct = 0;
+        vector<int> adj(n + 1, 0), count(n + 1, 0);
+        
+        for (auto& edge : edges) {
+            adj[edge[0]] ^= edge[1]; count[edge[0]]++;
+            adj[edge[1]] ^= edge[0]; count[edge[1]]++;
+        }
+        // Collecting leaf nodes
+        queue<int> leaves;
+        for (int i = 1; i <= n; i++)
+            if (count[i] == 1) leaves.push(i);
+        
+        // BFS
+        while (!leaves.empty()) {
+            int sz = leaves.size();
+            for (int i = 0; i < sz; i++) {
+                int node = leaves.front(); leaves.pop();
+                int other = adj[node];
+                // cout << node << "/" << other << endl;
+                adj[other] ^= node;
+                count[node]--;
+                if (--count[other] == 1) leaves.push(other);
+            }
+        }
+        // Find the last added edge among the left edges
+        for (int i = n - 1; i >= 0; i--)
+            if (count[edges[i][0]] != 0 && count[edges[i][1]] != 0) return edges[i];
+            
+        return {};
+    }
+};
+
+// indep_O(N^2)
+class Solution {
+public:
+    vector<int> findRedundantConnection(vector<vector<int>>& edges) {
+        int n = edges.size(), ct = 0;
+        vector<vector<int>> graph(n + 1, vector<int>(n + 1, -1)); // the order the edge is added
+        vector<int> count(n + 1, 0), removed(n, 0);
+        
+        for (auto& edge : edges) {
+            graph[edge[0]][edge[1]] = graph[edge[1]][edge[0]] = ct++;
+            count[edge[0]]++; count[edge[1]]++;
+        }
+        
+        // Collecting leaf nodes
+        queue<int> leaves;
+        for (int i = 1; i <= n; i++)
+            if (count[i] == 1) leaves.push(i);
+        // BFS
+        while (!leaves.empty()) {
+            int sz = leaves.size();
+            for (int i = 0; i < sz; i++) {
+                int node = leaves.front(); leaves.pop();
+                for (int j = 1; j <= n; j++) {
+                    if (graph[node][j] == -1) continue;
+                    removed[graph[node][j]] = 1; // remove edge
+                    graph[node][j] = graph[j][node] = -1;
+                    count[node]--; count[j]--;
+                    if (count[j] == 1) leaves.push(j);
+                }
+            }
+        }
+        // Find the last added edge among the left edges
+        for (int i = n - 1; i >= 0; i--)
+            if (!removed[i]) return edges[i];
+        return {};
+    }
+};

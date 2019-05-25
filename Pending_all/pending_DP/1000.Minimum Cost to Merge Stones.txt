@@ -1,0 +1,204 @@
+## Specification
+There are N piles of stones arranged in a row.  The i-th pile has stones[i] stones. A move consists of merging exactly K consecutive piles into one pile, and the cost of this move is equal to the total number of stones in these K piles. Find the minimum cost to merge all piles of stones into one pile.  If it is impossible, return -1.
+
+Example 1:
+Input: stones = [3,2,4,1], K = 2
+Output: 20
+Explanation: 
+We start with [3, 2, 4, 1].
+We merge [3, 2] for a cost of 5, and we are left with [5, 4, 1].
+We merge [4, 1] for a cost of 5, and we are left with [5, 5].
+We merge [5, 5] for a cost of 10, and we are left with [10].
+The total cost was 20, and this is the minimum possible.
+
+Example 2:
+Input: stones = [3,2,4,1], K = 3
+Output: -1
+Explanation: After any merge operation, there are 2 piles left, and we can't merge anymore.  So the task is impossible.
+
+Example 3.
+Input: stones = [3,5,1,2,6], K = 3
+Output: 25
+Explanation: 
+We start with [3, 5, 1, 2, 6].
+We merge [5, 1, 2] for a cost of 8, and we are left with [3, 8, 6].
+We merge [3, 8, 6] for a cost of 17, and we are left with [17].
+The total cost was 25, and this is the minimum possible.
+
+Note:
+1 <= stones.length <= 30
+2 <= K <= 30
+1 <= stones[i] <= 100
+
+
+
+## Ideas
+# (II) DP_bottom-up
+// derived
+Bearing the instance below, as is proposed, to merge the whole stones array into one pile, we have many choices and whichever choice we made, the first several (1/3/5) stones must be merged as one of the final subpiles. Actually, it can be discovered that given an array potentiated for a one-pile-merge, after we merge the first several (e.g. 1/3/5/.. for 13-element array), the shortest possible to merge the rest elements (12, 10, 8, 6...) shall be the same. For instance, 12 elements can be merged to at least 2 sub-piles (7-5/9-3/11-1) and similar cases applied for others. This is the case, because as soon as we decide the smallest possible to merge 12 elements, and after we remove 2 elements from it which coins the increase of first-several-element-merge from 1 to 3, the total number is not affected because we are sort of taking away an intact pile.
+
+Based on this idea, we can do a 2D dp, simulating at the top most level. As each mid we select can guarantee the first several elements valid for a one-pile merge and the rest elements valid for a (K-1)-pile merge, we can simply iterate mid over all possibilities (1/3/5...) to obtain the cost to merge the whole array into K piles. And we finally add a sum to this generating teh final answer.
+
+// indep
+Take [3,9,4,8,6,10,2] - 3 for instance. First, given K = 3, length of valid arrays include 3, 5, 7, 9,... which the given stones array fit into. As we know that this array can be finally merged into only one pile, the last merge must occur among three stone/piles however they are generated and we can further divide each of the three piles until single stone is reached. Based on this idea, a 3D dp can be designed as shown below.
+
+We initialize dp to make the cost of merging all stones[i:j] into j-i+1 piles to 0, e.g. dp[0][2][3] = 0 for the example above because [3,9,4] itself already presents as a 3-pile array. And all other costs are set as INT_MAX which means either not-visited or impossible to merge. For instance, dp[0][1][1] will be INT_MAX thruout the program since we can only merge 1/3/5/... stones into one pile.
+
+Then for the (1) first for loop, we specify the length of the current sub-array to evaluate. Notice, we start from K directly because for all subarrays of length < K, there is only one possiblity to merge them which is to leave them as they are (initialized as 0 above). For [3,9], one cannot merge it into 1 nor >= 3 but can only merge it into two piles. (2) The second for loop simply specifies the interval lo and hi bound of given length and this interval is to be moving across the whole array. (3) At the third for loop level, we simply specify how many piles current stones[i:j] shall be merged into and this should cover all possibilities from 1 to n.
+
+(4) At the last loop, we have to iterate from i to j. For instance, to determine dp[1][6][3] for the above example, which is to merge stones[1:6] into two sub-piles, no matter how we are merging, the first one or several elements must be merged together as one pile followed by the merge of the rest. Therefore, we maintain this mid pointer to iterate over the i~j interval to determine how long this first merge should cover. And since we are merging the first several into one pile exactly, we can only merge the first 1/3/5 stones restricted by K = 3. This is why mid increment by K-1. When mid starts as i, it means we simply leave the first element as it is and proceed to evaluate the rest (dp[1][6][3] -> dp[1][1][1] & dp[2][6][2]). However, mid cannot expand to j which will lead to stackoverflow (dp[1][6][3] will resolve to dp[1][6][3] again). 
+
+(5) When evaluating, two cases exist. If we are merging stones[i:j] into one interval, we need to first calculate the cost to merge stones[i:j] to K intervals and this step follows the same procedure as when k != 1. Then, we also need to add up the total sum of stone[i:j] because we are merginng the array into one and the cost of doing so will surely entail the final merge besides the cost to make the array potential for one-merge. 
+
+As we are always evaluating the cost of merging shorter subarrays into all possible number of piles first, at each evaluation, if the dp we refer to still records INT_MAX, it means that specific merge cannot be peformed and we can simply abort it.
+
+
+# (I) DP_top-down
+Derived from Lee's solution. Appear to run faster without checking sub-arrays of length larger than K and only check those whose 
+
+# (0) DP definition
+// derived
+dp[i][j] records the cost to merge stones[i:j] to the shortest possible
+
+// indep
+dp[i][j][k] records the cost to merge stones[i:j] into k subpiles.
+k != 1: dp[i][j][k] = min(dp[i][mid][1] + dp[mid+1][j][k(small)-1])
+k == 1: dp[i][j][k] = min(dp[i][mid][1] + dp[mid+1][j][K(CAPITAL)-1] + stoneNumbers[i][j])
+
+
+
+## Code
+# (II) DP_bottom-up
+// derived, O(n^3)_2D dp
+class Solution {
+public:
+    int mergeStones(vector<int>& stones, int K) {
+        int n = stones.size();
+        if (n == 1) return 0;
+        if ((n - 1) % (K - 1)) return -1;
+        
+        // dp[i][j], costs to merge stones[i:j] to the shortest possible
+        vector<vector<int>> dp(n, vector<int>(n));
+        int sum[n]{ stones[0] };
+        for (int i = 1; i < n; i++) sum[i] = sum[i - 1] + stones[i];
+        
+        for (int len = K; len <= n; len++)
+            for (int i = 0, j = i + len - 1; j < n; i++, j++) {
+                dp[i][j] = INT_MAX;
+                for (int mid = i; mid < j; mid += (K - 1))
+                    dp[i][j] = min(dp[i][j], dp[i][mid] + dp[mid + 1][j]);
+                if ((j - i) % (K - 1) == 0)
+                    dp[i][j] += sum[j] - sum[i] + stones[i];
+            }
+        
+        return dp[0][n - 1] == INT_MAX ? -1 : dp[0][n - 1];
+    }
+};
+
+// indep, O(n^4)_3D dp
+class Solution {
+public:
+    int mergeStones(vector<int>& stones, int K) {
+        int n = stones.size(), accu = 0;
+	if (n == 1) return 0;
+        if (stones.size() < K || (n - K) % (K - 1)) return -1;
+        
+        // dp[i][j][k], costs to merge stones[i:j] into k subpiles
+        vector<vector<vector<int>>> dp(n, vector<vector<int>>(n, vector<int>(n + 1, INT_MAX)));
+        // int dp[n][n][n + 1]; memset(dp, INT_MAX, sizeof(dp));
+        for (int i = 0; i < n; i++)
+            for (int j = i; j < n; j++) dp[i][j][j - i + 1] = 0;
+        int sum[n]{ stones[0] };
+        for (int i = 1; i < n; i++) sum[i] = sum[i - 1] + stones[i];
+        
+        // DP
+        for (int len = K; len <= n; len++)
+            for (int i = 0, j = i + len - 1; j < n; i++, j++)
+                for (int k = 1; k < len; k++) // ** upperbound set to K also got AC **
+                    for (int mid = i; mid < j; mid += (K - 1))
+                        if (k == 1 && dp[i][mid][1] != INT_MAX && dp[mid + 1][j][K - 1] != INT_MAX) // CAPITAL K
+                            dp[i][j][k] = min( dp[i][j][k], dp[i][mid][1] + dp[mid + 1][j][K - 1] + sum[j] - sum[i] + stones[i]);
+                        else if (dp[i][mid][1] != INT_MAX && dp[mid + 1][j][k - 1] != INT_MAX) // small k
+                                dp[i][j][k] = min( dp[i][j][k], dp[i][mid][1] + dp[mid + 1][j][k - 1] );
+
+        /*
+        for (int len = 1; len <= n; len++)
+            for (int i = 0, j = i + len - 1; j < n; i++, j++)
+                for (int k = 1; k <= len; k++)
+                    cout << i << "/" << j << "/" << k << ": " << dp[i][j][k] << endl;
+        */
+        return dp[0][n-1][1] == INT_MAX ? -1 : dp[0][n-1][1];
+    }
+};
+
+
+# (I) DP_top-down
+// indep
+class Solution {
+public:
+    vector<vector<vector<int>>> dp;
+    vector<int> sum;
+    
+    // min costs to merge stones[i:j] to c sub-piles
+    int solve(int i, int j, int c, int K, vector<int>& stones) {
+        if (dp[i][j][c] != INT_MAX) return dp[i][j][c];
+        if (c == 1) {
+            int cst = solve(i, j, K, K, stones);
+            if (cst != INT_MAX) cst += sum[j] - sum[i] + stones[i];
+            dp[i][j][c] = cst;
+            return cst;
+        }
+        
+        int cur = INT_MAX;
+        for (int mid = i; mid < j; mid += (K - 1)) {
+            int a = solve(i, mid, 1, K, stones), b = solve(mid + 1, j, c - 1, K, stones);
+            if (a != INT_MAX && b != INT_MAX)
+                cur = min(cur, a + b);
+        }
+        dp[i][j][c] = cur;
+        return cur;
+    }
+    
+    int mergeStones(vector<int>& stones, int K) {
+        int n = stones.size();
+        if (n == 1) return 0;
+        if (n < K || (n - K) % (K - 1)) return -1;
+        
+        // dp[i][j][k], costs to merge stones[i:j] into k subpiles
+        dp.assign(n, vector<vector<int>>(n, vector<int>(n + 1, INT_MAX)));
+        for (int i = 0; i < n; i++)
+            for (int j = i; j < n; j++) dp[i][j][j - i + 1] = 0;
+        sum.assign(n, stones[0]);
+        for (int i = 1; i < n; i++) sum[i] = sum[i - 1] + stones[i];
+        
+        solve(0, n - 1, 1, K, stones);
+        /*
+        for (int len = 1; len <= n; len++)
+            for (int i = 0, j = i + len - 1; j < n; i++, j++)
+                for (int k = 1; k <= K; k++)
+                    cout << i << "/" << j << "/" << k << ": " << dp[i][j][k] << endl;
+        */           
+        return dp[0][n-1][1] == INT_MAX ? -1 : dp[0][n-1][1];
+    }
+};
+
+
+
+## Testcases
+[3,9,4,8,6]
+3
+
+[3,9,7,6,2,8,4]
+4
+
+[3,9,7,6,2,8,4,1,10,5,11,7,13,4,6,12]
+4
+
+[3,5,1,2,6]
+3
+
+[9,8,3,2,9,4]
+2
+
+[1] - 82/83
+2
