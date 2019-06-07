@@ -1,4 +1,31 @@
-class Solution {
+## Specification
+Similar: LT523
+
+Given an integer array nums, find the contiguous subarray within an array (containing at least one number) which has the largest product.
+
+Example 1:
+Input: [2,3,-2,4]
+Output: 6
+Explanation: [2,3] has the largest product 6.
+
+Example 2:
+Input: [-2,0,-1]
+Output: 0
+Explanation: The result cannot be 2, because [-2,-1] is not a subarray.
+
+
+
+## Testcases
+[-2] - 183/184
+[-2,0,-1]
+[2,3,-2,4]
+[2,7,9,-1,0,3,2,-3,2,2,3,4,-3,0,0,0,-3,2,-3,-3,-2,4]
+
+
+
+## Ideas
+# (I) Array
+// indep
         //  1    2   -1   -2   2   1   -2   1   4   -5    4
         // 1280 1280 640  32  320 160  160  4   4   -20   4  pos
         // -64  -64  -32 -640 -16  -8  -8  -80 -80  -20   4  neg
@@ -10,6 +37,51 @@ class Solution {
         //  12   8     48  -8     -12  2     16  8      2  -8  pos
         // -48  -2     -6  -8     -12  2     16  8    -16  -8  neg
         //  12   8     48  -8       2  2     16  8      2  -8  max
+
+
+## Code
+# (I) Array
+// 2019-May-27_indep
+class Solution {
+public:
+    int maxProduct(vector<int>& nums) {
+        int n = nums.size(), ans = INT_MIN, pos = 0, neg = 0, pos2, neg2;
+        for (int i = 0; i < n; i++, pos = pos2, neg = neg2) {
+            if (!nums[i]) pos2 = neg2 = 0;
+            else if (nums[i] < 0) {
+                pos2 = neg < 0 ? neg * nums[i] : 0;
+                neg2 = !pos ? nums[i] : pos * nums[i];
+            } else {
+                pos2 = !pos ? nums[i] : pos * nums[i];
+                neg2 = !neg ? nums[i] : neg * nums[i];
+            }
+            // update
+            if (!nums[i] || pos2) ans = max(ans, pos2);
+            if (!nums[i] || neg2) ans = max(ans, neg2);
+        }
+        return ans;
+    }
+};
+
+// 2018-Oct-15_derived
+class Solution {
+public:
+    int maxProduct(vector<int>& nums) {
+        int n = nums.size(), pos = nums[n - 1], neg = nums[n - 1], mx = nums[n - 1];
+        for (int i = n - 2; i >= 0; i--) {
+            if (nums[i] < 0)
+                swap(pos, neg);
+            pos = max(nums[i], pos * nums[i]);
+            neg = min(nums[i], neg * nums[i]);
+            mx = max(pos, mx);
+        }
+        return mx;
+    }
+};
+
+// indep
+class Solution {
+
     public int maxProduct(int[] nums) {
         int n = nums.length, pos = nums[n - 1], neg = nums[n - 1], max = nums[n - 1];
         

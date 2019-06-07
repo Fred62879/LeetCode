@@ -8,8 +8,8 @@ hackerrank可不简单，反正比topcoder要难的。其中难度在Expert以上的题你试过就知道了
 
 
 
-**** Java tips ****
-** (I) programming tricks
+## Java
+# (I) programming tricks
 // (1) Math.floorMod
 Instead of dp[i][j] = dp[i][j] < 0 ? dp[i][j] + 1000000007 : dp[i][j] % 1000000007;
 you can use Math.floorMod method dp[i][j] = Math.floorMod(dp[i][j], 1000000007);
@@ -30,15 +30,22 @@ int MOD = 1_000_000_007;
 // (4) int[]
 int[] a = null
 
+// (5) String
+LT297
+> String data = "a b c d e";
+> String[] array = data.split(" ");
+array = { a, b, c, d, e };
 
-# (II) 
+
+
+# (II) Others
 // (1) Comparator
-    public class coinCompare implements Comparator<Integer> {
-        @Override
-        public int compare(Integer a, Integer b) {
-            return nums[a] - nums[b];
-        }
-    }
+> public class coinCompare implements Comparator<Integer> {
+>    @Override
+>    public int compare(Integer a, Integer b) {
+>        return nums[a] - nums[b];
+>    }
+> }
 
 Arrays.sort(idx, new coinCompare());
        
@@ -48,50 +55,48 @@ Arrays.sort(idx, (Integer a, Integer b) -> nums[a] - nums[b]);
 // (3) Arrays.fill
 Do not use this to fill array of arraylist, otherwise, all arraylists will be
 modified simultaneously
-class Solution {
-    
-    public List<List<String>> findLadders(String beginWord, String endWord, List<String> wordList) {
-        List<List<String>> res = new ArrayList<List<String>>();
-        ArrayList<Integer>[] difs = new ArrayList[5];
-        Arrays.fill(difs, new ArrayList<Integer>());
-        difs[0].add(0);
-        
-        ArrayList<String> cur = new ArrayList<String>();
-        cur.add(String.valueOf(difs[2].size()));
-        res.add(cur);
-        return res;
-    }
-}
-
+> class Solution {
+> 
+>    public List<List<String>> findLadders(String beginWord, String endWord, List<String> wordList) {
+>        List<List<String>> res = new ArrayList<List<String>>();
+>        ArrayList<Integer>[] difs = new ArrayList[5];
+>        Arrays.fill(difs, new ArrayList<Integer>());
+>        difs[0].add(0);
+> 
+>        ArrayList<String> cur = new ArrayList<String>();
+>        cur.add(String.valueOf(difs[2].size()));
+>        res.add(cur);
+>        return res;
+>    }
+> }
 
 // (4) PQ
-PriorityQueue<int[]> pq = new PriorityQueue<int[]>((a,b) -> a[1] - b[1]);
-	for (int neigh: graph[i])
-	    pq.add(new int[]{neigh, graph[neigh].length});
+> PriorityQueue<int[]> pq = new PriorityQueue<int[]>((a,b) -> a[1] - b[1]);
+> for (int neigh: graph[i])
+>     pq.add(new int[]{neigh, graph[neigh].length});
 
 // (5) hash
 LT818
 putIfAbsent()
 
-
 // (6) TreeSet
 LT56 - Array
-	TreeSet<Interval> tree = new TreeSet<Interval>(new Comparator<Interval>() {
-            @Override
-            public int compare(Interval i1, Interval i2) {
-                if (i1.end < i2.start) return -1;
-                else if (i1.start > i2.end) return 1;
-                else return 0;
-            }
-        });
+> TreeSet<Interval> tree = new TreeSet<Interval>(new Comparator<Interval>() {
+>     @Override
+>     public int compare(Interval i1, Interval i2) {
+>         if (i1.end < i2.start) return -1;
+>         else if (i1.start > i2.end) return 1;
+>         else return 0;
+>      }
+> });
 
 
 
-**** Cpp ****
-** Familar **
+## Cpp
+# (I) Programming tricks
 // (1) LT730 
-vector<map<char,int>> cnt(n);
-cnt[i][c]...;
+> vector<map<char,int>> cnt(n);
+> cnt[i][c]...;
 
 // (2) If-else
 bulks of if else under several for loops, parenthesis can all be ommitted
@@ -99,131 +104,253 @@ bulks of if else under several for loops, parenthesis can all be ommitted
 // (3) Memset
 https://leetcode.com/problems/shortest-path-visiting-all-nodes/discuss/136158/C%2B%2B-7ms-Simple-solution-with-intuition-(this-is-a-wrong-intuition-happened-to-pass-all-test-case)
 
-bool visited[1<<graph.size()][graph.size()];
-memset(visited, 0, sizeof(visited));
+> bool visited[1<<graph.size()][graph.size()];
+> memset(visited, 0, sizeof(visited));
 
 // (4) While
-do {
-    j1 = advanceBy(1, j1, nums, dir);
-    j2 = advanceBy(2, j2, nums, dir);
-} while (j1 >= 0 && j2 >= 0 && j1 != j2);
+> do {
+>    j1 = advanceBy(1, j1, nums, dir);
+>    j2 = advanceBy(2, j2, nums, dir);
+> } while (j1 >= 0 && j2 >= 0 && j1 != j2);
 
 
 // (5) Global vector ini
-private:
-	vector<int> a;
-public:
-	int sth() 
+> private:
+>	vector<int> a;
+> public:
+>	int sth() 
 (i)
-{ a.assign(n, 0); }
+> { a.assign(n, 0); }
 
 (ii)
-{ v.resize(n);
-iota(v.begin(), v.end(), 0); }
+> { v.resize(n);
+> iota(v.begin(), v.end(), 0); }
 
 // (6)
-vector<unordered_set<int>> graph(n + 1, unordered_set<int>());
+> vector<unordered_set<int>> graph(n + 1, unordered_set<int>());
 
 // (7)
-vector<int> a;
-if (a.count(..)) equivalent to if (a.find(..) != a.end());
+> vector<int> a;
+> if (a.count(..)) equivalent to if (a.find(..) != a.end());
 
+// (8) Concise
+> int L, r = 0;
+> for (char c:b) if (c-r) 
+>	if ((L=a.size()) < 2 || c-a[L-1] || c-a[L-2]) a += c, r = 0;
+>	else r = c, a.pop_back(), a.pop_back();
 
-** Need digestion **
-// (1) LT879
-"https://leetcode.com/problems/profitable-schemes/discuss/154685/C%2B%2B-ACCEPTED-top-down-DP-with-O(N*G*P)-but-why-does-it-still-take-too-long-(1800ms)"
-
-you are calling 3-level regression on vector<>(), The delay is zoomed out at 3rd order. The lookup will be a hard job for vectors. The iterator need to look up the address book, instead of in static library just add index+starting address and you can get the address.
-
-// (2) LT902
-string s = "0";
-s[0] == '0' -> true
-
-
-// (3) define
-https://leetcode.com/problems/tallest-billboard/discuss/203942/C%2B%2B-16ms-solution-beats-100
-
-#define NOT_REACHABLE -10011
-#define YET_TO_VISIT -10012
-if (j < 0 || j > 2 * sum[i])
-     return NOT_REACHABLE;
-
-// (4)
-int compare (const void *a, const void * b) {  
-    return ( (*(pairSum *)a).sum - (*(pairSum*)b).sum );  
-}
-
-// (5) Swap
-https://leetcode.com/problems/permutations/discuss/18360/C%2B%2B-backtracking-and-nextPermutation
-for two entries in an array, can directly swap: swap(nums[i], nums[j]);
-
-// (6) auto
-   struct State {
-      int mask;
-      int last;
-   };
-auto[mask, last] = q.front(); q.pop();
-
-// (7)
-#if DEBUG
-int main(int argc, char** argv) {
-    return 0;
-}
-#endif
-
-// (8) char* and string
-int dfs(int r, int c, const char* word, vector<vector<char>>& board) { ... }
-dfs(i, j, word.c_str() + 1, board)
-plus one means to start from the 2nd char of word
-
-// (9) struct, constructor
-struct TrieNode {
-        TrieNode *children[26];
-        string word;
-
-        TrieNode() : word("") {
-            for (int i = 0; i < 26; i++) {
-                children[i] = nullptr;
-            }
-        }
-    };
+// (9)
+0x3FE
 
 // (10) Sort
-(i) Lambda LT975 DP
-std::sort(B.begin(), B.end(), [&A](int i, int j) {return A[i] < A[j];});
+LT675 - By default, vectors are sorted based on their first emtry.
 
-(ii) Comparator
-static bool comp(const Interval& a, const Interval& b){
-    return a.start < b.start;
-}
-sort(intervals.begin(), intervals.end(), comp);
+// (11) Pointer
+> Object* a;
+> if (a == nullptr) ...;
+
+** WAIT FOR VALIDATION **
+> void function1(int* a) { &a = 20; }
+> void function2(int& a) { a = 20; }
+> void execute() {
+>     int a = 10;
+>     function1(&a); // same effect:
+>     function2(*a); // change int a
+> }
+
+// (12) stringstream
+LT297
+> string str = "a,b,c,d,e", s;
+> getline(s, str, ',');
+s = "a"
+
+// [13] LT902
+> string s = "0";
+> s[0] == '0' -> true
+
+// [14]
+int dp[a][b]; // entries being INT_MAX
+int dp[a][b]{}; // entries being 0
+
+// [15]
+We can add assign values to paras in function overhead.
+> int maxWidthRamp(vector<int>& A, int res = 0) { ... }
+
+
+# (II) Advanced
+// [1] VECTOR
+_(i) Runing time_
+LT879
+"https://leetcode.com/problems/profitable-schemes/discuss/154685/C%2B%2B-ACCEPTED-top-down-DP-with-O(N*G*P)-but-why-does-it-still-take-too-long-(1800ms)"
+
+You are calling 3-level regression on vector<>(), The delay is zoomed out at 3rd order. The lookup will be a hard job for vectors. The iterator need to look up the address book, instead of in static library just add index+starting address and you can get the address.
+
+
+// [2] DEFINE
+_(i) Variable_
+https://leetcode.com/problems/tallest-billboard/discuss/203942/C%2B%2B-16ms-solution-beats-100
+
+> #define NOT_REACHABLE -10011
+> #define YET_TO_VISIT -10012
+> if (j < 0 || j > 2 * sum[i])
+>     return NOT_REACHABLE;
+
+_(ii) Function_
+> #define MIN_COINS(x, y) (((x) + (y) - 1)/(y))
+> int function1 () {
+>     int a = MIN_COINS(10, 12);
+>     return a;
+> }
+
+
+// [3] COMPARE
+_(i) Compare_
+> int compare (const void *a, const void * b) {
+>    return ( (*(pairSum *)a).sum - (*(pairSum*)b).sum );
+> }
+
+_(ii) Comparator_
+> static bool comp(const Interval& a, const Interval& b) {
+>    return a.start < b.start;
+> }
+> sort(intervals.begin(), intervals.end(), comp);
+
+_(iii)_
+> typedef std::pair<int, int> pair;
+> 
+> // object of a class implementing () operator
+> struct comp {
+>	bool operator(const pair& x, const pair& y) const { 
+> 		if (x.second != y.seond) return x.second < y.second;
+>		return x.first < y.first;
+>	}
+> };
+>
+> // binary function
+> bool fn(const pair& x, const pair& y) const { 
+> 	if (x.second != y.seond) return x.second < y.second;
+>	return x.first < y.first;
+> };
+> 
+> int main() {
+> 	...;
+> 	sort(v.begin(), v.end(), [](const [air& x, const pair& y) {
+>		...;
+>	});
+>	// std::sort(B.begin(), B.end(), [&A](int i, int j) {
+>	//	return A[i] < A[j];
+>	// });
+> 
+>	// sort(v.begin(), v.end(), fn);
+>	// sort(v.begin(), v.end(), comp);
+>	
+> }
+
+_(iv)_ lower bound
+To binary search in a descending array. (LT962)
+> vector<pair<int, int>> v;
+> auto id = lower_bound(v.begin(), v.end(), make_pair( A[i], INT_MAX ),   greater<pair<int, int>>());
+
+
+// [4] SWAP
+https://leetcode.com/problems/permutations/discuss/18360/C%2B%2B-backtracking-and-nextPermutation
+for two entries in an array, can directly swap: 
+> swap(nums[i], nums[j]);
+
+// [5] auto
+>  struct State {
+>     int mask;
+>     int last;
+>  };
+>  auto[mask, last] = q.front(); q.pop();
+
+// [6]
+> #if DEBUG
+> int main(int argc, char** argv) {
+>    return 0;
+> }
+> #endif
+
+// [7] char* and string
+> int dfs(int r, int c, const char* word, vector<vector<char>>& board) { ... }
+> dfs(i, j, word.c_str() + 1, board)
+plus one means to start from the 2nd char of word
+
+// [8] struct, constructor
+> struct TrieNode {
+>        TrieNode *children[26];
+>        string word;
+> 
+>        TrieNode() : word("") {
+>            for (int i = 0; i < 26; i++)
+>                children[i] = nullptr;
+>        }
+> };
 
 
 // (11) int64_t
 
-// (12) BinarySearch equivalent
+// [12] BinarySearch equivalent
 lower_bound() - LT209 - Array
 binary_find() - LT74 - Array
 
-// (13) Iterator
-(i) To iterate over refernce ot vector of objects without incurring large memory and time consumption do this:
-for (auto& sth : col)...
-(ii) Use iterator to access element LT310
-(iii) https://leetcode.com/problems/merge-intervals/discuss/21420/16ms-C%2B%2B-solution-beat-100.
+// [13] ITERATOR
+_(i)_
+To iterate over refernce ot vector of objects without incurring large memory and time consumption do this:
+> for (auto& sth : col)...
 
-// (14) static vector
+_(ii)_
+Use iterator to access element LT310
+
+_(iii)_ 
+https://leetcode.com/problems/merge-intervals/discuss/21420/16ms-C%2B%2B-solution-beat-100.
+
+_(iv)_
+LT229 - Array
+LT34 - Array
+
+_(v)_Good instances
+https://leetcode.com/problems/coin-change/discuss/289477/C%2B%2B-Search-with-pruning-12ms-solution-with-comments
+
+
+// [14] static vector
 LT920
 use in function without initializing it each call.
 
-// (15) Pointer
+// [15] POINTER
 LT310
 
-// (16)
+// [16]
+For objects initialized to NULL, we can simply use treat them as NULL = 0. Thus, given "Node a = NULL", "if(a)" will not be evaluate as false.
+
+// [17] PQ
+> auto cmp = [](const pair<int,int> &a, const pair<int,int> &b) { return a.second > b.second; };
+> priority_queue<pair<int,int>, vector<pair<int,int>>, decltype(cmp)> q{cmp};
+
+// [18] Pair
+> queue<pair<int, int>> qu;
+> tie(r, c) = qu.front(); // assign pair element to r and c
+
+// [19] In-function function
+LT546
+> int removeBoxes(vector<int>& boxes) {
+> 	...;
+> 	function<int(int, int , int)> dfs =[&](int i, int j, int k){
+> 		return i + j + k
+> 	};
+> 	return dfs(0, A.size()-1, 0);
+> }
+
+// [20]
+unsigned int size_t dp[51][50][50] = {}; , you don't even need to cast to (long long).
+
+size_t could be 8 bytes, so it can double the memory requirements. However, unsigned int seems to be sufficient. Updated the code, thanks.
 
 
 
 
-# (II) Data structures & Alg
+
+# (III) Data structures & Alg
 // (i) Hash
 (1) hash function for pair
 LT818_BFS
@@ -234,14 +361,27 @@ LT818_BFS
             for (auto it: cur) {
                 int d = it.first;
                 dp[d + x] = max(dp[d + x],cur[d]);
-(2) iterator
-LT229 - Array
-LT34 - Array
 
-// (iii) TreeMap
+
+// (iii) Set(cpp)/TreeMap(java)
 We can use a TreeMap, which is an excellent structure for maintaining sorted data.
 LT56
 
+// (iv) Recursion_O(nlgn)
+LT99
+Whenever you call a function recursively n times, we need O(n) spaces to push the memory consumption of these calls in memory stack. There is O(N) overhead on the stack. The question asked for O(1) space. Just keep in mind, this is a side-effect of recursive solutions.
+
+I think it's necessary to clarify it here that you can't just say "Recursion's space complexity is O(n) or O(log n)". In this question, the recursion version has average O(log n) data complexity. But recursion could be O(n) on average as well. For example, the data cost will be O(n) here:
+
+ int fun(int n) {
+    if(n<=0) return 0;
+    else return fun(n-1) + n;
+ }
+
+// (v) Skip trailing space
+string s = " aaa";
+int i = 0;
+for(; s[i] == ' '; i++) {}
 
 
 
@@ -251,6 +391,24 @@ Memo optimize
 LT903_official solution
 LT1000_Lee solution
 
+https://leetcode.com/problems/find-the-closest-palindrome/discuss/102396/C%2B%2B-short-solution-only-need-to-compare-5-numbers
+
+(2) string join & split
+https://leetcode.com/problems/serialize-and-deserialize-binary-tree/discuss/166904/Python-or-BFS-tm
+> res = [a,b,c,d,e]
+> a = ','.join(res) 
+> b = a.split(',')
+
+a = "a,b,c,d,e"
+b = res
+
+(3) tricks
+https://leetcode.com/problems/out-of-boundary-paths/discuss/102975/Python-1-line-solution
+
+
+
+## C
+https://leetcode.com/problems/longest-palindromic-substring/discuss/2923/Simple-C%2B%2B-solution-(8ms-13-lines)
 
 
 

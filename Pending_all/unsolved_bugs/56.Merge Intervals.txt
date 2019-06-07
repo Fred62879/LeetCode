@@ -41,20 +41,6 @@ Trivial
 ## Code
 # (IV) TreeSet
 // cpp_derived
-
-
-        
-        set<vector<int>, decltype(cmp)> tree(cmp);
-        tree.insert({2, 3});
-        tree.insert({5, 5});
-        bool a = tree.find({3, 4}) == tree.end();
-        
-        cout << a;
-        for (auto& i : tree)
-            cout << i[0] << "/" << i[1] << endl;
-        
-        return {{}};
-
 class Solution {
 public:
     vector<vector<int>> merge(vector<vector<int>>& intervals) {
@@ -63,23 +49,26 @@ public:
             return a[0] > b[1] ? 1 : 0;
         };
         set<vector<int>, decltype(cmp)> tree(cmp);
-        
         for (auto& cur : intervals) {
-            cout << cur[0] << ", " << cur[1] << ": ";
-            
-            bool a = tree.find(cur) == tree.end();
-            cout << a << endl;
-            
-            while (tree.find(cur) != tree.end()) {
+            while (tree.count(cur)) {
                 auto it = tree.lower_bound(cur);
                 vector<int> i = *it;
-                cout << i[0] << "/ " << i[1] << endl;
                 cur = { min(cur[0], i[0]), max(cur[1], i[1]) };
                 tree.erase(it);
             }
-            cout << cur[0] << "| " << cur[1] << endl;
-            tree.insert(cur);
         }
+	/*
+	// test
+	tree.insert({2, 3});
+        tree.insert({5, 5});
+	// cannot find {3, 4} although {2, 3} in set
+        bool a = tree.find({3, 4}) == tree.end();
+	cout << a;
+	// can locate lower_bound for {3, 4}
+        auto it = tree.lower_bound({3, 4});
+        vector<int> i = *it;
+        cout << i[0] << "/ " << i[1] << endl;
+	*/
 
         int sz = tree.size(), ct = 0;
         vector<vector<int>> res(sz, vector<int>(2));
@@ -141,6 +130,7 @@ public:
         return ans;
     }
 };
+
 
 # (I) Sort
 // indep

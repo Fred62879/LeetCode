@@ -35,8 +35,6 @@ F(N, L, K) = C(N, N) * R(N, L, K) + C(N, N-1) * R(N-1, L, K) + C(N, N-2) * R(N-2
 R(N, L, K) = C(N, N) * F(N, L, K) - C(N, N-1) * F(N-1, L, K) + C(N, N-2) * F(N-2, L, K), where F(N, L, K) = P(ermutation)(N, K) * (N - K)^(L - K)
 
 
-
-
 # (2) Math_Official
 **** STAY TUNED ****
 Take N = 5, L = 13, K = 1 for instance. To satisfy the requirement that each song shall be played at least once, we can derive a vector x(x1, x2, ..., x5) with xi specifying the first occurrence id of the i-1\th song.
@@ -60,7 +58,6 @@ in which case, we have totally 5 * 4 * (3 * 1^3) * (2 * 2^3) * (1 * 3^2)
 **** STAY TUNED ****
 
 
-
 # (1) DP definition
 Let dp[i][j] denotes the # of ways to have songs 0~i being played j times. To make sure all of the first i+1 songs are played, i cannot be larger than j and to make sure the left songs (N-i-1) can be played within the left times (L-j), i <= j && N-i-1 <= L-j. To update dp[i][j] we refer to two conditions - dp[i-1][j-1] & dp[i][j-1]:
 
@@ -72,6 +69,83 @@ Let dp[i][j] denotes the # of ways to have songs 0~i being played j times. To ma
 
 ## Code
 # (3) Math
+// others_optimized
+class Solution {
+public:
+    int mod;
+    vector<long> fac{1, 1}, fac_inv{1, 1}, pow_lk;
+    
+    // multiplicative inverse
+    long inv(int a, int b) {
+        int x = 1, y = 0, q, r, tmp;
+        if (b == 1) return 0;
+        while (a > 1) {
+            q = a / b;
+            // update a & b 
+            tmp = b;   b = a % b;   a = tmp;
+            // update x & y
+            tmp = y;   y = x - q * y;   x = tmp;
+        }
+        return (x + mod) % mod;
+    }
+    
+    long fact(int k) {
+        while (fac.size() <= k)
+            fac.push_back(fac.back() * fac.size() % mod);
+        return fac[k];
+    }
+    
+    long pow(int n, int k) {
+        if (n == 0) return 0;
+        if (k == 0) return 1;
+        long res;
+        if (k % 2) {
+            res = n % mod;
+            res = (res * pow(n, k - 1) % mod) % mod;
+        } else {
+            res = pow(n, k / 2) % mod;
+            res = (res * res) % mod;
+        }
+        return (int) (res + mod) % mod;
+    }
+    
+    void seive(int n, int l, int k) {
+        pow_lk.assign(n + 1, -1);
+        pow_lk[0] = 0; pow_lk[1] = 1;
+        vector<long> prime;
+        for (int i = 2; i <= n; i++) {
+            if (pow_lk[i] == -1) {
+                pow_lk[i] = pow(i, l - k);
+                prime.push_back(i);
+            }
+            for (int j = 0; i * prime[j] <= n; j++) {
+                pow_lk[i * prime[j]] = pow_lk[i] * pow_lk[prime[j]] % mod;
+                if (i % prime[j] == 0) break;
+            }
+        }
+        for (int i : prime)
+            cout << i << endl;
+    }
+    
+    long combi(int n, int k) {  
+        return fact(n) * inv(fact(n-k) * fact(k) % mod, mod) % mod;
+    }
+    
+    long F(int n, int l, int k) {
+        if (n < k) return 0; // not sufficient songs
+        return fact(n) * inv(fact(n-k), mod) % mod * pow_lk[n - k] % mod;
+    }
+    
+    int numMusicPlaylists(int N, int L, int K) {
+        mod = 1e9 +7;
+        long ans = 0;
+        seive(N, L, K);
+        for (int i = N, sign = 1; i >= K; i--, sign *= -1)
+            ans = (ans + mod + sign * combi(N, i) * F(i, L, K) % mod ) % mod;
+        return ans;
+    }
+};
+
 // derived
 class Solution {
 public:

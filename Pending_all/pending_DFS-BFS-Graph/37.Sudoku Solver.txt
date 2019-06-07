@@ -1,0 +1,84 @@
+## Specification
+Similar: LT36
+
+Write a program to solve a Sudoku puzzle by filling the empty cells. A sudoku solution must satisfy all of the following rules:
+Each of the digits 1-9 must occur exactly once in each row.
+Each of the digits 1-9 must occur exactly once in each column.
+Each of the the digits 1-9 must occur exactly once in each of the 9 3x3 sub-boxes of the grid.
+Empty cells are indicated by the character '.'.
+
+Note:
+The given board contain only digits 1-9 and the character '.'.
+You may assume that the given Sudoku puzzle will have a single unique solution.
+The given board size is always 9x9.
+
+
+## Testcases
+[["5","3",".",".","7",".",".",".","."],["6",".",".","1","9","5",".",".","."],[".","9","8",".",".",".",".","6","."],["8",".",".",".","6",".",".",".","3"],["4",".",".","8",".","3",".",".","1"],["7",".",".",".","2",".",".",".","6"],[".","6",".",".",".",".","2","8","."],[".",".",".","4","1","9",".",".","5"],[".",".",".",".","8",".",".","7","9"]]
+
+
+## Ideas
+(II) 
+https://leetcode.com/problems/sudoku-solver/discuss/15806/Yet-another-0ms-C%2B%2B-solution
+
+https://leetcode.com/problems/sudoku-solver/discuss/15748/Sharing-my-2ms-C%2B%2B-solution-with-comments-and-explanations.
+
+(I) DFS/Backtracking
+// others_optimized
+https://leetcode.com/problems/sudoku-solver/discuss/15796/Singapore-prime-minister-Lee-Hsien-Loong's-Sudoku-Solver-code-runs-in-1ms
+
+(This imple tends to locate all possible solutions to the sudoku and also possess the ability to detect if its solvable).
+
+Optomized in the way that (i) Use bitmask to record the elements available for each cell board[i,j] in terms of row, col, and box the cell locates in. In this way, the constraint info can be recorded in three 1D arrays. Every time we reach an empty cell, to check numbers that can be taken, we can derive a binary int via "bit-wise &" the constraints for the current cell in terms of row, col, and box. Using this int (e.g. 0010101101), we progressively derive its lowest 1-bit and DFS on that. (ii) DFS is performed according to the cell priority the highest of which is attained by the cell with least number of choices at the time it's reached. So DFS start with the empty cell with the strictest constriants. For imple part, the Sqeuence array records the priority and the SeqPtr incremented while initializing the constiants ensure we start after the last filled number.
+
+// indep
+Inheriting the constraint checking methods from LT36, DFS can be performed from the first empty cell onward from top-left to bottom-right. For each cell on the DFS path, we simple check all numbers it can take at the current timepoint and also updating the three matrices recording the constraints info.
+
+
+
+## Code
+# (II) 
+// others
+
+
+# (I) DFS/Backtracking
+// others_optimized_bitmask
+**** WAIT ****
+
+
+// indep_concise_array recording
+class Solution {
+public:
+    vector<vector<int>> row, col, box;
+    
+    // fill board from [i,j] onward (top-left to bottom-right)
+    int dfs(int i, int j, vector<vector<char>>& board) {
+        if (i == 9) return 1;
+        int ni = j == 8 ? i + 1 : i, nj = (j + 1) % 9;
+        if (board[i][j] != '.') return dfs(ni, nj, board);
+        
+        for (int k = 1; k <= 9; k++) { // fill numbers
+            int num = k + '0', id = (i/3)*3 + j/3;
+            if (row[i][k - 1] || col[j][k - 1] || box[id][k - 1]) continue;
+            
+            board[i][j] = num;
+            row[i][k - 1] = col[j][k - 1] = box[id][k - 1] = 1;
+            if (dfs(ni, nj, board)) return 1;
+            row[i][k - 1] = col[j][k - 1] = box[id][k - 1] = 0;
+            board[i][j] = '.';
+        }
+        return 0;
+    }
+    
+    void solveSudoku(vector<vector<char>>& board) {
+        row.assign(9, vector<int>(9, 0));
+        col.assign(9, vector<int>(9, 0));
+        box.assign(9, vector<int>(9, 0));
+        for (int i = 0; i < 9; i++)
+            for (int j = 0; j < 9; j++) if (board[i][j] != '.') {
+                int num = board[i][j] - '1', id = (i/3)*3 + j/3;
+                row[i][num] = col[j][num] = box[id][num] = 1;
+            }
+        dfs(0, 0, board);
+    }
+};

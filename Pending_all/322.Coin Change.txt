@@ -1,0 +1,84 @@
+## Specification
+You are given coins of different denominations and a total amount of money amount. Write a function to compute the fewest number of coins that you need to make up that amount. If that amount of money cannot be made up by any combination of the coins, return -1.
+
+Example 1:
+Input: coins = [1, 2, 5], amount = 11
+Output: 3 
+Explanation: 11 = 5 + 5 + 1
+
+Example 2:
+Input: coins = [2], amount = 3
+Output: -1
+
+Note: You may assume that you have an infinite number of each kind of coin.
+
+
+
+## Testcases
+[1]
+0
+
+
+
+## Ideas
+# (II) DFS_pruning/backtracking
+https://leetcode.com/problems/coin-change/discuss/77463/8-ms15-lines-concise-DFS-solutionc%2B%2B
+
+https://leetcode.com/problems/coin-change/discuss/77479/4ms-C%2B%2B-solution-(beats-99.65)
+
+https://leetcode.com/problems/coin-change/discuss/289477/C%2B%2B-Search-with-pruning-12ms-solution-with-comments
+
+https://leetcode.com/problems/coin-change/discuss/77437/3ms-c%2B%2B-easy-to-understand!
+
+# (I) DP_bottom-up
+
+
+
+## Code
+# (II) DFS
+//
+
+//
+class Solution {
+public:
+    int ans;
+    
+    // find smallest # (less than ans) of coins to take
+    int dfs(int t, int cur, int idx, vector<int>& coins) {
+        if (idx < 0) return -1;
+        if (!t) return cur; // >= ans ? -1 : (ans = cur);
+        
+        int n = t / coins[idx]; // max amount of current coin that can be taken
+        if (cur + n >= ans) return -1;
+        
+        int tmp = INT_MAX, a;
+        for (int i = n; i >= 0; i--) { // take one/multiple current coins
+            a = dfs(t - i * coins[idx], cur + i, idx - 1, coins);
+            if (a != -1) tmp = min(tmp, a);
+        }
+        if (tmp > ans) return -1;
+        return ans = tmp;
+    }
+    
+    int coinChange(vector<int>& coins, int amount) {
+        ans = INT_MAX;
+        sort(coins.begin(), coins.end());
+        return dfs(amount, 0, coins.size() - 1, coins);
+    }
+};
+
+
+# (I) DP
+// indep
+class Solution {
+public:
+    int coinChange(vector<int>& coins, int amount) {
+        vector<int> dp(amount + 1, INT_MAX);
+        dp[0] = 0;
+        for (int i = 1; i <= amount; i++)
+            for (int coin : coins) if (coin <= i && dp[i - coin] != INT_MAX)
+                dp[i] = min(dp[i], dp[i - coin] + 1);
+        // for (int i : dp) cout << i << endl;
+        return dp[amount] == INT_MAX ? -1 : dp[amount];
+    }
+};

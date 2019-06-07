@@ -20,6 +20,7 @@ The judging time limit has been increased for this question.
 
 
 ## Testcases
+["kccomwcgcs","socgcmcwkc","sgckwcmcoc","coswcmcgkc","cowkccmsgc","cosgmccwkc","sgmkwcccoc","coswmccgkc","kowcccmsgc","kgcomwcccs"]
 ["akmjfuyexdbuwienqsolcdess","mcbeedqifoslenwjdauuysxsk","oxdsekdsjbiyamulefenwqusc","felsxokeamdicwjunsqudsbey","yxdsekdsjbioamulefenwqusc","yeobladedijmxusfwukscsqne","lcysbswusdmqaoeuiednfxejk","dxfdeqskeuouymalsjcniesbw","jsnedyewscmsbiudqxkeolfau","ajmxqddueenlsisbfesockuwy","akmjfuyexdbswienqsolcdesu","sdexyedioqsakwlfbsencumuj","lcysbswusdmqaoeuiednxfejk","sdexyedioqsakwlfbsenucmuj","fmsuwbexauqsoeyecdilsjkdn","felsxokeamsicwjundqudsbey","jsnedyiwscmsbeudqxkeolfau","jdiboufslaceuneyqwsdmeskx","lcysbswukdmqaoeuiednxfejs","fkemdoqsdieswusbnlyuaxecj","oxdsekdsjyibamulefenwqusc","ubmsssynixlefaedjecwokduq","ejydqwnksbecildseuaufxmos","kcaxwsisjoquenuflebesymdd","jsnedyiwssmcbeudqxkeolfau"]
 
 
@@ -41,66 +42,70 @@ As we encounter each A[i], we first assume it being an independent group increme
 Indep.
 
 
+
 ## Code
 # (4) BFS
+// indep_384ms
 class Solution {
-    private boolean isSimilar(String s1, String s2) {
-        for (int i = 0, ct = 0; i < s1.length(); i++)
-            if (s1.charAt(i) != s2.charAt(i) && ++count > 2) return false;
-        return true;
+public:
+    // if pass strings directly, time becomes 1684ms
+    int compare(string* a, string* b) {
+        for (int i = 0, diff = 0; i < (*a).size(); i++) {
+            if ((*a)[i] != (*b)[i] && ++diff > 2) return 0;
+        }
+        return 1;
     }
     
-    public int numSimilarGroups(String[] A) {
-        int count = 0, N = A.length;
-        if (N == 0) return 0;
+    int numSimilarGroups(vector<string>& A) {
+        int n = A.size(), ans = 0;
+        vector<int> marked(n, 0);
         
-        Set<String> visited = new HashSet<>();
-        Queue<String> Q = new ArrayDeque<>();
-        for (String a: A) {
-            if (visited.contains(a)) continue;
-            visited.add(a); count++; Q.add(a);
+        queue<int> q;
+        for (int i = 0; i < n; i++) {
+            if (marked[i]) continue;
+            ans++;  marked[i] = 1;  q.push(i);
             
-            while(!Q.isEmpty()) {
-                String u = Q.remove();
-                for (String v: A)
-                    if (!visited.contains(v) && isSimilar(u, v)) { visited.add(v); Q.add(v); }
+            while (!q.empty()) {
+                int cur = q.front(); q.pop();
+		// cannot check from cur+1 onward as BFS tend to skip elements
+                for (int j = 0; j < n; j++) {
+                    if (marked[j] || !compare(&(A[cur]), &(A[j]))) continue;   
+                    q.push(j); marked[j] = 1;
+                }
             }
         }
-        return count;
+        return ans;
     }
-}
+};
 
 
 # (3) DFS
+// indep_452ms
 class Solution {
-    
-    private void dfsHelper(String[] A, int i, int[] visited) {
-        for (int j = 0; j < A.length; j++)
-            if (visited[j] == 0 && isSimilar(A[i], A[j])) {
-                visited[j] = 1;
-                dfsHelper(A, j, visited);
-            }
-    } 
-    
-    private boolean isSimilar(String s1, String s2) {
-        for (int i = 0, ct = 0; i < s1.length(); i++)
-            if (s1.charAt(i) != s2.charAt(i) && ++ct > 2) return false;
-        return true;
-    }
-    
-    public int numSimilarGroups(String[] A) {
-        int count = 0, N = A.length;
-        if (N == 0) return count;
-        
-        int[] visited = new int[N];
-        for (int i = 0; i < N; i++) {
-            if (visited[i] == 1) continue;
-            count++; visited[i] = 1;
-            dfsHelper(A, i, visited);
+public:
+    int compare(string* a, string* b) {
+        for (int i = 0, diff = 0; i < (*a).size(); i++) {
+            if ((*a)[i] != (*b)[i] && ++diff > 2) return 0;
         }
-        return count;
+        return 1;
     }
-}
+    
+    void dfs(int cur, vector<int>& marked, vector<string>& A) {
+        for (int i = 0; i < A.size(); i++) {
+            if (!marked[i] && compare(&(A[cur]), &(A[i])) ) {
+                marked[i] = 1; dfs(i, marked, A);
+            }
+        }
+    }
+    
+    int numSimilarGroups(vector<string>& A) {
+        int n = A.size(), ans = 0;
+        vector<int> marked(n, 0);
+        for (int i = 0; i < n; i++)
+            if (!marked[i]) { ans++; dfs(i, marked, A); }
+        return ans;
+    }
+};
 
 
 # (2) Union find

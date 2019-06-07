@@ -1,0 +1,116 @@
+## Specification
+Given n points on a 2D plane, find the maximum number of points that lie on the same straight line.
+
+Example 1:
+Input: [[1,1],[2,2],[3,3]]
+Output: 3
+Explanation:
+^
+|
+|        o
+|     o
+|  o  
++------------->
+0  1  2  3  4
+
+Example 2:
+Input: [[1,1],[3,2],[5,3],[4,1],[2,3],[1,4]]
+Output: 4
+Explanation:
+^
+|
+|  o
+|     o        o
+|        o
+|  o        o
++------------------->
+0  1  2  3  4  5  6
+
+NOTE: input types have been changed on April 15, 2019. Please reset to default code definition to get new method signature.
+
+
+
+## Testcases
+[[0,0],[94911151,94911150],[94911152,94911151]]
+[[0,0],[1,65536],[65536,0]]
+[[84,250],[0,0],[1,0],[0,-70],[0,-70],[1,-1],[21,10],[42,90],[-42,-230]]
+
+
+
+## Ideas
+https://leetcode.com/problems/max-points-on-a-line/discuss/221044/
+
+# (III) Math & Hash
+https://leetcode.com/problems/max-points-on-a-line/discuss/224773/Python-Easy-and-Concise-with-Detailed-Explanation-Algebra
+
+# (II) Line-wise O(n^3)
+For lines defined by every two points, we can find the # of points fall on it and simply return the line which entails the largest amount of points.
+
+# (I) Point-wise
+Using hashmap, for each point, we can count the number of lines of certain slope/interception. Alledgedely, this suffers from precision problems.
+
+
+
+## Code
+# (III) Math & Hash
+ 
+
+# (II) Line-wise
+// derived
+class Solution {
+public:
+    int maxPoints(vector<vector<int>>& p) {
+        int ans = 0, n = p.size();
+        if (n < 3) return n;
+        
+        for (int i = 0; i < n - 1; i++)
+            for (int j = i + 1; j < n; j++) {
+                int dx = p[i][0] - p[j][0], dy = p[i][1] - p[j][1];
+                long intcptdx = 0;
+                int inf = 0, cur = 0;
+                
+                if (!dx) inf = 1;
+                else intcptdx = (long)p[i][1] * dx - (long)p[i][0] * dy;
+                
+                for (int k = 0; k < n; k++)
+                    if (inf && p[k][0] == p[i][0]) cur++;
+                    else if (!inf && (long)dx * p[k][1] == (long)dy * p[k][0] + intcptdx) cur++;
+                ans = max(ans, cur);
+            }
+            
+        return ans;
+    }
+};
+
+
+# (I) Point-wise
+// indep_FAIL
+class Solution {
+public:
+    unordered_map<double, unordered_set<int>> lines;
+    vector<int> inf;
+    int mxct;
+    
+    void push(double key, int x) {
+        if (lines.count(key)) lines[key].insert(x);
+        else lines[key] = { x };
+        if (lines[key].size() > mxct) mxct = lines[key].size();
+    }
+    
+    int maxPoints(vector<vector<int>>& p) {
+        infct = mxct = 0;
+        for (int i = 0; i < p.size() - 1; i++)
+            for (int j = i + 1; j < p.size(); j++)
+                if (p[i][0] == p[j][0]) {
+                    infct++;
+                } else if (p[i][1] == p[j][1]) {
+                    push(0, j);
+                } else {
+                    int x1 = p[i][0], y1 = p[i][1], x2 = p[j][0], y2 = p[j][1];
+                    push( (double)(y1 - y2) / (x1 - x2), j );
+                }
+        
+        for (auto& it : lines) cout << it.first << "/" << it.second.size() << endl;
+        return max(infct, mxct + 1);
+    }
+};

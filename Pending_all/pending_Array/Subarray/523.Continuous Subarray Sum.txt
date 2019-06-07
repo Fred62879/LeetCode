@@ -1,0 +1,94 @@
+## Specification
+Given a list of non-negative numbers and a target integer k, write a function to check if the array has a continuous subarray of size at least 2 that sums up to the multiple of k, that is, sums up to n*k where n is also an integer. 
+
+Example 1:
+Input: [23, 2, 4, 6, 7],  k=6
+Output: True
+Explanation: Because [2, 4] is a continuous subarray of size 2 and sums up to 6.
+
+Example 2:
+Input: [23, 2, 6, 4, 7],  k=6
+Output: True
+Explanation: Because [23, 2, 6, 4, 7] is an continuous subarray of size 5 and sums up to 42.
+
+Note:
+The length of the array won't exceed 10,000.
+You may assume the sum of all the numbers is in the range of a signed 32-bit integer.
+
+
+
+## Ideas
+# (II) Array
+It can also be found that for an intercal nums[i:j], if it satisfies the requirement, sum[i-1] would equal sum[j+1] given the sum cacualted as modulo k. The difficulty lays in implementation. My original idea is to keep an array to record the index recording the earliest occurrence of each modulo result. However, for very large K, allocation error is incurred. The imple from others employs a pre which means each time we insert into the set the modulo result obtained last time, in which case once the same res is encountered again, we do not need to check whether the two occurrences locate from each other by more than 2 numbers.
+
+
+# (I) DP
+The idea is to maintain a set of prefix sum. Iterating from 0 to n, for each index, we treat it as the lower bound and decrementing a higher bound index from n - 1 while calculating sum of the array defined by these two bounds and evalauting whether the sum satisfy the requirement.
+
+
+## Code
+# (II) Array
+// indep_imple_others
+class Solution {
+public:
+    bool checkSubarraySum(vector<int>& nums, int k) {
+        int n = nums.size();
+        unordered_set<int> prev;
+        for (int i = 0, pre = 0, sum = 0; i < n; i++, pre = sum) {
+            sum += nums[i];
+            if (k) sum %= k;
+            if (prev.count(sum)) return 1;
+            prev.insert(pre);
+        }
+        return 0;
+    }
+};
+
+
+# (I) DP_bottom-up
+// indep_O(n^2)
+class Solution {
+public:
+    bool checkSubarraySum(vector<int>& nums, int k) {
+        int n = nums.size();
+        vector<int> sum(n, nums[0]); // sum[i], accu sum[0:i-1]
+        for (int i = 1; i < n; i++) sum[i] = sum[i - 1] + nums[i];
+        
+        for (int i = 0; i < n; i++)
+            for (int j = n - 1; j > i; j--)
+                if ( (!k && sum[j] == sum[i] && !nums[i]) || 
+                     (k && (sum[j] - sum[i] + nums[i]) % k == 0) ) 
+                    return 1;
+        return 0;
+    }
+};
+
+
+
+## Testcases
+[1000000000]
+1000000000
+
+[23,2,4,6,7]
+6
+
+[1,0]
+2
+
+[1,1]
+-1
+
+[23,2,6,4,7]
+0
+
+[0]
+0
+
+[0,1,0]
+0
+
+[23,2,4,6,7]
+-6
+
+[0,0]
+-1

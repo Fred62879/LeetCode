@@ -1,5 +1,5 @@
 ## Specification
-Similar: LT132,647,940
+Similar: LT132,564,647,940
 Given a string S, find the number of different non-empty palindromic subsequences in S, and return that number modulo 10^9 + 7. A subsequence of a string S is obtained by deleting 0 or more characters from S. A sequence is palindromic if it is equal to the sequence reversed. Two sequences A_1, A_2, ... and B_1, B_2, ... are different if there is some i for which A_i != B_i.
 
 Example 1:

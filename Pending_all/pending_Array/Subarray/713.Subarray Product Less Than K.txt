@@ -1,0 +1,41 @@
+## Specification
+Your are given an array of positive integers nums. Count and print the number of (contiguous) subarrays where the product of all the elements in the subarray is less than k.
+
+Example 1:
+Input: nums = [10, 5, 2, 6], k = 100
+Output: 8
+Explanation: The 8 subarrays that have product less than 100 are: [10], [5], [2], [6], [10, 5], [5, 2], [2, 6], [5, 2, 6].
+Note that [10, 5, 2] is not included as the product of 100 is not strictly less than k.
+
+Note:
+0 < nums.length <= 50000.
+0 < nums[i] < 1000.
+0 <= k < 10^6.
+
+
+
+## Ideas
+# (II) Pointers/Sliding window
+To figure out how many subsequences terminating at a particular index possess a smaller-than-k product, we can also exploit a pointer instead of doing bs. We use lo to indicate the leftmost index, the subarray defined by which and the current index has a product less than k. At each index, we first update the product and if this goes beyond k, we increment "lo" until the product turn to be smaller than k. Then, the length or the array defined by "lo" and "i" is the # of subseqs terminating at i whose products are less than k.
+
+# (I) Binary Search
+We can maintain a array recording the accumulative product from idx 0 to the current index. Terminating at each index, to check the longest subsequence whose product is less than k, we do a bs to locate.
+
+
+
+## Code
+# (II) Pointers/Sliding window
+// indep
+class Solution {
+public:
+    int numSubarrayProductLessThanK(vector<int>& nums, int k) {
+        int n = nums.size(), lo = 0, product = 1, ans = 0;
+        for (int i = 0; i < n; i++) {
+            product *= nums[i];
+            while (product >= k && lo <= i)
+                product /= nums[lo++];
+            if (i >= lo) ans += (i - lo + 1);
+        }
+        return ans;
+    }
+};

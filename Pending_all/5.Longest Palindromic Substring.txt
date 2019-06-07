@@ -1,0 +1,169 @@
+## Specification
+Given a string s, find the longest palindromic substring in s. You may assume that the maximum length of s is 1000.
+
+Example 1:
+Input: "babad"
+Output: "bab"
+Note: "aba" is also a valid answer.
+
+Example 2:
+Input: "cbbd"
+Output: "bb"
+
+
+
+## Ideas
+# (III) Manacher's Algorithm
+https://leetcode.windliang.cc/leetCode-5-Longest-Palindromic-Substring.html
+
+
+# (II) Expand
+Another simplt way to solve this is to expand as much as possible from each char of the string which is treated as the center (odd) or left center(even).
+
+
+# (I) DP_bottom-up
+_(ii)_ longest common substr
+As parlindrome strings will be the same after reversal, this problem is equivalent to find the longest shared sequence of two strings, one being the reverse of the other. We define dp[i][j] be the length of the shared string between s[0:i] and sr[0:j]
+
+
+_(i)_ brute force based
+Let dp[i][j] denotes whether s[i:j] is a parlindromic string. To evaluate this, we simply refer to dp[i-1][j+1] while compare s[i] with s[j]. Equivalently, we can also let dp[len][i] denotes that of the string start from i of length len. Based on this, space complexity can be easily reduced to O(N) letting dp[i] records that of string start from i of the length under investigation.
+
+
+
+## Code
+# (III) Manacher's Algorithm
+
+
+
+# (II) Expand
+// others_fastest
+class Solution {
+public:
+    std::string longestPalindrome(std::string s) {
+        if (s.size() < 2)
+            return s;
+        int len = s.size(), max_left = 0, max_len = 1, left, right;
+	// center of parlindrome
+        for (int start = 0; start < len && len - start > max_len / 2;) {
+            left = right = start;
+            while (right < len - 1 && s[right + 1] == s[right])
+                ++right; // identical chars are integrated as center
+            start = right + 1;
+            while (right < len - 1 && left > 0 && s[right + 1] == s[left - 1]) {
+                ++right;
+                --left;
+            }
+            if (max_len < right - left + 1) {
+                max_left = left;
+                max_len = right - left + 1;
+            }
+        }
+        return s.substr(max_left, max_len);
+    }
+};
+
+// others_fast
+class Solution {
+public:
+    int expandAroundCenter(string& s, int left, int right) {
+        int L = left, R = right;
+        while (L >= 0 && R < s.size() && s[L] == s[R]) { L--, R++; }
+        return R - L - 1;
+    }
+    
+    string longestPalindrome(string s) {
+        if (s == "" || s.size() < 1) return "";
+        int start = 0, end = 0;
+        for (int i = 0; i < s.size(); i++) {
+            int len1 = expandAroundCenter(s, i, i);
+            int len2 = expandAroundCenter(s, i, i + 1);
+            int len = max(len1, len2);
+            if (len > end - start) {
+                start = i - (len - 1) / 2;
+                end = i + len / 2;
+            }
+        }
+        return s.substr(start, end + 1 - start);
+    }
+};
+
+
+# (II) Longest common substr
+_(i) DP_bottom-up_
+// others_188ms
+class Solution {
+public:
+    string longestPalindrome(string s) {
+        int n = s.size(), mx = 0, st = 0;
+        if (!n) return "";
+        
+        string sr = s;
+        reverse(sr.begin(), sr.end());
+        
+        // dp[i][j], length of shared region between s[0:i] & sr[0:j]
+        int dp[n][n]; memset(dp, 0, sizeof(dp));
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) if (s[i] == sr[j]) {
+                if (!i || !j) dp[i][j] = 1;
+                else dp[i][j] = dp[i - 1][j - 1] + 1;
+                
+                if (dp[i][j] <= mx) continue;
+                int origj = n - j - 1;
+                if (origj + dp[i][j] - 1 == i)
+                    mx = dp[i][j], st = origj;
+            }
+        }
+        return s.substr(st, mx);
+    }
+};
+
+
+# (I) DP_bottom-up/Brute force based
+// indep_O(N) space
+class Solution {
+public:
+    string longestPalindrome(string s) {
+        int n = s.size(), lo = 0, hi = 0;
+        if (!n) return "";
+        
+        int dp[2][n]; memset(dp, 0, sizeof(dp));
+        for (int i = 0; i < n; i++) dp[1][i] = 1;
+        for (int i = 1; i < n; i++) dp[0][i] = 1;
+        
+        for (int len = 2; len <= n; len++) {
+            for (int i = 0, j = i + len - 1, prev = len % 2; j < n; i++, j++) {
+                dp[prev][i] = dp[prev][i + 1] && s[i] == s[i + len - 1];
+                if (dp[prev][i]) lo = i, hi = i + len - 1;
+            }
+        }
+        // cout << lo << "/" << hi;
+        return s.substr(lo, hi - lo + 1);
+    }
+};
+
+// indep_O(N^2) space (120/90ms)
+class Solution {
+public:
+    string longestPalindrome(string s) {
+        int n = s.size(), lo = 0, hi = 0;
+        if (!n) return "";
+        
+        int dp[n][n]; memset(dp, 0, sizeof(dp));
+        for (int i = 0; i < n; i++) dp[i][i] = 1;
+        for (int i = 0; i < n - 1; i++) dp[i + 1][i] = 1;
+	// int dp[n + 1][n]; memset(dp, 0, sizeof(dp));
+	// for (int i = 0; i < n; i++) dp[1][i] = 1;
+	// for (int i = 1; i < n; i++) dp[0][i] = 1;
+
+        for (int len = 2; len <= n; len++) {
+            for (int i = 0, j = i + len - 1; j < n; i++, j++) {
+                dp[i][j] = dp[i + 1][j - 1] && s[i] == s[j];
+                if (dp[i][j]) lo = i, hi = j;
+		// dp[len][i] = dp[len - 2][i + 1] && s[i] == s[j];
+		// if (dp[len][i]) lo = i, hi = i + len - 1;
+            }
+        }
+        return s.substr(lo, hi - lo + 1);
+    }
+};

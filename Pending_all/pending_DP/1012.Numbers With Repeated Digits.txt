@@ -28,7 +28,9 @@ Note:
 
 
 ## Ideas
-# (1) DP_Math
+# (II) DP_Backtracking/top-down
+
+# (I) DP_Math
 To count the # of numbers with >= 2 repeats, we can do the complementary, counting that of numbers with completely no repeats which can be easily accomplished using permutation. Take 7834 for instance, we first count the # of ints with less than 4 digits that have no repeats. 
 Then, the difficult part comes to calculate ints with 4 digits which can be done progressively. 
 

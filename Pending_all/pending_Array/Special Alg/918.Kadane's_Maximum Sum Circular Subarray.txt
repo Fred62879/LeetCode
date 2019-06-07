@@ -31,10 +31,7 @@ Note:
 1 <= A.length <= 30000
 
 
-
 ## Idea
-# (3) Naive
-
 # (2) Queue
 
 # (1) Kadane's 
@@ -45,6 +42,30 @@ Notice when combine the two for loops, runtime increase a bit.
 
 
 ## Code
+# (2) Queue
+// derived
+class Solution {
+public:
+    int maxSubarraySumCircular(vector<int>& A) {
+        int n = A.size(), mx = A[0];
+        vector<int> sum(n * 2 + 1, 0);
+        for (int i = 0; i < n * 2; i++)
+            sum[i + 1] = sum[i] + A[i % n];
+        
+        deque<int> q; q.push_back(0);
+        for (int i = 1; i <= n * 2; i++) {
+            if (i - q.front() > n)
+                q.pop_front();
+            mx = max(mx, sum[i] - sum[q.front()]);
+            while (!q.empty() && sum[q.back()] >= sum[i])
+                q.pop_back();
+            q.push_back(i);
+        }
+        return mx;
+    }
+};
+
+
 # (1) Kadane's
 // optimize
 class Solution {

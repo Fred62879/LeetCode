@@ -1,0 +1,46 @@
+## Specification
+Given an array of integers and an integer k, you need to find the total number of continuous subarrays whose sum equals to k.
+
+Example 1:
+Input:nums = [1,1,1], k = 2
+Output: 2
+
+Note: The length of the array is in range [1, 20,000]. The range of numbers in the array is [-1000, 1000] and the range of the integer k is [-1e7, 1e7].
+
+
+
+## Testcases
+[-1,9,0,2,3,5,4,-2,6,11,-9,13,4,15,-4,-3,-8,12]
+7
+
+[1,1,1]
+2
+
+
+
+## Ideas
+# (I) HashMap
+The primitive idea is to store the prefix sum and then check all subarray sums subtracting a portion from the current array. Equivalently, without using an extra array storing the prefix sum, we can also maintain a cumulative sum that records the total sum from each i to the current index j. However, both would give a O(n^2) solution.
+
+Actually, it can be found that the above method checks each sum individually. An improvement can thus be realized if for each accu sum for nums[0:i], we know immediately the number of subarrays nums[0:j] (j < i) whose accu sum is K smaller than accu[0:i].
+
+
+
+## Code
+# (I) HashMap
+// derived
+class Solution {
+public:
+    int subarraySum(vector<int>& nums, int k) {
+        int ans = 0, n = nums.size();
+        unordered_map<int, int> freq;
+        for (int i = 0, sum = 0; i < n; i++) {
+            if (freq.count(sum)) freq[sum]++;
+            else freq[sum] = 1;
+            sum += nums[i];
+            if (freq.count(sum - k))
+                ans += freq[sum - k];
+        }
+        return ans;
+    }
+};

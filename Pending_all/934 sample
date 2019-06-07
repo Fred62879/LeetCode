@@ -1,0 +1,111 @@
+
+class Solution {
+public:
+    vector<int> b, count;
+    // dp[i][j][k], max points obtainable removing boxes[i:j] inheriting k boxes from previous
+    int dp[100][100][100];
+    
+    // max points obtainable removing b[i:j] inheriting prev 
+    int solve(int lo, int hi, int prev) {
+        if (lo > hi) return 0;
+        if (lo == hi) return (dp[lo][hi][prev] = pow(count[lo], 2));
+        if (dp[lo][hi][prev] != -1) return dp[lo][hi][prev];
+        
+        int cur = 0;
+        for (int i = lo; i <= hi; i++) {
+            cur = max(cur, solve(lo, i - 1) + (int) pow(count[i], 2) + solve(i + 1, hi));
+            for (int j = i + 1; j <= hi; j++) if (b[i] == b[j])
+                cur = max(cur, solve(i + 1, j - 1) + solve(lo, i - 1) + solve(j + 1, hi) 
+                                + (int) pow(count[i] + count[j], 2));
+        }
+        dp[lo][hi] = cur;
+        return cur;
+    }
+    
+    int removeBoxes(vector<int>& boxes) {
+        int n = boxes.size();
+        for (int i = 0, lo = i; i < n; i++) {
+            while (lo < n - 1 && boxes[lo] == boxes[lo + 1]) lo++;
+            b.push_back(boxes[i]), count.push_back(lo - i + 1), i = lo++;
+        }
+        int m = b.size();
+        memset(dp, -1, sizeof(dp));
+        
+        int a = solve(0, b.size() - 1);
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < m; j++)
+                cout << dp[i][j] << ", ";
+            cout << endl;
+        }
+        return a;
+    }
+};
+
+
+//
+class Solution {    
+public:
+    int overlap(string a, string b) {
+        int ans = 0, ovlp = 0, n = a.size(), m = b.size();
+        for (int i = 0, j = 0; i < n && j < m; i++) {
+            if (a[i] != b[j]) { i -= j; j = 0; ovlp = 0; }
+            else if (j == m - 1) {ans = max(ans, ovlp + 1); ovlp = 0; j = 0; }
+            else { ovlp++; j++; }
+        }
+        ans = max(ans, ovlp);
+        return ans == m ? -1 : ans;
+    }
+    
+    string shortestSuperstring(vector<string>& A) {
+        int n = A.size(), m = 1 << n;
+        // calculate pair-wise distance
+        vector<vector<int>> dist(n, vector<int>(n, 0));
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++) 
+                if (i != j) dist[i][j] = overlap(A[i], A[j]);
+        
+        // dp[i][j], max total overlap for path i starting from j
+        vector<vector<int>> dp(m, vector<int>(n, -1));
+        vector<vector<int>> successor(m, vector<int>(n, -1));
+        for (int i = 0; i < n; i++) dp[1 << i][i] = 0;
+        
+        // bottom-up DP
+        int st = 0, mxTotal = -1;
+        for (int path = 1; path < m; path++) {
+            for (int node = 0; node < n; node++) {
+                if (((path >> node) & 1) == 0) continue;
+                int ppath = path^(1 << node);
+                if (ppath == 0) break;
+                // append node before head
+                for (int head = 0; head < n; head++) {
+                    if (((ppath >> head) & 1) == 0) continue;
+                    int prevOvlp = dp[path][node];
+                    int curOvlp = dp[ppath][head] + dist[node][head];
+                    if (prevOvlp < curOvlp) { 
+                        dp[path][node] = curOvlp;
+                        successor[m - 1][node] = head;
+                        if (path == m - 1 && mxTotal < curOvlp) {
+                            mxTotal = curOvlp; st = node;
+                        }
+                    }
+                }
+            }
+        }
+        int a = successor[m - 1][st], b = successor[m - 1][a], c = successor[m - 1][b], d = successor[m - 1][c];
+        int e = successor[m - 1][d];
+        cout << st << ", " << a << ", " << b << ", " << c << ", " << d << ", " << e;
+        /*
+        // trace and generate ans string
+        string res = A[st];
+        int trace = 1 << st;
+        while (trace != m - 1) {
+            int next = parent[trace][st], ovlp = dist[st][next];
+            if (ovlp != -1) res += A[next].substr(ovlp, A[next].size());
+            trace |= (1 << next); st = next;
+            cout << trace << ", " << next;
+        }
+        // return res;
+        */
+        return "";
+    }
+};

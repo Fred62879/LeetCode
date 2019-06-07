@@ -1,0 +1,141 @@
+## Specification
+There is an m by n grid with a ball. Given the start coordinate (i,j) of the ball, you can move the ball to adjacent cell or cross the grid boundary in four directions (up, down, left, right). However, you can at most move N times. Find out the number of paths to move the ball out of grid boundary. The answer may be very large, return it after mod 109 + 7.
+
+Example 1:
+Input: m = 2, n = 2, N = 2, i = 0, j = 0
+Output: 6
+Explanation:
+
+Example 2:
+Input: m = 1, n = 3, N = 3, i = 0, j = 1
+Output: 12
+Explanation:
+
+Note: Once you move the ball out of boundary, you cannot move it back. The length and height of the grid is in range [1,50]. N is in range [0,50].
+
+
+
+## Testcases
+10 10 5 4
+
+
+
+## Ideas
+https://leetcode.com/problems/out-of-boundary-paths/discuss/102966/C%2B%2B-6-lines-DP-O(N-*-m-*-n)-6-ms
+
+The dp design is straightfroward. dp[i][j][k] / dp[id][k] denotes the # of ways to breach the square from cell i-j/id moving at most k steps. To optimize mem, since we are updating dp[i][j][k] only using dp[i][j][k-1], we shrink size of the 3rd dim of dp to two. To avoid coping dp each time to update, we alternately update one of the two levels of 3rd dim.
+
+Since at each k out of N, we are updating i-j from 0-0 to m-n, the # of movements from right (dp[i][j+1]) and down (dp[i+1][j]) movement can be tracked directly from dp. This is correct because when we are updating dp[i][j] for k, we are not touching dp[i][j+1] and dp[i+1][j] for k-1 yet. Thus, we only need to remember that of up and left movement using some extra mem since dp[i-1][j] and dp[i][j-1] are already updated with its value for k rather than k-1.
+
+At a particular row index i under constriant k, prior[j] records the # of movements to breach the board starting from cell (i-1)-j under k-1 constriants. For up movement from i-j, since we are seeking that to breach from (i-1)-j, there is no problem to directly use prior[j]. While for left movement, since we are now at j and prior[j-1] has been updated to that to breach from i-j, it comes as a surprise that we can also use it directly without any problems.
+
+
+
+## Code
+# (I) DP
+_(ii) bottom-up_
+// optimized2
+class Solution {
+public:
+ int findPaths(int m, int n, int N, int i, int j) {
+        if (m <= 0 || n <= 0) return 0;
+        int dp[m][n] = {};
+        for (int k=0; k<N; k++) {
+            int prior[n] = {};
+            for (int i=0; i<m; i++) {
+                for (int j=0; j<n; j++) {
+                    unsigned int paths = 0;
+                    paths += (i==0 ? 1 : prior[j]); // dp[i-1][j]
+                    paths += (j==0 ? 1 : prior[j-1]); // dp[i][j-1]
+                    paths += (i==m-1 ? 1 : dp[i+1][j]);
+                    paths += (j==n-1 ? 1 : dp[i][j+1]);
+                    paths %= 1000000007;
+                    prior[j] = dp[i][j]; // remember val under k-1 constriant for row i
+                    dp[i][j] = paths; // update value to k constriant
+                }
+            }
+        }
+        return dp[i][j];
+    }
+};
+
+class Solution {
+public:
+    int findPaths(int m, int n, int N, int i, int j) {
+        unsigned int g[50][50] = {}, r[50]; // r[i], value for column i of prev row
+        while (N-- > 0) {
+            for (auto k = 0; k <= m; ++k) { // row
+                for (auto l = 0; l < n; ++l) { // column
+                    auto tmp = r[l];
+                    r[l] = (k == m ? 0 : ( (k == 0 ? 1 : g[k - 1][l]) + 
+					   (k == m - 1 ? 1 : g[k + 1][l]) +
+                                           (l == 0 ? 1 : g[k][l - 1]) + 
+					   (l == n - 1 ? 1 : g[k][l + 1]) ) % 1000000007);
+                    if (k > 0) g[k - 1][l] = tmp;
+                }
+            }
+        }
+        return g[i][j];
+    }
+};
+
+// optimized1
+class Solution {
+public:
+    int findPaths(int m, int n, int N, int i, int j) {
+        int q = 1e9 + 7, ct = 0;
+        long dp[m][n][2]{};
+        while (++ct <= N)
+            for (int i = 0, cn = ct % 2, pn = 1 - cn; i < m; i++)
+                for (int j = 0; j < n; j++)
+                    dp[i][j][cn] = ( (i == 0 ? 1 : dp[i-1][j][pn]) + (i == m - 1 ? 1 : dp[i+1][j][pn]) 
+                                   + (j == 0 ? 1 : dp[i][j-1][pn]) + (j == n - 1 ? 1 : dp[i][j+1][pn]) ) % q;
+        return (int) dp[i][j][N % 2];
+    }
+};
+
+// derived
+class Solution {
+public:
+    int findPaths(int m, int n, int N, int i, int j) {
+        int q = 1e9 + 7;
+        long dp[m][n][N + 1]; memset(dp, 0, sizeof(dp));
+        for (int k = 1; k <= N; k++)
+            for (int j = 0; j < n; j++)
+                for (int i = 0; i < m; i++)
+                    dp[i][j][k] = (dp[i][j][k] + (i == 0 ? 1 : dp[i-1][j][k-1]) + (i == m - 1 ? 1 : dp[i+1][j][k-1]) 
+                                   + (j == 0 ? 1 : dp[i][j-1][k-1]) + (j == n - 1 ? 1 : dp[i][j+1][k-1]) ) % q;
+        return (int)dp[i][j][N];
+    }
+};
+
+
+_(i) top-down_
+// indep
+class Solution {
+public:
+    vector<vector<int>> dp;
+    int m, n, N, q;
+    int dir[4][2] { {-1, 0}, {1, 0}, {0, -1}, {0, 1} };
+    
+    // find the # of ways to exceed bd at the idth cell moving at most #move times
+    int solve(int id, int move) {
+        if (move == 0) return 0;
+        if (dp[id][move] != -1) return dp[id][move];
+        
+        int r = id / n, c = id % n, cur = 0;
+        for (int i = 0; i < 4; i++) {
+            int nr = r + dir[i][0], nc = c + dir[i][1];
+            if (nr < 0 || nr >= m || nc < 0 || nc >= n) cur = (cur + 1) % q;
+            else cur = (cur + solve( nr * n + nc, move - 1)) % q;
+        }
+        dp[id][move] = cur;
+        return cur;
+    }
+    
+    int findPaths(int m, int n, int N, int i, int j) {
+        dp.assign(n * m, vector<int>(N + 1, -1));
+        this->m = m, this->n = n, this->N = N, q = 1e9 + 7;
+        return solve(i * n + j, N);
+    }
+};

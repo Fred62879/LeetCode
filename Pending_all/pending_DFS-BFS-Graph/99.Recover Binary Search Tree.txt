@@ -1,0 +1,164 @@
+## Specification
+Two elements of a binary search tree (BST) are swapped by mistake. Recover the tree without changing its structure.
+
+Example 1:
+Input: [1,3,null,null,2]
+
+   1
+  /
+ 3
+  \
+   2
+
+Output: [3,1,null,null,2]
+
+   3
+  /
+ 1
+  \
+   2
+
+Example 2:
+Input: [3,1,4,null,null,2]
+
+  3
+ / \
+1   4
+   /
+  2
+
+Output: [2,1,4,null,null,3]
+
+  2
+ / \
+1   4
+   /
+  3
+
+Follow up: A solution using O(n) space is pretty straight forward. Could you devise a constant space solution?
+
+
+
+## Testcases
+[6,3,4,5,2] // impossible
+[6,4,3,2,5] // impossible
+
+
+
+## Ideas
+(II) DFS_Morris traversal
+https://leetcode.com/problems/recover-binary-search-tree/discuss/32562/Share-my-solutions-and-detailed-explanation-with-recursiveiterative-in-order-traversal-and-Morris-traversal
+
+Essential idea identical to (I). Implemented differently using Morris. Morris-traversal is similar to recursive/iterative traversal, but we need to modify the tree structure during the traversal. before we visiting the left tree of a root, we will build a back-edge between rightmost node in left tree and the root. So we can go back to the root node after we are done with the left tree. Then we locate the rightmost node in left subtree again, cut the back-edge, recover the tree structure and start visit right subtree. The detection of two incorrect TreeNodes is similar to iterative/recursive in-order traversal.
+
+(I) DFS_Inorder traversal
+Since only two nodes are swapped, after doing an inorder traversal of the tree, there should be exactly two nodes that violate a monotonic ascending order. (i) We can simply collect the nodes inorder together with their value and sort those node values. Since we have collected all nodes of the tree, we can simpy assign the sorted values to these nodes which will directly change the tree. (ii) Since only two nodes should be swapped, a more efficient manner is to maintain three pointers. The first violated nodes should be assigned to node a. Then, the last violating node encountered during inorder traversal should be assigned to b which shall be swapped with a in node value.
+
+
+
+## Code
+# (II) DFS_Morris traversal
+// O(1) space_Iterative
+
+
+
+# (I) DFS_Inorder traversal
+// others_O(1) space
+class Solution {
+public:
+    void recoverTree(TreeNode* root) {
+        TreeNode* pre = NULL, *one = NULL, *two = NULL;
+        DFS(root, pre, one, two);
+        swap(one->val, two->val);
+    }
+    
+    void DFS(TreeNode* cur, TreeNode* &pre, TreeNode* &one, TreeNode* &two){
+        if(!cur) return;
+        DFS(cur->left, pre, one, two);
+        if(pre && cur->val < pre->val){
+            if(!one) one = pre;
+            two = cur;
+        }
+        pre = cur;
+        DFS(cur->right, pre, one, two);
+    }
+};
+
+// derived_O(1) space
+class Solution {
+public:
+    TreeNode* a, *b, *prev;
+    
+    void dfs(TreeNode* root) {
+        if (root == NULL) return;
+        dfs(root->left);
+        if (prev != NULL && prev->val > root->val) {
+            if (a == NULL) a = prev;
+            b = root;
+        }
+        prev = root;
+        dfs(root->right);
+    }
+    
+    void recoverTree(TreeNode* root) {
+        a = b = prev = NULL;
+        dfs(root);
+        swap(a->val, b->val);
+    }
+};
+
+// derived_O(n) space_Iterative DFS
+class Solution {
+public:
+    void recoverTree(TreeNode* root) {
+        TreeNode* a = NULL, *b = NULL, *prev = NULL;
+        stack<TreeNode*> inorder;
+        while (root) {
+            inorder.push(root);
+            root = root->left;
+        }
+        while (!inorder.empty()) {
+            TreeNode* cur = inorder.top(); inorder.pop();
+            if (prev && prev->val > cur->val) {
+                if (!a) a = prev;
+                b = cur;
+            }
+            prev = cur;
+            if (cur->right) {
+                TreeNode* rc = cur->right;
+                while (rc) { inorder.push(rc); rc = rc->left; }
+            }
+        }
+        swap(a->val, b->val);
+    }
+};
+
+// derived_O(n) space_Recursive DFS
+class Solution {
+public:
+    void dfs(TreeNode* root, vector<TreeNode*>& nodes, vector<int>& vals) {
+        if (root == NULL) return;
+        dfs(root->left, nodes, vals);
+        nodes.push_back(root);
+        vals.push_back(root->val);
+        dfs(root->right, nodes, vals);
+    }
+    
+    void recoverTree(TreeNode* root) {
+        vector<TreeNode*> nodes;
+        vector<int> vals;
+        dfs(root, nodes, vals);
+        sort(vals.begin(), vals.end());
+        for (int i = 0; i < vals.size(); i++)
+            nodes[i]->val = vals[i];
+    }
+};
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+ * };
+ */

@@ -1,0 +1,102 @@
+## Specification
+Given an array A of integers, a ramp is a tuple (i, j) for which i < j and A[i] <= A[j].  The width of such a ramp is j - i. Find the maximum width of a ramp in A.  If one doesn't exist, return 0.
+
+Example 1:
+Input: [6,0,8,2,1,5]
+Output: 4
+Explanation: 
+The maximum width ramp is achieved at (i, j) = (1, 5): A[1] = 0 and A[5] = 5.
+
+Example 2:
+Input: [9,8,1,0,1,9,4,0,4,1]
+Output: 7
+Explanation: 
+The maximum width ramp is achieved at (i, j) = (2, 9): A[2] = 1 and A[9] = 1.
+
+Note:
+2 <= A.length <= 50000
+0 <= A[i] <= 50000
+
+
+
+## Testcases
+[0,9,7,5,1,2,5,4,2,1,0,9,8,5,4,10,4,3,2,1,0,0,5,6,4,3,2,6,5,1,4,7]
+[1,1,1]
+
+
+
+## Ideas
+# (II) Stack_Two pass
+Equivalently, we can maintain the array starting from the front to use as the left boundary. Then, we traversing from the back to select proper right boundary. To maximize the result, we shall maintain the collection of left bounds in descending order based on similar reason as in (I). In this case, given the temporal rightmost right bound, when we iteratively access the left bounds (from intermediate to leftmost position), we are always expanding the max possible distance providing the current left bound is no larger than the right bound.
+
+
+# (I) Queue_Binary search
+We can maintain an ascending array starting from the last element. Every time we encounter an element larger than the last element in the array, we simply append the new one to the array. When smaller elements are encountered, we shall only find the last element in the array that is no less than it and update the answer with the distance between these two elements.
+
+The ascending array record the right bounary of the ramp and smaller elements are not added (to make it ascending) because we would like to maximize the right bound together with its id. Since we are traverseing from the last entry in A, every new element must be inferior regarding its id relative to elements already in the array. If the new element is even smaller, both its val and id is not maxmimized and thus should be used as the left bound.
+
+Note, traversing from back to front is simply to ensure an ascending array to use binary search
+
+
+## Code
+# (II) Stack_Two pass
+// derived
+class Solution {
+public:
+    int maxWidthRamp(vector<int>& A) {
+        int ans = 0, n = A.size();
+        stack<int> s;
+        for (int i = 0; i < n; i++)
+            if (s.empty() || A[s.top()] > A[i]) s.push(i);
+        for (int i = n - 1; i >= 0; i--) {
+            while (!s.empty() && A[s.top()] <= A[i]) {
+                ans = max(ans, i - s.top());
+                s.pop();
+            }
+        }
+        return ans;
+    }
+};
+
+
+# (I) Queue_Binary search
+// others_concise
+class Solution {
+public:
+    int maxWidthRamp(vector<int>& A, int res = 0) {
+        vector<pair<int, int>> v;
+        for (auto i = 0; i < A.size(); ++i) {
+            if (v.empty() || v.back().first > A[i]) {
+                v.push_back({ A[i], i });
+            } else {
+		// target to binary search. max is to make sure
+		// search based only on pair.first
+		// when discovered first element is smaller, return nothing
+                auto t = make_pair( A[i], INT_MAX );
+                auto id = lower_bound(v.begin(), v.end(), t, greater<pair<int, int>>());
+                res = max(res, i - id->second);
+            }
+        }
+        return res;
+    }
+};
+
+// indep
+class Solution {
+public:
+    int maxWidthRamp(vector<int>& A) {
+        int ans = 0, n = A.size();
+        vector<int> col{ A.back() }, id{ n-1 };
+        for (int i = n - 2; i >= 0; i--) {
+            if (A[i] <= col.back()) {
+                auto it = lower_bound(col.begin(), col.end(), A[i]);
+                if (*it >= A[i])
+                    ans = max(ans, id[it - col.begin()] - i );
+            } else {
+                col.push_back(A[i]);
+                id.push_back(i);
+            }
+        }
+        return ans;
+    }
+};

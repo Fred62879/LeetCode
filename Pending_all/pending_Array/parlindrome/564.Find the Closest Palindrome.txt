@@ -1,0 +1,104 @@
+## Specification
+Similar: LT132,647,730,940
+Given an integer n, find the closest integer (not including itself), which is a palindrome. The 'closest' is defined as absolute difference minimized between two integers.
+
+Example 1:
+Input: "123"
+Output: "121"
+
+Note: The input n is a positive integer represented by string, whose length will not exceed 18. If there is a tie, return the smaller one as answer.
+
+
+## Testcases
+"1753201"
+"175320"
+"175571"
+"1753571"
+"170081"
+"170042"
+"2002" - fail by indep
+"10"
+
+
+## Ideas
+# (I) Naive
+https://leetcode.com/problems/find-the-closest-palindrome/discuss/102391/Python-Simple-with-Explanation
+
+// others
+Instead of trying to figure out the ceiling and floor which can be nasty, we can retrieve a set of possible candidates. (i) If the final answer has one more digit than n, then it must be 100..001. (ii) If ... less than .., then 999...99. (iii) If same number of digits, then there should be three possibilities - add one, maintain, or subtract one from the front half of f and flip this to given the right half.
+
+// indep
+To find the closest, we only need to find its ceiling and floor parlindrome and compare the two to derive the closer one. Take the small for instance, we simply start from the middle of the string and going left and right-ward simultaneously with many cases to be considered.
+
+
+## Code
+# (I) Naive
+// others
+class Solution {
+public:
+    string nearestPalindromic(string n) {
+        int m = n.size();
+        unordered_set<long> col;
+        col.insert(pow(10, m) + 1);
+        col.insert(pow(10, (m - 1))- 1);
+        
+        string pre = n.substr(0, (m + 1) / 2);
+        for (long i = -1; i <= 1; i++) {
+            string cpre = to_string(stol(pre) + i);
+            string cur = cpre + string(cpre.rbegin() + m % 2, cpre.rend());
+            col.insert(stol(cur));
+        }
+        
+        long mindiff = INT_MAX, ln = stol(n), ans;
+        col.erase(ln);
+        for (long cand : col) {
+            long curdiff = abs(cand - ln);
+            if (curdiff < mindiff)
+                mindiff = curdiff, ans = cand;
+            else if (curdiff == mindiff)
+                ans = min(ans, cand);
+        }
+        return to_string(ans);
+    }
+};
+
+// indep_not imple
+class Solution {
+public:
+    string update(string& ans, int lo, int hi, int m) {
+        while (lo >= 0 && hi < m)
+            ans[hi++] = ans[lo--];
+        return ans;
+    }
+    
+    string findLg(string& n) {
+        return "0";
+    }
+    // almost imple
+    string findSml(string& n) {
+        string ans = n;
+        int m = n.size(), hi = m / 2, lo = hi - 1 + m % 2;
+        while (lo >= 0 && hi < m) {
+            if (n[lo] == '0') {
+                if (n[hi] == '0') lo--, hi++;
+                else return update(ans, lo, hi, m);
+            } else {
+                if (n[hi] >= n[lo]) return update(ans, lo, hi, m);
+                else if (lo != 0) { --ans[lo]; return update(ans, lo, hi, m); }
+                // fill(ans.begin() + 1, ans.end() - 1, '9');
+                else if (ans[lo] != '1') { ans[hi] = --ans[lo]; return ans.replace(1, m - 2, m - 2, '9'); }
+                else return ans.replace(0, m, m - 1, '9');
+            }
+        }
+        return ans;
+    }
+    
+    string nearestPalindromic(string n) {
+        string ssml = findSml(n), slg = findLg(n);
+        cout << ssml;
+        // int t = stoi(n), sml = stoi(ssml), lg = stoi(slg);
+        // cout << sml;
+        // if (abs(t - sml) > abs(t - lg)) return slg;
+        return ssml;
+    }
+};

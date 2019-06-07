@@ -1,0 +1,344 @@
+## Specification
+You are asked to cut off trees in a forest for a golf event. The forest is represented as a non-negative 2D map, in this map:
+
+0 represents the obstacle can't be reached.
+1 represents the ground can be walked through.
+The place with number bigger than 1 represents a tree can be walked through, and this positive number represents the tree's height. 
+
+You are asked to cut off all the trees in this forest in the order of tree's height - always cut off the tree with lowest height first. And after cutting, the original place has the tree will become a grass (value 1). You will start from the point (0, 0) and you should output the minimum steps you need to walk to cut off all the trees. If you can't cut off all the trees, output -1 in that situation. You are guaranteed that no two trees have the same height and there is at least one tree needs to be cut off.
+
+Example 1:
+Input: 
+[[1,2,3],[0,0,4],[7,6,5]]
+Output: 6
+
+Example 2:
+Input: 
+[[1,2,3],[0,0,0],[7,6,5]]
+Output: -1
+
+Example 3:
+Input: 
+[[2,3,4],[0,0,5],[8,7,6]]
+Output: 6
+Explanation: You started from the point (0,0) and you can cut off the tree in (0,0) directly without walking.
+
+Hint: size of the given matrix will not exceed 50x50.
+
+
+
+## Testcases
+[[1,0,0,0],[9,0,0,2],[4,0,0,6],[7,8,3,5]]
+[[1,0,0],[9,0,2],[4,0,6]]
+[[1,19,15,17],[9,18,11,2],[4,10,12,6],[7,8,3,5]]
+[[0,8764,1202,0,0,2769,5770],[0,0,2521,0,5111,9321,0]]
+[[2,3,4],[0,0,5],[8,7,6]]
+
+
+
+## Ideas
+# (III) BFS_Hadlock's
+
+		  1   2   3  4   5   6          *1*  2  3  4  5  *6*
+		  7  [s]  8  9 *10* 11           7  [s] 8  9 10  11
+		 12  13  14 15  16  17          12  13 14  0  0  17
+		 18  19  20 21  [t] 22          18  19 20  0 [t] 22
+		 23 *24* 25 26  26  28         *23* 24 25 26 26 *28*
+
+An intuition is that within the square defined by the source and target tree, if there do not exist obstacles, the distance is fixed as the Manhattan distance. Moreover, even if there do exist some obstacles, if a path exists linking the source with the target which does not entail any trees beyond the square, the distance is still the Manhattan distance. However, if neither of these two conditions (left Fig) fit, to reach the target, we have to go beyond the square (s-10-t-19) (right Fig).
+
+After the square extension (1-6-28-23), if we can now find a path linking the source and the target without extending further beyond the current extended square, then the distance is still fixed, but as the Manhanttan distance + 2, which entails one step going beyond the original square and one step returning into it. If we still cannot find such a path, then extend further until we can find such a path.
+
+https://leetcode.com/problems/cut-off-trees-for-golf-event/discuss/107396/Python-solution-based-on-wufangjie's-(Hadlock's-algorithm)
+
+https://leetcode.com/problems/cut-off-trees-for-golf-event/discuss/107415/my-python-solution-inspired-by-A*-algorithm
+
+# (II) BFS_A*/Dijkstra
+https://leetcode.com/problems/cut-off-trees-for-golf-event/discuss/272841/C%2B%2B-solution-using-a*-search
+
+As a SP question, distance between a given source and target can also be addressed by Dijkstra's and herein a special case called the A* algorithm. Essentially, BFS can be performed based on priority of, for instance, distances of trees from the source, instead of randomly searching all possible trees. However, we cannot do it only incorporating distTo[s] as all trees reachable from the source in one BFS level would locate the same distance away from the source.
+
+In this case, it would be better that for each tree, we decide its priority based on the sum of its distance from the source (which is known for sure) and its distance to the target. This actually turns out to be the distance from the source to the target which is what we need to figure out. Indeed, we will never know the distance from a particular tree to the target until we real reach the target but this distance can be deduced as the Manhattan distance between the two trees without considering about the obstacles.
+
+       [1][1][1][1][1] 0
+       [3] 0  0  0 [1] 0
+	s [6] 0  0 *1  1  1
+	7 [1] 0  0 [1] 0  t
+	  [1] 0  0 [1] 0
+	  [1] 0  0 [1] 0
+	  [1] 0  0 [1] 0
+	  [1][1][1][1] 0
+
+       [1][1][1][1][1] 0
+       [3] 0  0  0 [1] 0
+	s [6] 0  0 *1  1  1
+	7 [1] 0  0 [1] 0  t
+	  [1] 0  0 [1] 0
+	  [1][1][1][1] 0
+
+Thus, if obstacles do not present or if certain path still maintain the Manhanttan disance, then our priority works perfectly. However, if this is not the case, it also does not hurt as we are doing BFS and the priority only determines which element to be evaluated first. Thus, the A* algorithm essentially optimized the BFS via selecting a temporally optimal next.
+
+(The official solution may not be correct
+
+
+# (I) BFS
+https://leetcode.com/problems/cut-off-trees-for-golf-event/discuss/217864/c%2B%2B-priority-queue-%2B-bfs-solution-with-comments
+
+https://leetcode.com/problems/cut-off-trees-for-golf-event/discuss/107427/C%2B%2B-BFS-with-optimization-86ms-beats-100
+
+Given the row and column index of a source and a target tree in the forest, to derive the distance between them, the most straightforward way is to do a BFS from the source. However, this easily get TLE and lots of optimization need to be taken into account.
+
+# (O) Basis
+Since we do not know the distribution of trees with varying heights, we need to first order the trees to simplify the processing. Iterating over the forests, we collect all trees and then sort them based on tree height. Then, the problem can be simplified as  finding the sum of the distance from each tree in the forest to its consecutive neighbour in the collection which is the shortest tree taller than it.
+
+
+
+## Code
+# (III) BFS_Hadlock's
+
+
+# (II) BFS_A*/Dijkstra
+
+public class sp {
+		
+	int[] edgeto, distto;
+
+
+	public sp(int s, int t, graph g) {
+		...;
+		Arrays.fill(distto, MAX);
+		distto[s] = 0;
+		Minpq<> pq;
+		pq.insert(s, 0);
+		while (!pq.emtpy()) {
+			int v = pq.delmin();
+			for (edge e : g.adj(v))
+				relax(e, g);
+		}
+	}
+	
+	public void relax() {
+		int v = e.from(), w = e.to();
+		if (distto[w] > distto[v] + e.weight) {
+			distto[w] = ...;
+			edgeto[w] = ..;
+			if (pq.con) pq.decreasekey(..);
+			else pq.insert(..);
+		}
+	}
+
+}
+
+
+# (I) BFS_Classical
+// others_fastest
+class Solution {
+public:
+    int cutOffTree(vector<vector<int>>& forest) {
+        int rows = forest.size(), cols = rows ? forest[0].size() : 0;
+        if (!rows || !cols) return 0;
+        if (forest[0][0] == 0) return -1;
+        
+         priority_queue<pair<int, pair<int, int>>, vector<pair<int, pair<int, int>>>, greater<pair<int, pair<int, int>>>> trees;
+        for (int r = 0; r < rows; ++r)
+            for (int c = 0; c < cols; ++c) if (forest[r][c] > 1)
+                trees.push({forest[r][c], {r, c}});
+        
+        int moves[][2] = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+        vector<vector<int>> visited(rows, vector<int>(cols, -1));
+        int totalDist = 0, i = 0;
+        pair<int, int> start = {0, 0};
+        
+        // Iterate through trees in increasing height order
+        while (!trees.empty()) {
+            pair<int, int> to = trees.top().second;
+            trees.pop();
+            bool found = false;
+            int dist = -1;
+            
+            queue<pair<int, int>> qu;
+            qu.push({start.first, start.second});
+            visited[start.first][start.second] = i;
+            while (!qu.empty() && !found) {
+                ++dist;
+                for (int j = 0, r, c, size = qu.size(); j < size && !found; ++j) {
+                    tie(r, c) = qu.front(); qu.pop();
+                    if (r == to.first && c == to.second) { found = true; break; }
+                    
+                    for (int m = 0, nr, nc; m < 4; ++m) {
+                        nr = r + moves[m].first, nc = c + moves[m].second;
+                        if (nr < 0 || nr >= rows || nc < 0 || nc >= cols || visited[nr][nc] == i || !forest[nr][nc])
+                            continue;
+                        
+                        visited[nr][nc] = i;
+                        qu.push({nr, nc});
+                    }
+                }
+            }    
+            if (!found) return -1;
+            totalDist += dist;
+            start = to;
+            ++i;
+        }
+        return totalDist;
+    }
+};
+
+// others_java
+class Solution {
+    int[] dr = {-1, 1, 0, 0};
+    int[] dc = {0, 0, -1, 1};
+    
+    public int bfs(List<List<Integer>> forest, int sr, int sc, int tr, int tc) {
+       int R = forest.size(), C = forest.get(0).size();
+        Queue<int[]> queue = new LinkedList();
+        queue.add(new int[]{sr, sc, 0});
+        boolean[][] seen = new boolean[R][C];
+        seen[sr][sc] = true;
+        while (!queue.isEmpty()) {
+            int[] cur = queue.poll();
+            if (cur[0] == tr && cur[1] == tc) return cur[2];
+            for (int di = 0; di < 4; ++di) {
+                int r = cur[0] + dr[di];
+                int c = cur[1] + dc[di];
+                if (0 <= r && r < R && 0 <= c && c < C &&
+                    !seen[r][c] && forest.get(r).get(c) > 0) {
+                    seen[r][c] = true;
+                    queue.add(new int[]{r, c, cur[2]+1});
+                }
+            }
+        }
+        return -1;
+    }
+
+    public int cutOffTree(List<List<Integer>> forest) {
+        List<int[]> trees = new ArrayList();
+        for (int r = 0; r < forest.size(); ++r) {
+            for (int c = 0; c < forest.get(0).size(); ++c) {
+                int v = forest.get(r).get(c);
+                if (v > 1) trees.add(new int[]{v, r, c});
+            }
+        }
+
+        Collections.sort(trees, (a, b) -> Integer.compare(a[0], b[0]));
+
+        int ans = 0, sr = 0, sc = 0;
+        for (int[] tree: trees) {
+            int d = bfs(forest, sr, sc, tree[1], tree[2]);
+            if (d < 0) return -1;
+            ans += d;
+            sr = tree[1]; sc = tree[2];
+        }
+        return ans;
+    }
+}
+
+// cpp
+class Solution {
+public:
+    int n, m;
+    vector<int> dr{ -1, 1, 0, 0 }, dc{ 0, 0, -1, 1 };
+    
+    int dist(int sx, int sy, int tx, int ty, vector<vector<int>>& f) {
+        if (sx == tx && sy == ty) return 0;
+        
+        vector<vector<int>> marked(n, vector<int>(m, 0));
+        queue<pair<int, int>> q; // **** USE PAIR OR TLE ****
+        q.push({ sx, sy });
+        marked[sx][sy] = 1;
+        int ans = 0;
+        
+        while (!q.empty()) {
+            ans++;
+            int sz = q.size();
+            while (--sz >= 0) {
+                pair<int, int> cur = q.front(); q.pop();
+                int curx = cur.first, cury = cur.second;
+                if (curx == tx && cury == ty) return ans;
+            
+                for (int i = 0; i < 4; i++) {
+                    int nx = curx + dr[i], ny = cury + dc[i];
+                    if (nx >= 0 && nx < n && ny >= 0 && ny < m && f[nx][ny] && !marked[nx][ny]) {
+                        if (nx == tx && ny == ty) return ans;
+                        marked[nx][ny] = 1, q.push({ nx, ny });
+                    }
+                }
+            }
+        }
+        return -1;
+    }
+    
+    int cutOffTree(vector<vector<int>>& f) {
+        n = f.size(), m = f[0].size();
+        // process forest
+        vector<vector<int>> col;
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < m; j++) if (f[i][j] > 1)
+                col.push_back({ f[i][j], i, j });
+        // sort(col.begin(), col.end(), [] (vector<int> a, vector<int> b) { return a[2] < b[2]; });
+        sort(col.begin(), col.end()); // **** THIS IS FASTER ****
+        // pair-wise distance calculation
+        int ans = 0, sr = 0, sc = 0;
+        for (auto& cur : col) {
+            int cdist = dist(sr, sc, cur[1], cur[2], f);
+            if (cdist == -1) return -1;
+            ans += cdist;
+            sr = cur[1], sc = cur[2];
+        }
+        return ans;
+    }
+};
+
+
+// indep_not imple_complicated
+class Solution {
+public:
+    int n, m;
+    
+    int check(int nx, int ny, int curx, int cury, int px, int py, int ppx, int ppy, vector<vector<int>>& f) {
+        if (nx < 0 || nx >= n || ny < 0 || ny >= m || !f[nx][ny]) return false;
+        if (curx == ppx && cury == ppy && nx == px && ny == py) return false; // loop around
+        return true;
+    }
+    
+    int cutOffTree(vector<vector<int>>& forest) {
+        n = forest.size(), m = forest[0].size();
+        vector<int> col, marked;
+        // obtain tree height order
+        for (auto& f : forest)
+            for (int h : f) if (h > 1)
+                col.push_back(h), marked.push_back(0);
+        sort(col.begin(), col.end());
+        // BFS
+        queue<vector<int>> q;
+        q.push({ 0, 0, -1, -1, -1, -1, 0, 0 });
+        while (!q.empty()) {
+            vector<int> cur = q.front(); q.pop();
+            if (marked[cur[6]]) continue; // tree reached already in other check 
+            
+            int curx = cur[0], cury = cur[1], px = cur[2], py = cur[3];
+            int ppx = cur[4], ppy = cur[5], htid = cur[6], steps = cur[7];
+            vector<vector<int>> nxt = { {curx-1, cury}, {curx+1, cury}, {curx, cury-1}, {curx, cury+1} };
+            cout << curx << "," << cury << ": ";
+            for (auto& loc : nxt)
+                if (check(loc[0], loc[1], curx, cury, px, py, ppx, ppy, forest)) {
+                    cout << loc[0] << "," << loc[1] << " | ";
+                    int curh = forest[loc[0]][loc[1]], nhtid = htid, flag = 0;
+                    
+                    // if (htid == 7 && curx == 3 && cury == 1) cout << loc[0] << "/" << loc[1] << ": " << steps << endl;
+                    // if (htid == 7 && curx == 3 && cury == 0) cout << loc[0] << "/" << loc[1] << ": " << steps << endl;
+                    // if (htid == 7) cout << curx << "/" << cury << endl;
+                    
+                    if (curh == col[htid]) { // reach target tree
+                        cout << col[htid] << ": " << steps << endl;
+                        if (htid == col.size() - 1) return steps + 1; // being the last tree
+                        marked[htid] = 1, nhtid = htid + 1, flag = 1;
+                    }
+                    q.push({loc[0], loc[1], curx, cury, px, py, nhtid, steps + 1});
+                    if (flag) break;
+                }
+            cout << endl;
+        }
+        return -1;
+    }
+};

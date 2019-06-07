@@ -1,0 +1,168 @@
+## Specification
+Alice plays the following game, loosely based on the card game "21". Alice starts with 0 points, and draws numbers while she has less than K points.  During each draw, she gains an integer number of points randomly from the range [1, W], where W is an integer.  Each draw is independent and the outcomes have equal probabilities. Alice stops drawing numbers when she gets K or more points.  What is the probability that she has N or less points?
+
+Example 1:
+Input: N = 10, K = 1, W = 10
+Output: 1.00000
+Explanation:  Alice gets a single card, then stops.
+
+Example 2:
+Input: N = 6, K = 1, W = 10
+Output: 0.60000
+Explanation:  Alice gets a single card, then stops.
+In 6 out of W = 10 possibilities, she is at or below N = 6 points.
+
+Example 3:
+Input: N = 21, K = 17, W = 10
+Output: 0.73278
+
+Note:
+0 <= K <= N <= 10000
+1 <= W <= 10000
+Answers will be accepted as correct if they are within 10^-5 of the correct answer.
+The judging time limit has been reduced for this question.
+
+
+
+## Testcases
+9 3 10
+
+
+
+## DP defi
+# (II)
+dp[i] denotes the possibility to collect i points.
+https://leetcode.com/problems/new-21-game/discuss/132334/One-Pass-DP-O(N)
+
+https://leetcode.com/problems/new-21-game/discuss/132358/Java-O(K-%2B-W)-DP-solution-with-explanation
+
+
+# (I)
+dp[i] denotes the possibility of collecting valid # of points when we already have i points.
+
+
+
+## Code
+# DP
+_(II) def_
+// WAIT
+
+// indep_bugs
+class Solution {
+public:
+    double new21Game(int N, int K, int W) {
+        double ans = 0, prob = 1 / (double)W, dp[K + 1];
+        for (int i = 0; i < K; i++) dp[i] = prob;
+        dp[0] = 1;
+        
+        for (int i = 1; i < K; i++)
+            for (int j = 1; j < K - i; j++)
+                dp[i + j] += prob * dp[i];
+        
+        for (int i = 0; i < K; i++)
+            cout << i << ": " << dp[i] << endl;
+        
+        for (int i = 0; i < K; i++) // points until last to final collect
+            ans += prob * (min(W, N - i) - (K - i) + 1) * dp[i];
+        return ans;
+    }
+};
+
+
+_(I) def_
+// optimized
+class Solution {
+public:
+    double new21Game(int N, int K, int W) {
+        double dp[N + W + 1];
+        memset(dp, 0, sizeof(dp));
+        for (int k = K; k <= N; ++k)
+            dp[k] = 1;
+
+        double S = min(N - K + 1, W);
+        for (int k = K - 1; k >= 0; --k) {
+            dp[k] = S / W;
+            S += dp[k] - dp[k + W];
+        }
+        return dp[0];
+    }
+};
+
+// others_TLE
+class Solution {
+public:
+    double new21Game(int N, int K, int W) {
+        double ans = 0, prob = 1 / (double)W;
+        double dp[N + W + 1]; // dp[i], ans when we already have i points;
+        memset(dp, 0, sizeof(dp));
+        
+        for (int i = K; i <= N; i++) dp[i] = 1;
+        
+        for (int i = K - 1; i >= 0; i--) {
+            for (int j = 1; j <= min(N - i, W); j++) {
+                dp[i] += prob * dp[i + j];
+            }
+        }    
+        return dp[0];
+    }
+};
+
+
+
+# Fail
+// bottom-up_indep
+class Solution {
+public:
+    double new21Game(int N, int K, int W) {
+        if (!K) return 0;
+        double dp[K + 1] {0, 1}; // dp[i], total # of ways to collect exactly i points
+        for (int i = 2; i < min(K, W); i++) dp[i] = 2 * dp[i - 1];
+        for (int i = W; i < K; i++)
+            for (int j = 1; j <= W; j++)
+                dp[i] += dp[i - j];
+        
+        // for (int i = 0; i < K; i++)
+            // cout << i << ": " << dp[i] << endl;
+        
+        double mtk = 0, mtn = 0; // # of ways to collect more than k/n points, exceeding at the last collect
+        for (int i = 0; i < K; i++) { // previously collected i points (not exceed)
+            for (int j = W; j >= K - i; j--) { // further collect j to exceed K
+                mtk += dp[i];
+                if (j + i > N) mtn += dp[i];
+            }
+        }
+        cout << mtk << "/" << mtn;
+        return 1 - mtn / mtk;
+    }
+};
+
+// top-down_indep_fail to imple
+class Solution {
+public:
+    // # of ways , given # prev points collected costing 
+    vector<double> solve(int prev, double num, int N, int K, int W) {
+        if (prev >= K) {
+            if (prev > N) return {1/num, 1/num};
+            return {1/num, 0};
+        }
+        double cmtk = 0, cmtn = 0;
+        if (W >= K - prev) cmtk = (W - K + prev + 1) / (num * W);
+        if (W > N - prev) cmtn = (W - N + prev) / (num * W);
+        
+        int hi = W >= K - prev ? K - 1 - prev : W;
+        for (int i = 1; i <= hi; i++) { // collect i points
+            vector<double> res = solve(prev + i, num * (double)W, N, K, W);
+            // if (num == .1) cout << i << ": " << res[0] << "/" << res[1] << endl;
+            cmtk += res[0], cmtn += res[1];
+        }
+        return { cmtk, cmtn };
+    }
+    
+    double new21Game(int N, int K, int W) {
+        if (!K) return 0;
+        vector< double> ans = solve(0, 1 / (double)W, N, K, W);
+        double mtk = ans[0], mtn = ans[1];
+        // cout << mtk << "/" << mtn << endl;
+        return 1 - mtn / mtk;
+    }
+};

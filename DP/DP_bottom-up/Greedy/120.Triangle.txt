@@ -1,0 +1,74 @@
+## Specification
+Given a triangle, find the minimum path sum from top to bottom. Each step you may move to adjacent numbers on the row below. For example, given the following triangle
+[
+     [2],
+    [3,4],
+   [6,5,7],
+  [4,1,8,3]
+]
+The minimum path sum from top to bottom is 11 (i.e., 2 + 3 + 5 + 1 = 11). Note: Bonus point if you are able to do this using only O(n) extra space, where n is the total number of rows in the triangle.
+
+
+
+## Code
+# (I) DP_bottom-up
+// 2nd visit_2019-May
+// others
+class Solution {
+public:
+    int minimumTotal(vector<vector<int>>& t) {
+        vector<int> dp = t[t.size() - 1];
+        for (int i = t.size() - 2; i >= 0; i--)
+            for (int j = 0; j <= i; j++)
+                dp[j] = min(dp[j + 1], dp[j]) + t[i][j];
+        return dp[0];
+    }
+};
+
+// indep
+class Solution {
+public:
+    int minimumTotal(vector<vector<int>>& t) {
+        int n = t.size();
+        int dp[n]{ t[0][0] };
+        
+        for (int i = 1; i < n; i++) {
+            for (int j = i; j >= 0; j--) {
+                if (j == i) dp[j] = dp[j - 1] + t[i][j];
+                else if (j == 0) dp[j] += t[i][j];
+                else dp[j] = min(dp[j], dp[j - 1]) + t[i][j];
+            }
+        }
+        int ans = INT_MAX;
+        for (int i = 0; i < n; i++)
+            if (ans > dp[i]) ans = dp[i];
+        return ans;
+    }
+};
+
+// 1st attempt_2018-Oct
+class Solution {
+    public int minimumTotal(List<List<Integer>> t) {
+        int len = t.size();
+        int[] res = new int[len];
+        for (int i = 0; i < len; i++) res[i] = t.get(len - 1).get(i);
+        for (int i = len - 2; i >= 0; i--)
+            for (int j = 0; j <= i; j++)
+                res[j] = Math.min(res[j + 1], res[j]) + t.get(i).get(j);
+        return res[0];
+    }
+}
+
+
+class Solution {
+    public int minimumTotal(List<List<Integer>> t) {
+        int len = t.size();
+        for (int i = len - 2; i >= 0; i--) {
+            for (int j = 0; j <= i; j++) {
+                List<Integer> a = t.get(i), b = t.get(i + 1);
+                a.set(j, a.get(j) + Math.min(b.get(j + 1), b.get(j))); 
+            }
+        }
+        return t.get(0).get(0);
+    }
+}

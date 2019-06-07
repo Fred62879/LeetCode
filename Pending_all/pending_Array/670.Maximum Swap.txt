@@ -1,0 +1,108 @@
+## Specification
+Given a non-negative integer, you could swap two digits at most once to get the maximum valued number. Return the maximum valued number you could get.
+
+Example 1:
+Input: 2736
+Output: 7236
+Explanation: Swap the number 2 and the number 7.
+
+Example 2:
+Input: 9973
+Output: 9973
+Explanation: No swap.
+
+Note: The given number is in the range [0, 108]
+
+
+
+## Testcases
+27838828
+
+
+
+## Ideas
+# (III) Min_Max So far
+https://leetcode.com/problems/maximum-swap/discuss/107138/C%2B%2B-concise-code-O(N-8)
+Similar idea to one pass traversal but use array to record largest so far instead a pointer.
+
+# (II) Traversal
+// One pass_pointers
+Traversing from back to front, we constantly update the candidate pair that need to be swapped. To do this, we record the id and value of the largest digit from i to n - 1 in its last occrrence. Once a particular digit is smaller than the largest so far, we update the candidate pair. If we encounter a larger digit than largest so far, we update lsf only without interfering the existing candidate pair.
+
+
+// Two pass_Greedy
+Basic idea is the same. Traverse
+
+
+# (I) Sort
+Since we can swap at most one pair of digits in num, to obtain the largest outcome, we shall try to swap large digit to as front as possible. For instance, if the first digit is not the largest digit, we definitely shall swap it with the largest digit immediately. To do this, we can simply keep an array of digit id and sort it in descending order of the corresponding digit. As we traverse from 0 to n-1, as soon as we encounter an i whose id[i] is not i, we know that num[i] represents a smaller digit which can be increased swapping it with some preceding digits. 
+
+However, it is also notable that given the presence of multiple largest digits, to maximize the result, we shall always swap the current small digit with the digit that is the last occurrence of the largest digit.
+
+This is because after swap, if we ignore the head where we newly put a larger digit to replace the original smaller digit, the _resting num_ is definitely getting smaller as we are replacing a larger digit with a smaller one. Therefore, among the several candidate digits, since all of them will lead to the same digit in the head, to maximize the result, we shall maximize the _resting num_, which is larger if the smaller digit is put in a later position.
+
+
+
+## Code
+# (II) Traversal
+// One pass_pointers_derived
+class Solution {
+public:
+    int maximumSwap(int num) {
+        string s = to_string(num);
+        int n = s.size(), lo = -1, hi = -1, lgid = n - 1;
+        char lg = s[n - 1];
+        
+        for (int i = n - 2; i >= 0; i--) {
+            if (s[i] > lg) lg = s[i], lgid = i;
+            else if (s[i] < lg) lo = i, hi = lgid;
+        }
+        if (hi == -1) return num;
+        swap(s[lo], s[hi]);
+        return stoi(s);
+    }
+};
+
+// Two pass_Greedy
+class Solution {
+    public int maximumSwap(int num) {
+        char[] A = Integer.toString(num).toCharArray();
+        int[] last = new int[10];
+        for (int i = 0; i < A.length; i++) {
+            last[A[i] - '0'] = i;
+        }
+
+        for (int i = 0; i < A.length; i++) {
+            for (int d = 9; d > A[i] - '0'; d--) {
+                if (last[d] > i) {
+                    char tmp = A[i];
+                    A[i] = A[last[d]];
+                    A[last[d]] = tmp;
+                    return Integer.valueOf(new String(A));
+                }
+            }
+        }
+        return num;
+    }
+}
+
+
+# (I) Sort
+// indep
+class Solution {
+public:
+    int maximumSwap(int num) {
+        string s = to_string(num);
+        vector<int> id(s.size());
+        for (int i = 0; i < s.size(); i++) id[i] = i;
+        sort(id.begin(), id.end(), [&s] (int a, int b) { return s[a] > s[b]; });
+        
+        for (int i = 0; i < s.size(); i++) if (id[i] != i) {
+            int lo = i, hi = i;
+            while (s[id[hi]] == s[id[hi + 1]]) hi++;
+            swap(s[lo], s[id[hi]]);
+            break;
+        }
+        return stoi(s);
+    }
+};

@@ -1,0 +1,99 @@
+## Specification
+Given a 2D binary matrix filled with 0's and 1's, find the largest square containing only 1's and return its area.
+
+Example:
+Input: 
+1 0 1 0 0
+1 0 1 1 1
+1 1 1 1 1
+1 0 0 1 0
+Output: 4
+
+
+
+## Testcases
+[]
+
+[["1","1","1","0","0"],["1","0","1","1","1"],["1","1","1","1","1"],["1","0","1","1","0"],["0","0","1","1","1"]]
+
+[["1","0","1","0","0"],["1","0","1","1","1"],["1","1","1","1","1"],["1","0","0","1","0"]]
+
+[["1"]]
+
+
+## Ideas
+# (II) DP
+dp[i][j] denotes the longest edge length of square whose right-bottom corner falls at matrix[i][j]. Then, given matrix[i][j] == '1', for the largest square terminating at matrix[i][j], (i) the bottom edge would possibly pass matrix[i][j-1]
+
+# (I) Array
+We can divide the problem into finding the largest square stop at each row. Since we are finding the largest one, at row i, for each column j we shall be aware of the tallest pole from row 0 to i for the specific column j. Knowing that, we are sort of converting this into a typical array problem similar to find the largest volume of a basket which depende on the shortest board.
+
+  	  ORIG         Height
+	1 0 1 0 0    1 0 1 0 0
+	1 0 1 1 1    2 0 2 1 1
+	1 1 1 1 1    3 1 3 2 2
+	1 0 0 1 0    4 0 0 3 0
+
+In that case, stopping at each row i, we can maintain an ascending stack. For entry j in this row, if its smaller than the entry most recently added to the stack, we shall pop out the from the stack while calculating the largest area that entry could incur. Since the stack is ascending, it can be ascertained that entries between the second to last stack entry and the last stack entry are all larger than the last stack entry. Therefore, if this range is larger than the last stack entry value, we find a valid square.
+
+For "3 1 3 2 2" above, when we reach 1, 3 is in stack. Since its larger, we shall check its posibility to form square. The interval within which 3 is shortest is 0~0 which makes it impossible to form a 3x3 square.
+
+Finally as we reach the last 2, we do another iteration given the stack being non-empty. This time 1 is in the stack and the interval dominated by 2 is 2~4 which can accomodate a 2x2 square.
+
+
+
+## Code
+# (II) DP
+// 1D
+**** WAIT ****
+
+// others_2D
+class Solution {
+public:
+    int maximalSquare(vector<vector<char>>& mtx) {
+        if (mtx.size() == 0) return 0;
+        int n = mtx.size(), m = mtx[0].size(), ans = 0;
+        int dp[n + 1][m + 1]{};
+        
+        for (int i = 1; i <= n; i++) {
+            for (int j = 1; j <= m; j++) if (mtx[i - 1][j - 1] == '1') {
+                dp[i][j] = min( {dp[i-1][j], dp[i-1][j-1], dp[i][j-1]} ) + 1;
+                ans = max(ans, dp[i][j]);
+            }
+        }
+        return ans * ans;
+    }
+};
+
+
+# (I) Array
+// indep
+class Solution {
+public:
+    int maximalSquare(vector<vector<char>>& mtx) {
+        if (mtx.size() == 0) return 0;
+        int n = mtx.size(), m = mtx[0].size(), ans = 0;
+        vector<int> h(m, 0);
+        for (int i = 0; i < n; i++) {
+            stack<int> stk;
+            for (int j = 0; j <= m; j++) {
+                if (j < m) h[j] = mtx[i][j] == '0' ? 0 : h[j] + 1;
+                
+                if (stk.empty()) {
+                    stk.push(j);
+                } else if (j < m && h[stk.top()] <= h[j]) {
+                    if (h[stk.top()] == h[j]) stk.pop();
+                    stk.push(j);
+                } else {
+                    while (!stk.empty() && (j == m || h[stk.top()] > h[j])) {
+                        int cur = stk.top(); stk.pop();
+                        if ( h[cur] <= j - 1 - (stk.empty() ? -1 : stk.top()) )
+                            ans = max(ans, h[cur]);
+                    }
+                    stk.push(j);
+                }
+            }
+        }
+        return ans * ans;
+    }
+};
