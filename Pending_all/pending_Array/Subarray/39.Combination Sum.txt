@@ -1,0 +1,64 @@
+## Specification
+Type: Subsets, Permutations, Combination Sum, and Palindrome Partitioning
+
+Similar: LT40, 90, 78
+
+Given a set of candidate numbers (candidates) (without duplicates) and a target number (target), find all unique combinations in candidates where the candidate numbers sums to target. The same repeated number may be chosen from candidates unlimited number of times.
+
+Note: All numbers (including target) will be positive integers. The solution set must not contain duplicate combinations. 
+
+Example 1:
+Input: candidates = [2,3,6,7], target = 7,
+A solution set is:
+[[7],[2,2,3]]
+
+Example 2:
+Input: candidates = [2,3,5], target = 8,
+A solution set is:
+[[2,2,2,2],[2,3,3],[3,5]]
+
+
+
+## Ideas
+# (X) Summary
+https://leetcode.com/problems/combination-sum/discuss/16502/A-general-approach-to-backtracking-questions-in-Java-(Subsets-Permutations-Combination-Sum-Palindrome-Partitioning)
+
+
+# (II) DP_knapsack
+https://leetcode.com/problems/combination-sum/discuss/16509/Iterative-Java-DP-solution
+
+This is similar to my orig idea. For each interger, to make a combiation sum as target, we need to find all subsets whose total sum is equal to target minus that particular int. We then store this subset and do the same thing for all int elements.
+
+
+# (I) DFS_backtracking
+https://leetcode.com/problems/combination-sum/discuss/16496/Accepted-16ms-c%2B%2B-solution-use-backtracking-easy-understand.
+
+
+
+## Code
+# (II) DP_knapsack
+// others
+
+
+
+# (I) DFS_backtracking
+// derived
+class Solution {
+public:
+    void solve(int st, int t, vector<int>& cad, vector<int>& run, vector<vector<int>>& res) {
+        if (t == 0) { res.push_back(run); return; }
+        for (int i = st; i < cad.size() && cad[i] <= t; i++) {
+            run.push_back(cad[i]);
+            solve(i, t - cad[i], cad, run, res);
+            run.pop_back();
+        }
+    }
+    
+    vector<vector<int>> combinationSum(vector<int>& candidates, int target) {
+        vector<vector<int>> res;
+        sort(candidates.begin(), candidates.end());
+        vector<int> run;
+        solve(0, target, candidates, run, res);
+        return res;
+    }
+};

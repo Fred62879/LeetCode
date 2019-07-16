@@ -11,6 +11,10 @@ Input: "cbbd"
 Output: "bb"
 
 
+## Testcase
+"dcacdbbccd"
+"dccd"
+
 
 ## Ideas
 # (III) Manacher's Algorithm
@@ -33,11 +37,45 @@ Let dp[i][j] denotes whether s[i:j] is a parlindromic string. To evaluate this, 
 
 ## Code
 # (III) Manacher's Algorithm
-
-
+// derived
+class Solution {
+public:
+    string process(string& s) {
+        if (s.size() == 0) return "*&";
+        string ps = "*";
+        for (int i = 0; i < s.size(); i++)
+            ps += "#" + string(1, s[i]);
+        ps += "#&";
+        return ps;
+    }
+    
+    string longestPalindrome(string s) {
+        string ps = process(s);
+        cout << ps;
+        int n = ps.size();
+        int dp[n]{};
+        
+        int mx = 0, c = 0;
+        for (int i = 1; i < n; i++) {
+            int cur = 1;
+            if (mx > i) cur = min(dp[2 * c - i], mx - i);
+            while (ps[i + cur] == ps[i - cur]) cur++;
+            dp[i] = cur;
+            if (i + dp[i] > mx)
+                mx = i + dp[i], c = i;
+            cout << i << ": " << dp[i] << endl;
+        }
+        
+        int st = 0, d = 1;
+        for (int i = 1; i < n; i++) if (dp[i] > d)
+            d = dp[i], st = (i - dp[i]) / 2;
+        return s.substr(st, d - 1);
+    }
+};
 
 # (II) Expand
-// others_fastest
+// pruning and shrinking_4ms
+// try to avoid evaluate both even and odd
 class Solution {
 public:
     std::string longestPalindrome(std::string s) {
@@ -63,7 +101,33 @@ public:
     }
 };
 
-// others_fast
+// indep_16ms
+class Solution {
+public:
+    vector<int> ans;
+    
+    void expand(int lft, int rht, string& s) {
+        int lo = lft++, hi = rht--;
+        while (lft > 0 && rht < s.size() - 1)
+            if (s[--lft] != s[++rht]) break;
+        if (s[lft] != s[rht]) lft++, rht--;
+        if (rht - lft > ans[1] - ans[0])
+            ans[0] = lft, ans[1] = rht;
+    }
+    
+    string longestPalindrome(string s) {
+        int n = s.size();
+        ans.resize(2);
+        ans[0] = ans[1] = 0;
+        for (int i = 1; i < n; i++) {
+            if (i < n - 1) expand(i - 1, i + 1, s);
+            expand(i - 1, i, s);
+        }
+        return s.substr(ans[0], ans[1] - ans[0] + 1);
+    }
+};
+
+// others_16ms
 class Solution {
 public:
     int expandAroundCenter(string& s, int left, int right) {
@@ -127,7 +191,7 @@ public:
         int n = s.size(), lo = 0, hi = 0;
         if (!n) return "";
         
-        int dp[2][n]; memset(dp, 0, sizeof(dp));
+        int dp[2][n]{};
         for (int i = 0; i < n; i++) dp[1][i] = 1;
         for (int i = 1; i < n; i++) dp[0][i] = 1;
         

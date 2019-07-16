@@ -1,0 +1,96 @@
+## Specification
+In the "100 game," two players take turns adding, to a running total, any integer from 1..10. The player who first causes the running total to reach or exceed 100 wins. What if we change the game so that players cannot re-use integers? For example, two players might take turns drawing from a common pool of numbers of 1..15 without replacement until they reach a total >= 100. Given an integer maxChoosableInteger and another integer desiredTotal, determine if the first player to move can force a win, assuming both players play optimally. You can always assume that maxChoosableInteger will not be larger than 20 and desiredTotal will not be larger than 300.
+
+Example
+Input:
+maxChoosableInteger = 10
+desiredTotal = 11
+Output:
+false
+
+
+## Testcases
+20
+210
+
+19
+190
+
+
+## Ideas
+# (I) DP
+The basic idea is similar to all optimization problem. For each player's run, we check all the number he can take. If none of these possibilities contribute to his win then he must fail otherwise he must win. To imple this, we need mem and without incorporating the 2nd dim indicating the turn of the player, we can simply use a 1D array based on a binary number indicating which nums are still valid for taking. Let dp[i] denotes whether the player taking from int collections "i" would win, 
+
+
+
+## Code
+# (I) DP
+// others_concise and faster
+**** WAIT ****
+class Solution {
+public:
+    bool canIWin(int M, int T) {
+      int S = M*(M+1)/2; // sum of entire pool
+      return T<2? true : S<T? false : S==T? M%2 : dfs(M,T,0);
+    }
+    
+    bool dfs(int M, int T, int k) {
+      if (T<=0 || m[k]) return T>0 && m[k]>0; // memorization or total reached by opponent
+      for (int i = 0; i < M; ++i)
+        if (!(k&1<<i) && !dfs(M, T-i-1, k|1<<i)) return m[k] = 1; // current player wins
+      return !(m[k] = -1); // current player can't win
+    }
+    
+    int m[1<<20] = {}; // m[key]: memorized result when pool state = key
+};
+
+// derived_vector faster but more mem
+class Solution {
+public:
+    int dp[1 << 21];
+    
+    // find if the current one would win given #rest ints left
+    int solve(int target, int rest, int n) {
+        if (target <= 0) return dp[rest] = 0; // given rest left, cur player fails
+        if (dp[rest] != -1) return dp[rest];
+        
+        for (int i = n; i >= 1; i--)
+            if ( (rest & (1 << i)) && !solve(target - i, rest ^ (1 << i), n) )
+                return dp[rest] = 1; // the one takes i wins
+        return dp[rest] = 0; // the one takes all i fails
+    }
+    
+    bool canIWin(int mci, int dt) {
+        int rest = (1 << (mci + 1)) - 1, sum = mci * (mci + 1) / 2;
+        memset(dp, -1, sizeof(dp));
+        if (sum < dt) return 0;
+        if (sum == dt) return mci % 2;
+        if (!dt) return 1;
+        return solve(dt, rest, mci);
+    }
+};
+
+// indep_fail
+class Solution {
+public:
+    vector<vector<int>> dp;
+    
+    // find the winner given #rest ints left and current player being turn
+    int solve(int turn, int target, int rest, int n) {
+        if (dp[rest][turn] != -1) return dp[rest][turn];
+        int winner = -1;
+        for (int i = n; i >= 1 && winner == -1; i--) if (rest & (1 << i)) {
+            if (i >= target) winner = turn;
+            int res = solve(3- turn, target - i, rest ^= (1 << i), n); // proceed
+            if (res == turn) winner = turn;
+        }
+        dp[rest][turn] = winner == -1 ? 3 - turn : winner;
+        return dp[rest][turn];
+    }
+    
+    bool canIWin(int mci, int dt) {
+        int rest = (1 << (mci + 1)) - 1;
+        dp.assign(rest + 1, vector<int>(dt, -1));
+        return solve(1, dt, rest, mci) == 1 ? 1 : 0;
+    }
+};

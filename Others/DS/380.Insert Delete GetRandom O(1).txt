@@ -1,0 +1,155 @@
+
+## Specification
+Design a data structure that supports all following operations in average O(1) time.
+
+insert(val): Inserts an item val to the set if not already present.
+remove(val): Removes an item val from the set if present.
+getRandom: Returns a random element from current set of elements. Each element must have the same probability of being returned.
+
+Example:
+RandomizedSet randomSet = new RandomizedSet(); // init
+randomSet.insert(1); // insert 1, returns true
+randomSet.remove(2); // return false
+randomSet.insert(2); // return true
+randomSet.getRandom(); // return either 1 or 2
+randomSet.remove(1); // return true
+randomSet.insert(2); // return false
+randomSet.getRandom(); // return 2
+
+
+
+## Ideas
+The only difficulty is to generate random number. To do this, we can maintain a vector recording all vals on track currently, and generate a random number as the id of the random number.
+
+To maintain this vector, when we insert new elements, we simply add new values to the vector while tracking the id of the element using a map. When deleting numbers, we can swap the number to be deleted with the last element currently tracked on the vector (int sz denotes this).
+
+
+
+## Code
+# (I) 
+// indep
+class RandomizedSet {
+public:
+    unordered_map<int, int> map;
+    vector<int> nums;
+    int sz;
+    
+    /** Initialize your data structure here. */
+    RandomizedSet() {
+        sz = 0;
+    }
+    
+    /** Inserts a value to the set. Returns true if the set did not already contain the specified element. */
+    bool insert(int val) {
+        if (map.count(val)) return false;
+        map[val] = sz;
+        if (sz < nums.size()) nums[sz] = val;
+        else nums.push_back(val); // sz == nums.size()
+        sz++;
+        return true;
+    }
+    
+    /** Removes a value from the set. Returns true if the set contained the specified element. */
+    bool remove(int val) {
+        if (!map.count(val)) return false;
+        if (map[val] == sz - 1) { map.erase(val); sz--; return true; }
+        
+        int id = map[val], last_num = nums[sz - 1];
+        map[last_num] = id, nums[id] = last_num;
+        map.erase(val), sz--;
+        return true;
+    }
+    
+    /** Get a random element from the set. */
+    int getRandom() {
+        return nums[rand() % sz];
+    }
+};
+
+
+// others
+class RandomizedSet {
+private:
+    unordered_map<int, int> indices; // the value is the index of the key
+    vector<int> vals;
+public:
+    /** Initialize your data structure here. */
+    RandomizedSet() {
+        srand((int)time(0));
+    }
+    
+    /** Inserts a value to the set. Returns true if the set did not already contain the specified element. */
+    bool insert(int val) {
+        unordered_map<int, int>::iterator it = indices.find(val);
+        if (it == indices.end())   {
+            // add the new value's index
+            indices.insert(pair<int, int>(val, vals.size()));
+            vals.push_back(val);
+            return true;
+        }
+        return false;
+    }
+    
+    /** Removes a value from the set. Returns true if the set contained the specified element. */
+    bool remove(int val) {
+        unordered_map<int, int>::iterator it = indices.find(val);
+        if (it == indices.end()) return false;
+        
+        // remove val
+        int index = it->second;
+        vals[index] = vals[vals.size() - 1];
+        indices.find(vals[index])->second = index;
+        vals.pop_back();
+        indices.erase(it);
+
+        return true;
+    }
+    
+    /** Get a random element from the set. */
+    int getRandom() {
+        int pick = rand() % vals.size();
+        return vals[pick];
+    }
+};
+
+//
+public class RandomizedSet {
+
+    HashMap<Integer, Integer> valToInd;
+    List<Integer> list;
+    int ind = 0;
+    
+    /** Initialize your data structure here. */
+    public RandomizedSet() {
+        valToInd = new HashMap<>();
+        list = new ArrayList<>();
+    }
+    
+    /** Inserts a value to the set. Returns true if the set did not already contain the specified element. */
+    public boolean insert(int val) {
+        if(valToInd.containsKey(val)) return false;
+        list.add(val);
+        valToInd.put(val,list.size()-1);
+        return true;
+    }
+    
+    /** Removes a value from the set. Returns true if the set contained the specified element. */
+    public boolean remove(int val) {
+        int ind = valToInd.getOrDefault(val,-1);
+        if(ind == -1) return false;
+        Collections.swap(list,ind,list.size()-1);
+        int swappedWith = list.get(ind);
+        valToInd.put(swappedWith,ind);
+        list.remove(list.size()-1);
+        valToInd.remove(val);
+        return true;
+    }
+    
+    /** Get a random element from the set. */
+    public int getRandom() {
+        int max = list.size();
+        int min = 0;
+        int ind = (int)(Math.random() * (max - min) + min);
+        return list.get(ind);
+    }
+}

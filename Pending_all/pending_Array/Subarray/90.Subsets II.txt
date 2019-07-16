@@ -1,0 +1,94 @@
+## Specification
+Type: Subsets, Permutations, Combination Sum, and Palindrome Partitioning
+
+Similar: LT78, 39
+
+Given a collection of integers that might contain duplicates, nums, return all possible subsets (the power set). Note: The solution set must not contain duplicate subsets.
+
+Example:
+Input: [1,2,2]
+Output:
+[[2],[1],[1,2,2],[2,2],[1,2],[]]
+
+
+
+## Ideas
+Each subset specifies no order of the elements. [2,3,1] is equivalent to [1,2,3]. Thus, the basic idea is to sort nums first.
+
+# (III) DFS_shrink
+https://leetcode.com/problems/subsets-ii/discuss/30168/C%2B%2B-solution-and-explanation
+
+# (II) DFS_non-duplicate based
+Similar to LT78 where no duplicate ints present in nums, when duplicates present, the only difference is that we cannot append the duplicated ones to subsets presenting before the first occurrence of this series of duplicates. For instance, given nums being [1,2,3,3,3,4,6,7,8], the processing of 1, 2, and 3 follow exactly the same way as in LT78. When we reach the 2nd 3, however, we cannot append it to all subsets currently stored in res since subsets composed of [1,2] are already appended by the 1st 3 and we only append the 2nd 3 to subsets terminating at the 1st 3. The start site of these subsets in res array can be easily derived as the size of res before we appending the 1st 3 to prev susbets.
+
+# (I) DFS_backtracking
+Similar to LT39.
+https://leetcode.com/problems/combination-sum/discuss/16502/A-general-approach-to-backtracking-questions-in-Java-(Subsets-Permutations-Combination-Sum-Palindrome-Partitioning)
+
+
+
+## Code
+# (III) DFS_shrink
+**** WAIT ****
+
+
+# (II) DFS_non-duplicate based
+// python
+class Solution:
+    # @param num, a list of integer
+    # @return a list of lists of integer
+    def subsetsWithDup(self, S):
+        res = [[]]
+        S.sort()
+        for i in range(len(S)):
+            if i == 0 or S[i] != S[i - 1]:
+                l = len(res)
+            for j in range(len(res) - l, len(res)):
+                res.append(res[j] + [S[i]])
+        return res
+
+// adapted
+class Solution {
+public:
+    
+    vector<vector<int>> subsetsWithDup(vector<int>& nums) {
+        int n = nums.size();
+        sort(nums.begin(), nums.end());
+        vector<vector<int>> res{ {} };
+        
+        for (int i = 0, st = 0; i < n; i++) { // find all unique subsets terminate at nums[i]
+            int sz = res.size();
+            for (int j = st; j < sz; j++) {
+                auto prev = res[j];
+                prev.push_back(nums[i]);
+                res.push_back(prev);
+            }
+            st = i < n - 1 && nums[i] == nums[i + 1] ? sz : 0;
+        }
+        return res;
+    }
+};
+
+
+# (I) DFS_backtracking
+// derived
+class Solution {
+public:
+    void solve(int st, vector<int>& nums, vector<int>& run, vector<vector<int>>& res) {
+        res.push_back(run);
+        for (int i = st; i < nums.size(); i++) {
+            if (i != st && nums[i] == nums[i - 1]) continue;
+            run.push_back(nums[i]);
+            solve(i + 1, nums, run, res);
+            run.pop_back();
+        }
+    }
+    
+    vector<vector<int>> subsetsWithDup(vector<int>& nums) {
+        sort(nums.begin(), nums.end());
+        vector<int> run;
+        vector<vector<int>> res;
+        solve(0, nums, run, res);
+        return res;
+    }
+};

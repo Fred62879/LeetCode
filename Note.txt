@@ -176,6 +176,17 @@ int dp[a][b]{}; // entries being 0
 We can add assign values to paras in function overhead.
 > int maxWidthRamp(vector<int>& A, int res = 0) { ... }
 
+// [16] Bin no bracket
+> k & 1 << i
+
+// [17] Cout
+> cout << "\nWith iterators = "; // start with a newline
+
+// [18] string
+_(i) rep_
+> string a(2, 'a'); a = "aa"
+
+
 
 # (II) Advanced
 // [1] VECTOR
@@ -312,6 +323,8 @@ LT34 - Array
 _(v)_Good instances
 https://leetcode.com/problems/coin-change/discuss/289477/C%2B%2B-Search-with-pruning-12ms-solution-with-comments
 
+https://leetcode.com/problems/insert-delete-getrandom-o1-duplicates-allowed/discuss/197641/C%2B%2B-30-ms-hashmap-hashset-and-vector
+
 
 // [14] static vector
 LT920
@@ -346,6 +359,69 @@ unsigned int size_t dp[51][50][50] = {}; , you don't even need to cast to (long 
 
 size_t could be 8 bytes, so it can double the memory requirements. However, unsigned int seems to be sufficient. Updated the code, thanks.
 
+// [21] Imple follow Python manner
+LT924
+> vector<int> initial(...), malware(...);
+> vector<int> res = {1, 0};
+> for (int i : initial)
+> 	res = min(res, {(malware[find(i)] == 1 ) * (-area[find(i)]), i});
+> return res[1];
+
+// [22]
+> int sizes[301]{};
+> max_element(begin(sizes), end(sizes)) - begin(sizes);
+
+// [23] Map
+> map<int, int> m;
+> for (int i : A) m[i]++;
+> map<int,int>::iterator it;
+> for (int i : B) {
+> 	it = m.upper_bound(i);
+> 	int x = it != m.end() ? it->first : m.begin()->first;
+> 	if (--m[x] == 0) m.erase(x);
+> }
+
+// [24] Comment
+> /***    keep  the  right-half-parentheses     ***/
+> if(pair > 0) help(pair-1, index+1, remove_left, remove_right);
+
+
+
+// [25] Unordered_set 
+_(i) to vector_
+> unordered_set<string> result;
+> vector<string>(result.begin(), result.end());
+
+
+// [26] unordered_map
+_(i) Iterator_
+> unordered_map<int, int> indices;
+> indices.insert(pair<int, int>(val, vals.size()));
+> unordered_map<int, int>::iterator it = indices.find(val);
+> int index = it->second;
+
+> auto it = m.find(val);
+> if (it != end(m)) { // equivalent to m.end()
+>     auto free_pos = *it->second.begin(); // equivalent to below two lines
+>     // unordered_set<int> it1 = it->second;
+>     // int free_pos = *(it1.begin());
+>     it->second.erase(it->second.begin());
+> }
+
+
+_(ii) ini_
+> unordered_map<int, unordered_set<int>> m;
+> m[2].insert(3); // can do this without ini unordered_set
+
+
+
+
+// [27] Random
+https://leetcode.com/problems/insert-delete-getrandom-o1-duplicates-allowed/discuss/85636/C%2B%2B-Solution-using-a-map-of-vectors-to-handle-duplicates.
+
+> default_random_engine rng;
+> uniform_int_distribution<int> distribution(0, buffer.size() - 1);
+> int idx = distribution(rng);
 
 
 
@@ -404,6 +480,12 @@ b = res
 
 (3) tricks
 https://leetcode.com/problems/out-of-boundary-paths/discuss/102975/Python-1-line-solution
+
+https://leetcode.com/problems/split-array-with-same-average/discuss/120842/DP-with-bitset-over-*sum*-(fast-PythonRuby-decent-C%2B%2B)
+
+https://leetcode.com/problems/unique-substrings-in-wraparound-string/discuss/95441/Python-Concise-Solution
+
+https://leetcode.com/problems/advantage-shuffle/discuss/149842/Python-Greedy-Solution-Using-Sort
 
 
 

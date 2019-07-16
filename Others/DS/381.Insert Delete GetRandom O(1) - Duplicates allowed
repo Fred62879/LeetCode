@@ -9,19 +9,96 @@ From Array
 ["RandomizedCollection","insert","insert","insert","getRandom","remove","getRandom"]
 [[],[1],[1],[2],[],[1],[]]
 
+["RandomizedCollection","insert","insert","insert","insert","insert","insert","remove","remove","remove","remove","getRandom","getRandom","getRandom","getRandom","getRandom","getRandom","getRandom","getRandom","getRandom","getRandom"]
+[[],[10],[10],[20],[20],[30],[30],[10],[10],[30],[30],[],[],[],[],[],[],[],[],[],[]]
+
 
 ## Ideas
-To satisfy getRandom, we maintain an arraylist to record all current elements tracked.
-And as we generate a random number, the correspond element will be picked up as a
-random element.
+_(ii) 2nd_
+// others
+https://leetcode.com/problems/insert-delete-getrandom-o1-duplicates-allowed/discuss/85541/C%2B%2B-128m-Solution-Real-O(1)-Solution
 
-Corresponding to this basic design, we need to maintain a hashmap to record the all
-locations of each element in the arraylist. 
+// concise
+https://leetcode.com/problems/insert-delete-getrandom-o1-duplicates-allowed/discuss/197641/C%2B%2B-30-ms-hashmap-hashset-and-vector
+
+// indep
+The basic idea is the same as that in LT380. The difference here it that to keep track of duplicated numbers, for each key in the map, we maintain an unordered_set to record all its locations in nums vector. When inserting new elements, scheme is similar. When deleting elements, I simply derived the first id in the unordered_set for the value to be removed and fill that hole in nums with the last number currently tracked.
+
+_(i) 1st_
+// 1st
+To satisfy getRandom, we maintain an arraylist to record all current elements tracked. And as we generate a random number, the correspond element will be picked up as a random element. Corresponding to this basic design, we need to maintain a hashmap to record the all locations of each element in the arraylist. 
+
+
 
 
 ## Code
-// allegedly faster without using cache.remove
-// actually not
+# (I)
+_(ii) 2nd_
+// others_space efficient
+**** WAIT ****
+
+// others_similar idea_concise
+
+
+// indep
+class RandomizedCollection {
+public:
+    unordered_map<int, unordered_set<int>> map;
+    vector<int> nums;
+    int sz;
+    
+    /** Initialize your data structure here. */
+    RandomizedCollection() {
+        sz = 0;
+    }
+    
+    /** Inserts a value to the set. Returns true if the set did not already contain the specified element. */
+    bool insert(int val) {
+        bool res = !map.count(val);
+        if (!map.count(val)) map[val] = unordered_set<int> { sz };
+        else map[val].insert(sz);
+        
+        if (sz < nums.size()) nums[sz] = val;
+        else nums.push_back(val); // sz == nums.size()
+        sz++;
+        return res;
+    }
+    
+    /** Removes a value from the set. Returns true if the set contained the specified element. */
+    bool remove(int val) {
+        if (!map.count(val)) return false;
+        
+        // num to be removed appear as the last tracked entry of nums
+        if (map[val].find(sz - 1) != map[val].end()) { 
+            if (map[val].size() == 1) map.erase(val);
+            else (map[val].erase(map[val].find(sz - 1)));
+            sz--;
+            return true;
+        }
+        // remove val
+        auto itval = map[val].begin();
+        int id = *itval; // should remove nums[id]
+        map[val].erase(itval);
+        if (map[val].size() == 0) map.erase(val);
+
+        // fill hole (id\th) with last_num
+	int last_num = nums[--sz];
+        auto itln = map[last_num].find(sz);
+        map[last_num].erase(itln), map[last_num].insert(id);    
+        nums[id] = last_num; // update nums vector
+
+        return true;
+    }
+    
+    /** Get a random element from the set. */
+    int getRandom() {
+        return nums[rand() % sz];
+    }
+};
+
+
+_(i) 1st_
+// allegedly faster without using cache.remove actually not
 class RandomizedCollection {
 
     HashMap<Integer, LinkedList<Integer>> pos;

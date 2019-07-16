@@ -1,0 +1,174 @@
+## Specification
+Define S = [s,n] as the string S which consists of n connected strings s. For example, ["abc", 3] ="abcabcabc".
+
+On the other hand, we define that string s1 can be obtained from string s2 if we can remove some characters from s2 such that it becomes s1. For example, “abc” can be obtained from “abdbec” based on our definition, but it can not be obtained from “acbbe”.
+
+You are given two non-empty strings s1 and s2 (each at most 100 characters long) and two integers 0 ≤ n1 ≤ 106 and 1 ≤ n2 ≤ 106. Now consider the strings S1 and S2, where S1=[s1,n1] and S2=[s2,n2]. Find the maximum integer M such that [S2,M] can be obtained from S1.
+
+Example:
+
+Input:
+s1="acb", n1=4
+s2="ab", n2=2
+
+Return:
+2
+
+
+
+## Ideas
+_(iii) 2nd visit Jul-15-2019_
+The overall idea is to evaluate how many s2 can be covered by n1 s1's. Knowing this, the final answer is simply that number divided by n2.
+
+The most straightforward way to derive this number is to go thru the two strs entirely. However, this will lead to TLE and actually, it can be found that each time a new s2 match start in s1, it must occur at some char. Since s1 contains a infinite number of chars, it can be assertained that after certain point, the match will go in a cycle, i.e. the match start char will be the same.
+
+
+
+Therfore, a much better way is to do certain math based on (i) the amount of s1 and s2 matched before cycle start ([preface1 & preface2]), (ii) the amount of s1 and s2 matched within a cycle ([freq1 & freq2]), and (iii) the amount of s2 matched if cycle is not intact providing the given n1 & n2 ([tail]).
+
+Before starting, we can also do a pre-processing - if the amount of certain chars in totally n2# s2 is larger than that in n1# s1, we can return immediately as there would be no way that we can remove chars from n1# s1 to give n2# s2. Given strs passes this test, we demostrate how to imple using "abdcfa" & "acfad" , n1 = 7, n2 = 2 for instance.
+
+
+
+The number of s2 covered by n1# s1's can be calculated as the sum of three portions —— front (portion before cycle starts) + cycle (freq * rep) + tail.
+
+(i) front is simply preface2. 
+
+(ii) freq1 and freq2 can be derived based on another vector which is described below. For the # of repetitions of the cycle, it can be found that when we have the starting and terminaing char of a match locating within the same s1 as is the case here, a divison with no remaining would lead to a last cycle which is not intact. Actually, freq1 here is 2 while each s2 spans three s1's. 
+
+As a result, exactly two s1's left at the end could not cover exactly freq2 s2's. Fortunately, this corner case only occurs under such circumstance. If the division has remaining or if the starting and terminating chars are not within the same s1, we do not need to worry about this special case. Thus, to monitor it, we can check within the cycle whether back and front collapse occurs (last_terminate & flag).
+
+(iii) As for tail, the general approach is described below. And we also need to consider the special case in (ii).
+
+ 0             5/1                5/2               5/3
+[abdcfa   abd cfa   abdcfa   abd cfa   abdcfa  abd cfa  abdcfa]
+[^           |  ^               |  ^              |  ^        ]
+
+(i/ii) It can be found that cycle starts at a-5/1. To evaluate the [preface and freq], we employ a vector of pair (mtch) to record how many s1 and s2's are matched before starting a new match at each char of s1. For instance, mtch[0] = { 0, 0 }, meaning before the match starting at str1[0], no s1 and s2 are matched. Then, mtch[5] = { 1, 1 }, which means that before the match starting at str1[5], one intact s1 covers one intact s2. When we reach a-5/2, we found that mtch[5] has already been assigned with value which means that we are entering a cycle. Now, mtch[5].first/second is simply preface1/2, and to calculate freq, we can use subtract the preface from the # of s1 and s2 traversed so far.
+
+(iii) To calculate the tail, which is the portion after a-5/3, we shall know not only how many s2's are covered by an intact cycle of s1's, but also the detail within the cycle, that is, how many s2's will be covered when we have one s1, two s1's, ..., since the starting char. —— This can be achieved using another vector (mem) which records exactly how many s2's can i intact s1 cover. 
+
+Using the ex above, since we have a right division and a terminate and start collapse, we know the last cycle is not intact and therefore, we shall first decrement the # of repetitions (nrep--) calculated. Then, to know how many s2's can this partial cycle cover (a-5/3 onward), we can view it as if it's occurring at the very begining when we first reach the cycle starting char (a-5/1). It is clear that tail = mem[2] - preface2. The "2" is derived as we know that we have a residu of two (a-5/3 onward) and a preface of 1 (preface1 = 1) which gives three s1's and thus mem[2]. 
+
+Note that, since we have a right division, modulo will be zero and we have to derive a brand new residu. It can always be assured that under such circumstance, freq2# s2's span actually (freq1 + 1)# s1's. Thus, a right division means that we have exactly freq1# s1's left.
+
+
+
+
+## Code
+# (I) DP
+_(iii) 2nd visit Jul-15-2019_
+// indep
+class Solution {
+public:
+    int getMaxRepetitions(string s1, int n1, string s2, int n2) {
+	int m1 = s1.size(), m2 = s2.size();
+	// pre-process
+	int letr1[26]{};
+	for (char c : s1) letr1[c -'a'] += n1;
+	for (char c : s2) {
+	    letr1[c -'a'] -= n2;
+	    if (letr1[c -'a'] < 0) return 0;
+	}
+        
+	// derive char match pattern
+	// mem[i], # of s2 covered by exactly i s1
+	vector<int> mem;
+	// mtch[i], # of s1/s2 covered before first match starting at ith char of s1
+	vector<pair<int, int>> mtch(m1, make_pair(-1, -1));
+	int ns1 = 0, ns2 = 0, id1 = -1, id2 = 0, freq1, freq2;
+	int flag = 0, last_terminate; // flag == 1, start and end char within same str
+	int preface1, preface2; // before reaching cycle, # of p1 intact s1 covered p2 intact s2
+        
+	while (true) {
+	    if (id2 == m2) { id2 = 0; ns2++; last_terminate = ns1; }
+	    if (++id1 == m1) { ns1++; mem.push_back(ns2); id1 = 0; }
+            
+	    if (s1[id1] == s2[id2] && id2++ == 0) { // new match start
+	        if (mtch[id1].first == -1) {
+	            mtch[id1] = make_pair(ns1, ns2);
+	        } else {
+	            preface1 = mtch[id1].first, preface2 = mtch[id1].second;
+	            freq1 = ns1 - preface1, freq2 = ns2 - preface2;
+	            if (last_terminate == ns1) flag = 1;
+	            break;
+	        }
+	    }
+	}
+        
+	// evaluate final answer
+	if (n1 <= preface1 + freq1) // not reach cycle (p1 + f1 = ns1)
+	    return mem[n1 - 1] / n2;
+        
+	int nrep = (n1 - preface1) / freq1, residu = (n1 - preface1) % freq1;
+	if (flag && !residu) // cycle terminate char and start char of next cycle in same string
+	    nrep--, residu += freq1;
+        
+	int covered, tail = 0; // covered, # of s2 that can be obtained from S1 (n1*s1)
+	if (preface1 + residu - 1 >= 0) tail = mem[preface1 + residu - 1] - preface2;
+	covered = preface2 + nrep * freq2 + tail ; // front + mid + tail
+	return covered / n2;
+    }
+};
+
+
+## Testcases
+"acb"
+4
+"ab"
+2
+
+"bdefb"
+10
+"bdef"
+1
+
+"abdcfa"
+7
+"acfad"
+2
+
+"abbc"
+4
+"abcb"
+1
+
+"acb"
+1
+"acb"
+1
+
+"acb"
+4
+"ab"
+2
+
+"baba"
+11
+"baab"
+1
+
+"ecbafedcba"
+4
+"abcdef"
+1
+
+"phqghumeaylnlfdxfircvscxggbwkfnqduxwfnfozvsrtkjprepggxrpnrvystmwcysyycqpevikeffmznimkkasvwsrenzkycxf"
+100
+"xtlsgypsfa"
+1
+	  10l 	15x  21s		     44t
+"phqghumeaylnlfdxfircvscxggbwkfnqduxwfnfozvsrtkjprepggxrpnrvystmwcysyycqpevikeffmznimkkasvwsrenzkycxf"
+100000
+"xtlsgypsfadpooefxzbcoejuvpvaboygpoeylfpbnpljvrvipyamyehwqnqrqpmxujjloovaowuxwhmsncbxcoksfzkvatxdknly"
+1
+
+"aaa"
+20
+"aaaaa"
+1
+
+"aahumeaylnlfdxfircvscxggbwkfnqduxwfnfozvsrtkjprepggxrpnrvystmwcysyycqpevikeffmznimkkasvwsrenazkycxf"
+1000000
+"aac"
+1000000

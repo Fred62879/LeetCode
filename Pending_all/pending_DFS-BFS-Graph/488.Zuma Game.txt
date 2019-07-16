@@ -21,11 +21,31 @@ Explanation: RBYYBBRRB -> RBYY[Y]BBRRB -> RBBBRRB -> RRRB -> B -> B[B] -> BB[B] 
 Note: You may assume that the initial row of balls on the table won’t have any 3 or more consecutive balls with the same color. The number of balls on the table won't exceed 20, and the string represents these balls is called "board" in the input. The number of balls in your hand won't exceed 5, and the string represents these balls is called "hand" in the input. Both input strings will be non-empty and only contain characters 'R','Y','B','G','W'.
 
 
+## Testcases
+"WWRRBBWW"
+"WRBRW"
+
+"G"
+"GGGGG"
+
+"RBYYBBRRB"
+"YRBGB"
+
+
+
 ## Ideas
 # (II) Recursion_memo
 https://leetcode.com/problems/zuma-game/discuss/97033/16-line-9ms-recursive-solution-with-pre-process-memorization-and-edge-case-test-no-helper-functions-(detailed-explanation)
 
+
 # (I) DFS
+// 2nd visit_indep
+We first preprocess balls on table and at hand. We can filter out balls at hand the colors of which are not appearing on table. We can also do a simple check. For each color of balls on table, if the sum of table and hand ball of that color is less than 3, then there is no chance that we can remove balls of that color and we will definitely end up with a -1.
+
+Then we do dfs. For instance, when we reach board[i], we go forward to reveal the consecutive sequence of that char. For this repet subseq, we have two choices. _(i)_ If allowed (subseq is of more than 3-char long or can be made at least 3-char long using ball at hand), we remove that range (accordingly generate a new board string) and restart dfs at the very first position of the new board string. _(ii)_ maintain the subseq, hoping that in the future we will meet another such subseq for the same char, the removal at which time may save us certain number of hand balls needed.
+
+
+// 1st attempt
 https://leetcode.com/problems/zuma-game/discuss/97053/Concise-3ms-C%2B%2B-Solution
 https://leetcode.com/problems/zuma-game/discuss/97010/%22short%22-java-solution-beats-98
 
@@ -33,9 +53,223 @@ https://leetcode.com/problems/zuma-game/discuss/97010/%22short%22-java-solution-
 
 ## Code
 # (II) Resursion_memo
+// others_20ms
 
+// indep_12ms
+class Solution {
+public:
+    unordered_map<string, unordered_map<string, int>> mem;
+    
+    // ballh record # of each of 'A'~'Z'
+    string toString(vector<int> ballh) {
+        vector<char> nhand;
+        for (int i = 0; i < 26; i++) if (ballh[i])
+            nhand.insert(nhand.end(), ballh[i], i +'A');
+        string res(nhand.begin(), nhand.end());
+        return res;
+    }
+    
+    int findMinStep(string board, string hand) {
+        if (mem.count(board) && mem[board].count(hand)) return mem[board][hand];
+        if (board.size() == 0) return 0;
+        vector<int> ballh(26);
+        for (char c : hand) ballh[c -'A']++;
+        
+        int ans = INT_MAX;
+        for (int i = 0, st, lo; i < board.size(); i = st + 1) {
+            lo = st = i;
+            while (st + 1 < board.size() && board[st] == board[st + 1]) st++;
+            
+            if (st - lo >= 2) { // remove immediately
+                string ns = board.substr(0, lo) + board.substr(st + 1, board.size() - st - 1);
+                int cur = findMinStep(ns, toString(ballh));
+                if (cur != -1) ans = min(ans, cur);
+                
+            } else if (ballh[board[st] -'A'] + st - lo >= 2) { 
+                int need = 3 - (st - lo + 1); // take extra balls
+                string ns = board.substr(0, lo) + board.substr(st + 1, board.size() - st - 1);
+                ballh[board[st] -'A'] -= need;
+                int cur = findMinStep(ns, toString(ballh));
+                ballh[board[st] -'A'] += need;
+                if (cur != -1) ans = min(ans, cur + need);
+            }
+        }
+        return mem[board][hand] = ans == INT_MAX ? -1 : ans;
+    }
+};
 
 # (I) DFS
+// 2nd visit_indep_4ms
+class Solution {
+public:
+    int ans;
+    
+    void dfs(int st, int require, string& board, vector<int>& ballh) {
+        if (ans <= require) return;
+        if (board.size() == 0) { ans = require; return; }
+        if (st == board.size()) return;
+        
+        int lo = st;
+        while (st + 1 < board.size() && board[st] == board[st + 1]) st++;
+        // (I) remove
+        if (st - lo >= 2) { // remove immediately
+            string ns = board.substr(0, lo) + board.substr(st + 1, board.size() - st);
+            dfs(0, require, ns, ballh);
+        } else if (ballh[board[st] -'A'] + st - lo >= 2) { 
+            int need = 3 - (st - lo + 1); // take extra balls
+            ballh[board[st] -'A'] -= need;
+            string ns = board.substr(0, lo) + board.substr(st + 1, board.size() - st);
+            dfs(0, require + need, ns, ballh);
+            ballh[board[st] -'A'] += need;
+        }
+        // (II) maintain
+        dfs(st + 1, require, board, ballh);
+    }
+    
+    int findMinStep(string board, string hand) {
+        ans = INT_MAX;
+        vector<int> ballh(26, 0), ballt(26, 0);
+        // preprocessing
+        for (char c : board) ballt[c -'A']++;
+        for (char c : hand)
+            if (ballt[c -'A']) ballh[c -'A']++;
+        for (int i = 0; i < 26; i++)
+            if (ballt[i] && ballt[i] + ballh[i] < 3) return -1;
+        // DFS
+        dfs(0, 0, board, ballh);
+        return ans == INT_MAX ? -1 : ans;
+    }
+};
+
+だから僕は音楽を辞めた
+
+// derived
+class Solution {
+public:
+    unordered_map<char, int> hd;
+    int ans;
+    
+    // min # of insertion to empty board
+    int dfs(string& board, int site) {
+        // clean up board
+        string nbd = board;
+        while (true) {
+            int lo = site, hi = site;
+            while (lo > 0 && nbd[lo] == nbd[lo - 1]) lo--;
+            while (hi < n - 1 && nbd[hi] == nbd[hi + 1]) hi++;
+            if (hi - lo <= 1) break;
+            nbd.erase(site = lo, hi - lo + 1);
+        }
+        if (nbd.size() == 0) return 0;
+        
+        // check further chars removable
+        int cur = INT_MAX;
+        for (int i = 0, lo = 0; i < nbd.size(); i = lo + 1) {
+            while (lo < n - 1 && nbd[lo] == nbd[lo + 1]) lo++;
+            int need = 2 - lo + i;
+            if (hd[nbd[i]] < need) continue; // no sufficient
+            // DFS
+            string residu(lo - i + 1, nbd[lo]);
+            hd[bd[i]] -= need;
+            nbd.erase(i, lo - i + 1); // remove rep
+            int fol = dfs(nbd, i);
+            if (fol != -1) cur = min(cur, need + fol);
+            nbd.insert(i, residu);
+            hd[bd[i]] += need;
+        }
+        return cur == INT_MAX ? -1 : cur;
+    }
+    
+    int findMinStep(string board, string hand) {
+        vector<int> letr(26, 0);
+        for (char& c : board) letr[c -'A'] = 1;
+        for (char& c : hand) if (letr[c -'A'])
+            hd[c] = hd.count(c) ? hd[c] + 1 : 1;
+        return dfs(board);
+    }
+};
+
+//
+class Solution {
+public:
+    unordered_map<char, int> hd;
+    int ans;
+    
+    // min # of insertion to empty board
+    int dfs(string& board) {
+        // clean up board
+        string nbd = board;
+        for (int i = 0, lo = 0; i < board.size(); i = lo + 1) {
+            while (lo < n - 1 && board[lo] == board[lo + 1]) lo++;
+            if (lo - i > 1) { nbd = nbd.erase(i, lo + 1); break; }
+        }
+        if (nbd.size() == 0) return 0;
+        
+        // check further chars removable
+        int cur = INT_MAX;
+        for (int i = 0, lo = 0; i < nbd.size(); i = lo + 1) {
+            while (lo < n - 1 && nbd[lo] == nbd[lo + 1]) lo++;
+            int need = 2 - lo + i;
+            if (hd[nbd[i]] < need) continue; // no sufficient
+            // DFS
+            string add(need, nbd[lo]);
+            hd[bd[i]] -= need;
+            nbd.insert(lo, add);
+            int fol = dfs(nbd);
+            if (fol != -1) cur = min(cur, need + fol);
+            nbd.erase(lo + 1, need);
+            hd[bd[i]] += need;
+        }
+        return cur == INT_MAX ? -1 : cur;
+    }
+    
+    int findMinStep(string board, string hand) {
+        vector<int> letr(26, 0);
+        for (char& c : board) letr[c -'A'] = 1;
+        for (char& c : hand) if (letr[c -'A'])
+            hd[c] = hd.count(c) ? hd[c] + 1 : 1;
+        return dfs(board);
+    }
+};
+
+// derived
+class Solution {
+public:
+    unordered_map<char, int> hd;
+    int ans;
+    
+    // 
+    int dfs(string& board) {
+        int cur = INT_MAX;
+        // clean up board
+        string nbd = board;
+        for (int i = 0, lo = 0; i < board.size(); i++) {
+            while (lo < n - 1 && board[lo] == board[lo + 1]) lo++;
+            if (lo - i > 1) { nbd = nbd.erase(i, lo + 1); break; }
+        }
+        // check further chars removable
+        for (int i = 0; i < nbd.size(); i++) {
+            while (lo < n - 1 && board[lo] == board[lo + 1]) lo++;
+            int need = 2 - lo + i;
+            if (hd[bd[i]] < need) continue; // no sufficient
+            string insert = fill();
+            hd[bd[i]] -=  need;
+            nbd.insert(lo, insert);
+            cur = min(cur, dfs(nbd));
+            nbd.erase(lo, lo + need + 1);
+            hd[bd[i]] += need;
+        }
+        return cur;
+    }
+    
+    int findMinStep(string board, string hand) {
+        vector<int> letr(26, 0);
+        for (char& c : board) letr[c -'A'] = 1;
+        for (char& c : hand) if (letr[c -'A'])
+            hd[c] = hd.count(c) ? hd[c] + 1 : 1;
+    }
+};
+
 // not imple
 class Solution {
 public:

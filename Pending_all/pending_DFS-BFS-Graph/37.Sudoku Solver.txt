@@ -18,10 +18,16 @@ The given board size is always 9x9.
 
 
 ## Ideas
-(II) 
+(II) DFS... (cell-wise)
 https://leetcode.com/problems/sudoku-solver/discuss/15806/Yet-another-0ms-C%2B%2B-solution
 
 https://leetcode.com/problems/sudoku-solver/discuss/15748/Sharing-my-2ms-C%2B%2B-solution-with-comments-and-explanations.
+
+Instead of maintaining three records of row, column, and box numbers used, here we maintain a bitset for each cell recording the values it cannot take. As a result, when we are processing the cells already filled with value and when we are propagating the constriants to all cells on the same row/col/box, we can also check the condition of the cell. For instance, if a cell has only one choice left, then it can be filled directly with that value.
+
+However, this imple does not really pick up the most strictly constrianed cell each time. It simply sort all empty cells based on the # of possibilities at the very begining but without update that order as these empty cells are filled up.
+
+
 
 (I) DFS/Backtracking
 // others_optimized
@@ -31,19 +37,136 @@ https://leetcode.com/problems/sudoku-solver/discuss/15796/Singapore-prime-minist
 
 Optomized in the way that (i) Use bitmask to record the elements available for each cell board[i,j] in terms of row, col, and box the cell locates in. In this way, the constraint info can be recorded in three 1D arrays. Every time we reach an empty cell, to check numbers that can be taken, we can derive a binary int via "bit-wise &" the constraints for the current cell in terms of row, col, and box. Using this int (e.g. 0010101101), we progressively derive its lowest 1-bit and DFS on that. (ii) DFS is performed according to the cell priority the highest of which is attained by the cell with least number of choices at the time it's reached. So DFS start with the empty cell with the strictest constriants. For imple part, the Sqeuence array records the priority and the SeqPtr incremented while initializing the constiants ensure we start after the last filled number.
 
+The difficult is how to implement a priority queue that gives us the most strictly constrianed cell each time. Actually, instead of implementing a real pq, which must be updated each time we fill in a cell, we can simply maintain a array recording all cells pending for filling. Since we are always filling the more strictly constrianed cells earlier, we are sort of building the pq as we are filling cells. That is, after filling in a cell, we select among the rest the most strictly constrianed cell.
+
+
 // indep
 Inheriting the constraint checking methods from LT36, DFS can be performed from the first empty cell onward from top-left to bottom-right. For each cell on the DFS path, we simple check all numbers it can take at the current timepoint and also updating the three matrices recording the constraints info.
 
 
 
 ## Code
-# (II) 
+# (II) DFS... (Cell-wise)
 // others
 
+// indep_imple_not finished
+class Solution {
+public:
+    vector<cell> cells;
+    
+    struct cell {
+        int val, nposib;
+        bitset<9> constriants;
+        cell: val(0), nposib(0), constriants[];
+    }
+    
+    bool propagate(int r, int c, int val) {
+        cell& c = cells[r * 9 + c];
+        if (c.val == val) return true;
+        if (c.constriants[val]) return false;
+        
+        c.constriants.set(val);
+        if (--c.nposib == 1)
+            for (int i = 0; i < 9; i++) 
+                if (!c.constriants[i]) set(r, c, i);
+        
+    }
+    
+    bool set(int i, int j, int val) {
+        cell& c = cells[i * 9 + j];
+        if (c.val == val) return true;
+        if (c.constriants[val]) return false;
+        
+        c.val = val, c.nposib = 1;
+        for (int k = 0; k < 9; k++) {
+            if (k != j) propagate(i, k); // propagate to cells on the same row
+            if (k != i) propagate(k, j); // ... column
+            
+        }
+    }
+    
+    void dfs() {
+        
+    }
+    
+    void solveSudoku(vector<vector<char>>& board) {
+        cells.assign(81);
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) if (board[i][j] != '.') {
+                set(i, j, board[i][j] - '0');
+            }
+        }
+        vector<int> eptyc;
+        // collect empty cells
+        for (int i = 0; i < 81; i++) {
+            if (!cells[i].value) eptyc.push_back(i);
+        }
+        dfs(eptyc);
+    }
+};
 
-# (I) DFS/Backtracking
-// others_optimized_bitmask
-**** WAIT ****
+
+# (I) DFS/Backtracking (Board-wise)
+// others_optimized_bitmask_self-imple
+class Solution {
+public:
+    vector<int> row, col, box, pq;
+    
+    void swap(int id1, int id2) {
+        if (id1 == id2) return;
+        int hold = pq[id1];
+        pq[id1] = pq[id2];
+        pq[id2] = hold;
+    }
+    
+    // find the cell with strictest constriants among pq[id:81]
+    int locate(int id) {
+        int ct = INT_MAX, ans;
+        for (int cur = id; cur < 81; cur++) {
+            int i = pq[cur] / 9, j = pq[cur] % 9, bid = (i / 3) * 3 + j / 3;
+            int candid = row[i] & col[j] & box[bid], cct = 0;
+            while (candid) {
+                candid ^= (candid & -candid);
+                if (++cct >= ct) break;
+            }
+            if (ct > cct) ct = cct, ans = cur;
+        }
+        swap(id, ans);
+        return pq[id];
+    }
+    
+    bool dfs(int id, vector<vector<char>>& board) {
+        if (id >= 81) return true;
+        
+        int cur = locate(id), i = cur / 9, j = cur % 9, bid = (i / 3) * 3 + j / 3;
+        int candid = row[i] & col[j] & box[bid];
+        
+        while (candid) {
+            int val = (candid & -candid), nd = log(val) / log(2); // extract the last one-digit
+            candid ^= val; // nullify last digit
+            
+            row[i] ^= val, col[j] ^= val, box[bid] ^= val, board[i][j] = '0'+ nd;
+            if (dfs(id + 1, board)) return true;
+            row[i] |= val, col[j] |= val, box[bid] |= val, board[i][j] = '.';
+        }
+        return false;
+    }
+    
+    void solveSudoku(vector<vector<char>>& board) {
+        int n = (1 << 10) - 2, fepty = 0;
+        row.assign(9, n), col.assign(9, n), box.assign(9, n), pq.resize(81);
+        for (int i = 0; i < 81; i++) pq[i] = i;
+        
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) if (board[i][j] != '.') {
+                int cur = 1 << (board[i][j] -'0'), bid = (i / 3) * 3 + j / 3;
+                row[i] ^= cur, col[j] ^= cur, box[bid] ^= cur;
+                swap(fepty++, i * 9 + j);
+            }
+        }
+        dfs(fepty, board);
+    }
+};
 
 
 // indep_concise_array recording

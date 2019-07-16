@@ -1,0 +1,57 @@
+## Specification
+Given two arrays A and B of equal size, the advantage of A with respect to B is the number of indices i for which A[i] > B[i]. Return any permutation of A that maximizes its advantage with respect to B.
+
+Example 1:
+Input: A = [2,7,11,15], B = [1,10,4,11]
+Output: [2,11,7,15]
+
+Example 2:
+Input: A = [12,24,8,32], B = [13,25,32,11]
+Output: [24,32,8,12]
+
+Note:
+1 <= A.length = B.length <= 10000
+0 <= A[i] <= 10^9
+0 <= B[i] <= 10^9
+
+
+
+## Testcases
+[17,8,32,20,9,6,4,3,5,6,11,15,20,21,22]
+[9,29,20,17,4,6,8,19,15,14,20,3,0,1,4]
+
+[4,4,4,4,4]
+[4,4,4,4,4]
+
+
+
+## Ideas
+# (I) Greedy
+The idea is very simple. We start from the largest element of each array and if b > a, then we fill the current position with the smallest element in A. Then increment a pointer pointing to the smallest element in A not used yet.
+
+
+## Code
+# (I) Greedy
+_(ii) Map_
+**** WAIT ****
+
+_(i) Sort_
+// indep
+class Solution {
+public:
+    vector<int> advantageCount(vector<int>& A, vector<int>& B) {
+        int n = A.size();
+        vector<int> id1(n), id2(n);
+        for (int i = 0; i < n; i++) id1[i] = id2[i] = i;
+        sort(id1.begin(), id1.end(), [&A] (int a, int b) { return A[a] < A[b]; });
+        sort(id2.begin(), id2.end(), [&B] (int a, int b) { return B[a] < B[b]; });
+        
+        vector<int> res(n);
+        int hi2 = n - 1, hi1 = n - 1, lo1 = 0;
+        while (hi2 >= 0) {
+            if (B[id2[hi2]] >= A[id1[hi1]]) res[id2[hi2--]] = A[id1[lo1++]];
+            else res[id2[hi2--]] = A[id1[hi1--]];
+        }
+        return res;
+    }
+};

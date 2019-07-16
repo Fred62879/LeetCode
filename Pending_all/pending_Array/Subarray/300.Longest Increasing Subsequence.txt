@@ -1,0 +1,43 @@
+## Specification
+Given an unsorted array of integers, find the length of longest increasing subsequence.
+
+Example:
+Input: [10,9,2,5,3,7,101,18]
+Output: 4 
+Explanation: The longest increasing subsequence is [2,3,7,101], therefore the length is 4. 
+
+Note: There may be more than one LIS combination, it is only necessary for you to return the length. Your algorithm should run in O(n2) complexity. Follow up: Could you improve it to O(n log n) time complexity?
+
+
+
+## Testcases
+[9,2,1,10,3,4,7,2,8,10,5,8,4,1,6,3]
+
+
+
+## Idea
+# (II) DP
+For instance, given [10, 9, ...], it can be found that when we reach 9, we can replace 10 immediately with 9 since longest subarray end at 10 is 1. However, given [1,2,3,4,5,10,8...], we cannot replace without heisitation because we would expect a longer subseq present in the following appendable to only 8. The case is that if this following subseq starts with 11, then both 10 and 8 can access it and it does not matter what 1~5 should terminate with, 8 or 10. If this preceding subseq starts with 9, then we are assured to replace 10 with 8. Thus, it can be concluded that whenever we encounter a smaller element, we shall add it into our ascending array at hand.
+
+
+## Code
+# (II) DP_Binary Search
+**** WAIT ****
+
+# (I) DP
+// indep
+class Solution {
+public:
+    int lengthOfLIS(vector<int>& nums) {
+        int n = nums.size(), ans = 0;
+        if (!n) return 0;
+        int dp[n]{}; // dp[i], len of longest subseq from i onward
+        for (int i = n - 1; i >= 0; i--) {
+            int curlen = 1;
+            for (int j = i + 1; j < n; j++)
+                if (nums[i] < nums[j]) curlen = max(curlen, 1 + dp[j]);
+            ans = max(ans, dp[i] = curlen);
+        }
+        return ans;
+    }
+};
