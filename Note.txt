@@ -36,6 +36,44 @@ LT297
 > String[] array = data.split(" ");
 array = { a, b, c, d, e };
 
+// [6] LinkedList
+https://leetcode.com/problems/smallest-sufficient-team/discuss/334683/Java-backtracking-solution
+
+> private List<Integer> findSmallest(LinkedList<String> neededSkillz, List<List<String>> people) {
+        if (neededSkillz.isEmpty()) return new ArrayList<Integer>();
+
+        String skill = neededSkillz.removeFirst();
+        Integer shortest = null;
+        List<Integer> shortestList = null;
+        for(int person : skillCombo.get(skill)) {
+            List<String> removedSkills = new ArrayList<>();
+
+            for(String pSkill : people.get(person))
+                if(neededSkillz.remove(pSkill)) 
+			removedSkills.add(pSkill);
+            
+            List<Integer> otherSkills = findSmallest(neededSkillz, people);
+            if(shortest == null || otherSkills.size() < shortest) {
+                shortest = otherSkills.size();
+                shortestList = otherSkills;
+                shortestList.add(person);
+            }
+            neededSkillz.addAll(removedSkills);
+        }
+        
+        neededSkillz.add(skill);
+        
+        return shortestList;
+    }
+
+
+// [7] console interaction
+CPSC210-lecture-week12-Auction
+> Scanner userInput = new Scanner(System.in);
+> userResponse = userInput.next();
+> userResponse.equalsIgnoreCase("y")
+
+
 
 
 # (II) Others
@@ -92,336 +130,8 @@ LT56 - Array
 
 
 
-## Cpp
-# (I) Programming tricks
-// (1) LT730 
-> vector<map<char,int>> cnt(n);
-> cnt[i][c]...;
 
-// (2) If-else
-bulks of if else under several for loops, parenthesis can all be ommitted
-
-// (3) Memset
-https://leetcode.com/problems/shortest-path-visiting-all-nodes/discuss/136158/C%2B%2B-7ms-Simple-solution-with-intuition-(this-is-a-wrong-intuition-happened-to-pass-all-test-case)
-
-> bool visited[1<<graph.size()][graph.size()];
-> memset(visited, 0, sizeof(visited));
-
-// (4) While
-> do {
->    j1 = advanceBy(1, j1, nums, dir);
->    j2 = advanceBy(2, j2, nums, dir);
-> } while (j1 >= 0 && j2 >= 0 && j1 != j2);
-
-
-// (5) Global vector ini
-> private:
->	vector<int> a;
-> public:
->	int sth() 
-(i)
-> { a.assign(n, 0); }
-
-(ii)
-> { v.resize(n);
-> iota(v.begin(), v.end(), 0); }
-
-// (6)
-> vector<unordered_set<int>> graph(n + 1, unordered_set<int>());
-
-// (7)
-> vector<int> a;
-> if (a.count(..)) equivalent to if (a.find(..) != a.end());
-
-// (8) Concise
-> int L, r = 0;
-> for (char c:b) if (c-r) 
->	if ((L=a.size()) < 2 || c-a[L-1] || c-a[L-2]) a += c, r = 0;
->	else r = c, a.pop_back(), a.pop_back();
-
-// (9)
-0x3FE
-
-// (10) Sort
-LT675 - By default, vectors are sorted based on their first emtry.
-
-// (11) Pointer
-> Object* a;
-> if (a == nullptr) ...;
-
-** WAIT FOR VALIDATION **
-> void function1(int* a) { &a = 20; }
-> void function2(int& a) { a = 20; }
-> void execute() {
->     int a = 10;
->     function1(&a); // same effect:
->     function2(*a); // change int a
-> }
-
-// (12) stringstream
-LT297
-> string str = "a,b,c,d,e", s;
-> getline(s, str, ',');
-s = "a"
-
-// [13] LT902
-> string s = "0";
-> s[0] == '0' -> true
-
-// [14]
-int dp[a][b]; // entries being INT_MAX
-int dp[a][b]{}; // entries being 0
-
-// [15]
-We can add assign values to paras in function overhead.
-> int maxWidthRamp(vector<int>& A, int res = 0) { ... }
-
-// [16] Bin no bracket
-> k & 1 << i
-
-// [17] Cout
-> cout << "\nWith iterators = "; // start with a newline
-
-// [18] string
-_(i) rep_
-> string a(2, 'a'); a = "aa"
-
-
-
-# (II) Advanced
-// [1] VECTOR
-_(i) Runing time_
-LT879
-"https://leetcode.com/problems/profitable-schemes/discuss/154685/C%2B%2B-ACCEPTED-top-down-DP-with-O(N*G*P)-but-why-does-it-still-take-too-long-(1800ms)"
-
-You are calling 3-level regression on vector<>(), The delay is zoomed out at 3rd order. The lookup will be a hard job for vectors. The iterator need to look up the address book, instead of in static library just add index+starting address and you can get the address.
-
-
-// [2] DEFINE
-_(i) Variable_
-https://leetcode.com/problems/tallest-billboard/discuss/203942/C%2B%2B-16ms-solution-beats-100
-
-> #define NOT_REACHABLE -10011
-> #define YET_TO_VISIT -10012
-> if (j < 0 || j > 2 * sum[i])
->     return NOT_REACHABLE;
-
-_(ii) Function_
-> #define MIN_COINS(x, y) (((x) + (y) - 1)/(y))
-> int function1 () {
->     int a = MIN_COINS(10, 12);
->     return a;
-> }
-
-
-// [3] COMPARE
-_(i) Compare_
-> int compare (const void *a, const void * b) {
->    return ( (*(pairSum *)a).sum - (*(pairSum*)b).sum );
-> }
-
-_(ii) Comparator_
-> static bool comp(const Interval& a, const Interval& b) {
->    return a.start < b.start;
-> }
-> sort(intervals.begin(), intervals.end(), comp);
-
-_(iii)_
-> typedef std::pair<int, int> pair;
-> 
-> // object of a class implementing () operator
-> struct comp {
->	bool operator(const pair& x, const pair& y) const { 
-> 		if (x.second != y.seond) return x.second < y.second;
->		return x.first < y.first;
->	}
-> };
->
-> // binary function
-> bool fn(const pair& x, const pair& y) const { 
-> 	if (x.second != y.seond) return x.second < y.second;
->	return x.first < y.first;
-> };
-> 
-> int main() {
-> 	...;
-> 	sort(v.begin(), v.end(), [](const [air& x, const pair& y) {
->		...;
->	});
->	// std::sort(B.begin(), B.end(), [&A](int i, int j) {
->	//	return A[i] < A[j];
->	// });
-> 
->	// sort(v.begin(), v.end(), fn);
->	// sort(v.begin(), v.end(), comp);
->	
-> }
-
-_(iv)_ lower bound
-To binary search in a descending array. (LT962)
-> vector<pair<int, int>> v;
-> auto id = lower_bound(v.begin(), v.end(), make_pair( A[i], INT_MAX ),   greater<pair<int, int>>());
-
-
-// [4] SWAP
-https://leetcode.com/problems/permutations/discuss/18360/C%2B%2B-backtracking-and-nextPermutation
-for two entries in an array, can directly swap: 
-> swap(nums[i], nums[j]);
-
-// [5] auto
->  struct State {
->     int mask;
->     int last;
->  };
->  auto[mask, last] = q.front(); q.pop();
-
-// [6]
-> #if DEBUG
-> int main(int argc, char** argv) {
->    return 0;
-> }
-> #endif
-
-// [7] char* and string
-> int dfs(int r, int c, const char* word, vector<vector<char>>& board) { ... }
-> dfs(i, j, word.c_str() + 1, board)
-plus one means to start from the 2nd char of word
-
-// [8] struct, constructor
-> struct TrieNode {
->        TrieNode *children[26];
->        string word;
-> 
->        TrieNode() : word("") {
->            for (int i = 0; i < 26; i++)
->                children[i] = nullptr;
->        }
-> };
-
-
-// (11) int64_t
-
-// [12] BinarySearch equivalent
-lower_bound() - LT209 - Array
-binary_find() - LT74 - Array
-
-// [13] ITERATOR
-_(i)_
-To iterate over refernce ot vector of objects without incurring large memory and time consumption do this:
-> for (auto& sth : col)...
-
-_(ii)_
-Use iterator to access element LT310
-
-_(iii)_ 
-https://leetcode.com/problems/merge-intervals/discuss/21420/16ms-C%2B%2B-solution-beat-100.
-
-_(iv)_
-LT229 - Array
-LT34 - Array
-
-_(v)_Good instances
-https://leetcode.com/problems/coin-change/discuss/289477/C%2B%2B-Search-with-pruning-12ms-solution-with-comments
-
-https://leetcode.com/problems/insert-delete-getrandom-o1-duplicates-allowed/discuss/197641/C%2B%2B-30-ms-hashmap-hashset-and-vector
-
-
-// [14] static vector
-LT920
-use in function without initializing it each call.
-
-// [15] POINTER
-LT310
-
-// [16]
-For objects initialized to NULL, we can simply use treat them as NULL = 0. Thus, given "Node a = NULL", "if(a)" will not be evaluate as false.
-
-// [17] PQ
-> auto cmp = [](const pair<int,int> &a, const pair<int,int> &b) { return a.second > b.second; };
-> priority_queue<pair<int,int>, vector<pair<int,int>>, decltype(cmp)> q{cmp};
-
-// [18] Pair
-> queue<pair<int, int>> qu;
-> tie(r, c) = qu.front(); // assign pair element to r and c
-
-// [19] In-function function
-LT546
-> int removeBoxes(vector<int>& boxes) {
-> 	...;
-> 	function<int(int, int , int)> dfs =[&](int i, int j, int k){
-> 		return i + j + k
-> 	};
-> 	return dfs(0, A.size()-1, 0);
-> }
-
-// [20]
-unsigned int size_t dp[51][50][50] = {}; , you don't even need to cast to (long long).
-
-size_t could be 8 bytes, so it can double the memory requirements. However, unsigned int seems to be sufficient. Updated the code, thanks.
-
-// [21] Imple follow Python manner
-LT924
-> vector<int> initial(...), malware(...);
-> vector<int> res = {1, 0};
-> for (int i : initial)
-> 	res = min(res, {(malware[find(i)] == 1 ) * (-area[find(i)]), i});
-> return res[1];
-
-// [22]
-> int sizes[301]{};
-> max_element(begin(sizes), end(sizes)) - begin(sizes);
-
-// [23] Map
-> map<int, int> m;
-> for (int i : A) m[i]++;
-> map<int,int>::iterator it;
-> for (int i : B) {
-> 	it = m.upper_bound(i);
-> 	int x = it != m.end() ? it->first : m.begin()->first;
-> 	if (--m[x] == 0) m.erase(x);
-> }
-
-// [24] Comment
-> /***    keep  the  right-half-parentheses     ***/
-> if(pair > 0) help(pair-1, index+1, remove_left, remove_right);
-
-
-
-// [25] Unordered_set 
-_(i) to vector_
-> unordered_set<string> result;
-> vector<string>(result.begin(), result.end());
-
-
-// [26] unordered_map
-_(i) Iterator_
-> unordered_map<int, int> indices;
-> indices.insert(pair<int, int>(val, vals.size()));
-> unordered_map<int, int>::iterator it = indices.find(val);
-> int index = it->second;
-
-> auto it = m.find(val);
-> if (it != end(m)) { // equivalent to m.end()
->     auto free_pos = *it->second.begin(); // equivalent to below two lines
->     // unordered_set<int> it1 = it->second;
->     // int free_pos = *(it1.begin());
->     it->second.erase(it->second.begin());
-> }
-
-
-_(ii) ini_
-> unordered_map<int, unordered_set<int>> m;
-> m[2].insert(3); // can do this without ini unordered_set
-
-
-
-
-// [27] Random
-https://leetcode.com/problems/insert-delete-getrandom-o1-duplicates-allowed/discuss/85636/C%2B%2B-Solution-using-a-map-of-vectors-to-handle-duplicates.
-
-> default_random_engine rng;
-> uniform_int_distribution<int> distribution(0, buffer.size() - 1);
-> int idx = distribution(rng);
+		
 
 
 
@@ -487,10 +197,56 @@ https://leetcode.com/problems/unique-substrings-in-wraparound-string/discuss/954
 
 https://leetcode.com/problems/advantage-shuffle/discuss/149842/Python-Greedy-Solution-Using-Sort
 
+https://leetcode.com/problems/smallest-sufficient-team/discuss/334572/Python-DP-Solution
+
+// @functools.lru_cache(None) - cache 
+https://leetcode.com/problems/make-array-strictly-increasing/discuss/377531/O(n2-log(n))-
+solutionStarting-from-brute-force-improve-by-memoization
+
+
+// np.matrix, matrix multiplication
+https://leetcode.com/problems/count-vowels-permutation/discuss/398224/easy-peasy-python-O(logN)-matrix-rank
+
+
 
 
 ## C
 https://leetcode.com/problems/longest-palindromic-substring/discuss/2923/Simple-C%2B%2B-solution-(8ms-13-lines)
+
+
+## JavaScript
+// [1] Source code
+LT52
+https://leetcode.com/problems/n-queens-ii/discuss/20141/Never-write-codes-like-this-lets-do-eval
+
+It generates source code that's nested loops and ifs, and then runs that code. You can see it by inserting console.log(p); before the return line and testing a custom test case. For example for N=4 you'll see this:
+
+/**
+ * @param {number} n
+ * @return {number}
+ */
+var totalNQueens = function(n) {
+    var p = '', s = 0, l;
+    for (var i = 0; i < n; i++) {
+        l = '\nfor (var s# = 0; s# < ' + n + '; s#++)';
+        for (var j = 0; j < i; j++)
+            l += 'if (s# !== s@ && Math.abs(s# - s@) !== (# - @)) '.replace(/@/g, j);
+        p += l.replace(/#/g, i);
+    }
+    p += '\ns++;\ns';
+    console.log(p);
+    return eval(p);
+};
+
+It generates source code that's nested loops and ifs, and then runs that code. You can see it by inserting console.log(p); before the return line and testing a custom test case. For example for N=4 you'll see this:
+
+for (var s0 = 0; s0 < 4; s0++)
+for (var s1 = 0; s1 < 4; s1++)if (s1 !== s0 && Math.abs(s1 - s0) !== (1 - 0)) 
+for (var s2 = 0; s2 < 4; s2++)if (s2 !== s0 && Math.abs(s2 - s0) !== (2 - 0)) if (s2 !== s1 && Math.abs(s2 - s1) !== (2 - 1)) 
+for (var s3 = 0; s3 < 4; s3++)if (s3 !== s0 && Math.abs(s3 - s0) !== (3 - 0)) if (s3 !== s1 && Math.abs(s3 - s1) !== (3 - 1)) if (s3 !== s2 && Math.abs(s3 - s2) !== (3 - 2)) 
+s++;
+s
+
 
 
 
@@ -506,18 +262,47 @@ You have two ways. One way is you can just create a table of binom[n][k] directl
 
 The second way is that you could just use long. Since every value is modulo MOD, the multiplication of two of those values will fit into a long integer.
 
+(2) DFS_constant branches
+A typical setting is the matrix exploration scenario, where using for loop would increase running time significantly. Thus, try to write out the 4 direction population explicitly without using a loop.
 
-## Cpp learning
-(1) binary search
-https://en.cppreference.com/w/cpp/algorithm/lower_bound
+When write out the 4 directions, there is no need to check the validity of both row and column number since each direction only change either row or column. Thus, it is only necessary to check the dimension that is changed.
 
-template<class ForwardIt, class T, class Compare=std::less<>>
-ForwardIt binary_find(ForwardIt first, ForwardIt last, const T& value, Compare comp={})
-{
-    // Note: BOTH type T and the type after ForwardIt is dereferenced 
-    // must be implicitly convertible to BOTH Type1 and Type2, used in Compare. 
-    // This is stricter than lower_bound requirement (see above)
- 
-    first = std::lower_bound(first, last, value, comp);
-    return first != last && !comp(value, *first) ? first : last;
-}
+> if (i - 1 >= 0 && matrix[i - 1][j] > matrix[i][j]) u = dfs(i - 1, j, matrix);
+> if (i + 1 < n && matrix[i + 1][j] > matrix[i][j]) d = dfs(i + 1, j, matrix);
+> if (j - 1 >= 0 && matrix[i][j - 1] > matrix[i][j]) l = dfs(i, j - 1, matrix);
+> if (j + 1 < m && matrix[i][j + 1] > matrix[i][j]) r = dfs(i, j + 1, matrix);
+
+
+(3) Heap and priority queue (LT23)
+- Heap is a kind of data structure. It is a name for a particular way of storing data that makes certain operations very efficient. We can use a tree or array to describe it.
+
+   18
+  /  \
+ 10  16
+/ \  / \
+9 5  8 12
+
+18, 10, 16, 9, 5, 8, 12
+
+- Priority queue is an abstract datatype. It is a shorthand way of describing a particular interface and behavior, and says nothing about the underlying implementation.
+
+A heap is a very good data structure to implement a priority queue. The operations which are made efficient by the heap data structure are the operations that the priority queue interface needs.
+
+(4) Hash
+LT30
+https://leetcode.com/problems/substring-with-concatenation-of-all-words/discuss/13700/My-AC-c%2B%2B-code-O(n)-complexity-26ms
+
+Hash word into int. And then hash vector of words to int.
+
+
+(5) Sort
+_(i)_ Radix sort
+Two imple (1) Algr2 (2) LT164
+
+
+(6) Segment tree
+LT1157
+ Perfect ds for dividing intervals
+
+(7) BFS (Hadlock/A*)
+LT675
