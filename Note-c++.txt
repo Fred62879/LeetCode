@@ -1,0 +1,676 @@
+## Cpp
+# (I) Programming tricks
+// (1) LT730 
+> vector<map<char,int>> cnt(n);
+> cnt[i][c]...;
+
+// (2) If-else
+bulks of if else under several for loops, parenthesis can all be ommitted
+
+// (3) Memset
+https://leetcode.com/problems/shortest-path-visiting-all-nodes/discuss/136158/C%2B%2B-7ms-Simple-solution-with-intuition-(this-is-a-wrong-intuition-happened-to-pass-all-test-case)
+
+> bool visited[1<<graph.size()][graph.size()];
+> memset(visited, 0, sizeof(visited));
+
+// (4) While
+> do {
+>    j1 = advanceBy(1, j1, nums, dir);
+>    j2 = advanceBy(2, j2, nums, dir);
+> } while (j1 >= 0 && j2 >= 0 && j1 != j2);
+
+
+// (5) Global vector ini
+> private:
+>	vector<int> a;
+> public:
+>	int sth() 
+(i)
+> { a.assign(n, 0); }
+
+(ii)
+> { v.resize(n);
+> iota(v.begin(), v.end(), 0); }
+
+// (6)
+> vector<unordered_set<int>> graph(n + 1, unordered_set<int>());
+
+// (7)
+> vector<int> a;
+> if (a.count(..)) equivalent to if (a.find(..) != a.end());
+
+// (8) Concise
+> int L, r = 0;
+> for (char c:b) if (c-r) 
+>	if ((L=a.size()) < 2 || c-a[L-1] || c-a[L-2]) a += c, r = 0;
+>	else r = c, a.pop_back(), a.pop_back();
+
+// (9)
+0x3FE
+
+// (10) Sort
+LT675 - By default, vectors are sorted based on their first emtry.
+
+// (11) Pointer
+> Object* a;
+> if (a == nullptr) ...;
+
+** WAIT FOR VALIDATION **
+> void function1(int* a) { &a = 20; }
+> void function2(int& a) { a = 20; }
+> void execute() {
+>     int a = 10;
+>     function1(&a); // same effect:
+>     function2(*a); // change int a
+> }
+
+// (12) stringstream
+LT297
+> string str = "a,b,c,d,e", s;
+> getline(s, str, ',');
+s = "a"
+
+// [13] LT902
+> string s = "0";
+> s[0] == '0' -> true
+
+// [14]
+int dp[a][b]; // entries being INT_MAX
+int dp[a][b]{}; // entries being 0
+
+// [15]
+We can add assign values to paras in function overhead.
+> int maxWidthRamp(vector<int>& A, int res = 0) { ... }
+
+
+
+// [16] Bin no bracket
+> k & 1 << i
+
+
+
+// [17] Cout
+> cout << "\nWith iterators = "; // start with a newline
+
+
+
+// [18] string
+_(i) rep_
+> string a(2, 'a'); a = "aa"
+
+
+
+// [19] Vector ini
+> vector<int> team[20]; // size of 20
+
+
+
+// [20]
+In dp problems, to save space, we use 1/2D dp to replace a 2D one via alternating between the two levels of the 2nd dim. To do this implicitly, we can use modula.
+
+https://leetcode.com/problems/count-vowels-permutation/discuss/398213/C%2B%2BJava-O(n)-Knight-Dialer
+
+
+
+// [21] Inside function
+class Solution {
+public:
+    int longestIncreasingPath(vector<vector<int>>& matrix) {
+	...;
+        std::function<int(int, int)> dfs = [&] (int x, int y) {
+		...;
+        };
+	...;
+    }
+};
+
+
+
+// [22] assign vals to two ints simultaneously
+> int r, c;
+> pair<int, int> p = { 1, 1 };
+> tie (r, c) = p;
+
+
+
+
+
+// [23] Multi-dim vector ini
+> vector<vector<int>> dp(m + 1,  vector<int>());
+// this will create a 2D vector with element 1 filled in already
+// however, you cannot ini 1D vector in this way (vector<int> a();)
+
+
+
+
+// [24] pointer class manipulation
+_(i) LT 24_
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode(int x) : val(x), next(NULL) {}
+ * };
+ */
+class Solution {
+public:
+    ListNode* reverseKGroup(ListNode* head, int k) {
+        ListNode* a(head); // a points to the same thing as head
+        ListNode* b = new ListNode(1); // point to a new node with val 1
+        ListNode *crun = head, *pre = NULL; // must add the star to every var
+    }
+};
+
+
+
+
+// [25] Modulo
+_(i) matrix multiplication_
+Three ways of doing modulo. (LT1220)
+> vector<vector<int>> product(vector<vector<int>>& a, vector<vector<int>>& b) {
+>        vector<vector<int>> res(a.size(), vector<int>(5, 0));
+>        for (int i = 0; i < a.size(); i++) // row i in a
+>            for (int j = 0; j < 5; j++)    // col j in b
+>                for (int k = 0; k < 5; k++)
+>                    res[i][j] = (int)(((long)res[i][j] + (((long)a[i][k] * (long)b[k][j]) % q)) % q);
+>                    res[i][j] = (res[i][j] + (long)a[i][k] * b[k][j] % q) % q;
+>                    res[i][j] += (long long)a[i][k] * b[k][j] % q, res[i][j] %= q;
+>                    res[i][j] += (long)a[i][k] * b[k][j] % q, res[i][j] %= q;
+>        return res;
+> }
+
+
+
+// [26] Generate an array [1,2,3,...]
+https://leetcode.com/problems/maximum-profit-in-job-scheduling/discuss/409188/C%2B%2B-with-picture
+> vector<int> a(n);
+> iota(begin(a), end(a), 0);
+
+
+// [27] Unique
+LT1187
+
+
+// [28] Min Max
+(i)
+> auto lu = minmax_element(nums.begin(), nums.end());
+> int l = *lu.first, u = *lu.second;
+
+(ii)
+> int maxE = *max_element(nums.begin(),nums.end());
+> int minE = *min_element(nums.begin(),nums.end());
+
+
+// [29]
+> int maxElement = *max_element(array.begin(), array.end());
+
+
+
+
+# (II) Advanced
+
+// [1] VECTOR
+
+_(i) Runing time_
+
+LT879
+"https://leetcode.com/problems/profitable-schemes/discuss/154685/C%2B%2B-ACCEPTED-top-down-DP-with-O(N*G*P)-but-why-does-it-still-take-too-long-(1800ms)"
+
+You are calling 3-level regression on vector<>(), The delay is zoomed out at 3rd order. The lookup will be a hard job for vectors. The iterator need to look up the address book, instead of in static library just add index+starting address and you can get the address.
+
+
+
+
+// [2] DEFINE
+_(i) Variable_
+https://leetcode.com/problems/tallest-billboard/discuss/203942/C%2B%2B-16ms-solution-beats-100
+
+> #define NOT_REACHABLE -10011
+> #define YET_TO_VISIT -10012
+> if (j < 0 || j > 2 * sum[i])
+>     return NOT_REACHABLE;
+
+_(ii) Function_
+> #define MIN_COINS(x, y) (((x) + (y) - 1)/(y))
+> int function1 () {
+>     int a = MIN_COINS(10, 12);
+>     return a;
+> }
+
+
+
+
+// [3] COMPARE
+_(i) Compare_
+> int compare (const void *a, const void * b) {
+>    return ( (*(pairSum *)a).sum - (*(pairSum*)b).sum );
+> }
+
+_(ii) Comparator_
+> static bool comp(const Interval& a, const Interval& b) {
+>    return a.start < b.start;
+> }
+> sort(intervals.begin(), intervals.end(), comp);
+
+_(iii)_
+> typedef std::pair<int, int> pair;
+> 
+> // object of a class implementing () operator
+> struct comp {
+>	bool operator(const pair& x, const pair& y) const { 
+> 		if (x.second != y.seond) return x.second < y.second;
+>		return x.first < y.first;
+>	}
+> };
+>
+> // binary function
+> bool fn(const pair& x, const pair& y) const { 
+> 	if (x.second != y.seond) return x.second < y.second;
+>	return x.first < y.first;
+> };
+> 
+> int main() {
+> 	...;
+> 	sort(v.begin(), v.end(), [](const pair& x, const pair& y) {
+>		...;
+>	});
+>	// std::sort(B.begin(), B.end(), [&A](int i, int j) {
+>	//	return A[i] < A[j];
+>	// });
+> 
+>	// sort(v.begin(), v.end(), fn);
+>	// sort(v.begin(), v.end(), comp);
+>	
+> }
+
+_(iv)_ lower bound
+To binary search in a descending array. (LT962)
+> vector<pair<int, int>> v;
+> auto id = lower_bound(v.begin(), v.end(), make_pair( A[i], INT_MAX ),   greater<pair<int, int>>());
+
+
+
+
+
+// [4] SWAP
+https://leetcode.com/problems/permutations/discuss/18360/C%2B%2B-backtracking-and-nextPermutation
+for two entries in an array, can directly swap: 
+> swap(nums[i], nums[j]);
+
+
+
+
+// [5] auto
+>  struct State {
+>     int mask;
+>     int last;
+>  };
+>  auto[mask, last] = q.front(); q.pop();
+
+
+
+
+// [6]
+> #if DEBUG
+> int main(int argc, char** argv) {
+>    return 0;
+> }
+> #endif
+
+
+
+
+// [7] char* and string
+> int dfs(int r, int c, const char* word, vector<vector<char>>& board) { ... }
+> dfs(i, j, word.c_str() + 1, board)
+plus one means to start from the 2nd char of word
+
+
+
+
+// [8] struct, constructor
+> struct TrieNode {
+>        TrieNode *children[26];
+>        string word;
+> 
+>        TrieNode() : word("") {
+>            for (int i = 0; i < 26; i++)
+>                children[i] = nullptr;
+>        }
+> };
+
+// REFER TO LT472 (Trie imple)
+
+
+// (11) int64_t
+
+
+
+
+// [12] BinarySearch equivalent
+lower_bound() - LT209 - Array
+binary_find() - LT74 - Array
+
+
+
+
+// [13] ITERATOR
+_(i)_
+To iterate over refernce ot vector of objects without incurring large memory and time consumption do this:
+> for (auto& sth : col)...
+
+_(ii)_
+Use iterator to access element LT310
+
+_(iii)_ 
+https://leetcode.com/problems/merge-intervals/discuss/21420/16ms-C%2B%2B-solution-beat-100.
+
+_(iv)_
+LT229 - Array
+LT34 - Array
+
+_(v)_Good instances
+https://leetcode.com/problems/coin-change/discuss/289477/C%2B%2B-Search-with-pruning-12ms-solution-with-comments
+
+https://leetcode.com/problems/insert-delete-getrandom-o1-duplicates-allowed/discuss/197641/C%2B%2B-30-ms-hashmap-hashset-and-vector
+
+
+
+
+// [14] static vector
+LT920
+use in function without initializing it each call.
+
+
+
+
+// [15] POINTER
+LT310
+LT1220 - v.begin() can also be written as beign(v)
+
+
+
+// [16]
+For objects initialized to NULL, we can simply use treat them as NULL = 0. Thus, given "Node a = NULL", "if(a)" will not be evaluate as false.
+
+
+
+
+// [17] PQ
+_(i) instance 1_
+> auto cmp = [](const pair<int,int> &a, const pair<int,int> &b) { return a.second > b.second; };
+> priority_queue<pair<int,int>, vector<pair<int,int>>, decltype(cmp)> q{cmp};
+
+
+_(ii) instance 2_
+> priority_queue<pair<int, pair<int, int>>, vector<pair<int, pair<int, int>>>, greater<pair<int, pair<int, int>>>> trees;
+[LT675]
+
+_(iii) instance 3_
+You need to provide a valid strict weak ordering comparison for the type stored in the queue, Person in this case. The default is to use std::less<T>, which resolves to something equivalent to operator<. This relies on it's own stored type having one. So if you were to implement:
+> bool operator<(const Person& lhs, const Person& rhs); 
+
+it should work without any further changes. The implementation could be:
+> bool operator<(const Person& lhs, const Person& rhs) { return lhs.age < rhs.age; }
+
+If the the type does not have a natural "less than" comparison, it would make more sense to provide your own predicate, instead of the default std::less<Person>. For example:
+> struct LessThanByAge {
+>	bool operator()(const Person& lhs, const Person& rhs) const { 
+> 		return lhs.age < rhs.age; 
+> 	}
+> };
+
+then instantiate the queue like this:
+> std::priority_queue<Person, std::vector<Person>, LessThanByAge> pq;
+
+Concerning the use of std::greater<Person> as comparator, this would use the equivalent of operator> and have the effect of creating a queue with the priority inverted WRT the default case. It would require the presence of an operator> that can operate on two Person instances.
+
+[https://stackoverflow.com/questions/19535644/how-to-use-the-priority-queue-stl-for-objects/19535699]
+
+
+
+// [18] Pair
+> queue<pair<int, int>> qu;
+> tie(r, c) = qu.front(); // assign pair element to r and c
+
+
+
+
+// [19] In-function function
+LT546
+> int removeBoxes(vector<int>& boxes) {
+> 	...;
+> 	function<int(int, int , int)> dfs =[&](int i, int j, int k){
+> 		return i + j + k
+> 	};
+> 	return dfs(0, A.size()-1, 0);
+> }
+
+
+
+
+// [20]
+unsigned int size_t dp[51][50][50] = {}; , you don't even need to cast to (long long).
+
+size_t could be 8 bytes, so it can double the memory requirements. However, unsigned int seems to be sufficient. Updated the code, thanks.
+
+
+
+
+// [21] Imple follow Python manner
+LT924
+> vector<int> initial(...), malware(...);
+> vector<int> res = {1, 0};
+> for (int i : initial)
+> 	res = min(res, {(malware[find(i)] == 1 ) * (-area[find(i)]), i});
+> return res[1];
+
+
+
+
+// [22]
+> int sizes[301]{};
+> max_element(begin(sizes), end(sizes)) - begin(sizes);
+
+
+
+
+// [23] Map Comment
+> /***    keep  the  right-half-parentheses     ***/
+> if(pair > 0) help(pair-1, index+1, remove_left, remove_right);
+
+
+
+
+// [25] Unordered_set 
+_(i) to vector_
+> unordered_set<string> result;
+> vector<string>(result.begin(), result.end());
+
+
+
+
+// [26]
+_(i) map_
+> map<int, int> m;
+> for (int i : A) m[i]++;
+> map<int,int>::iterator it;
+> for (int i : B) {
+> 	it = m.upper_bound(i);
+> 	int x = it != m.end() ? it->first : m.begin()->first;
+> 	if (--m[x] == 0) m.erase(x);
+> }
+
+_(ii) unordered_map_Iterator_
+> unordered_map<int, int> indices;
+> indices.insert(pair<int, int>(val, vals.size()));
+> unordered_map<int, int>::iterator it = indices.find(val);
+> int index = it->second;
+
+> auto it = m.find(val);
+> if (it != end(m)) { // equivalent to m.end()
+>     auto free_pos = *it->second.begin(); // equivalent to below two lines
+>     // unordered_set<int> it1 = it->second;
+>     // int free_pos = *(it1.begin());
+>     it->second.erase(it->second.begin());
+> }
+
+_(iii) ini_
+> unordered_map<int, unordered_set<int>> m;
+> m[2].insert(3); // can do this without ini unordered_set
+
+_(iv) hash_
+map provides buildin hash for pair while unordered_map does not support 
+using pairs as key unless hash fns are provided also.
+
+https://stackoverflow.com/questions/32685540/why-cant-i-compile-an-unordered-map-with-a-pair-as-key
+
+struct hash_pair { 
+    template <class T1, class T2> 
+    size_t operator()(const pair<T1, T2>& p) const
+    { 
+        auto hash1 = hash<T1>{}(p.first); 
+        auto hash2 = hash<T2>{}(p.second); 
+        return hash1*37 + hash2; 
+    } 
+}; 
+
+
+
+
+// [27] Random
+https://leetcode.com/problems/insert-delete-getrandom-o1-duplicates-allowed/discuss/85636/C%2B%2B-Solution-using-a-map-of-vectors-to-handle-duplicates.
+
+> default_random_engine rng;
+> uniform_int_distribution<int> distribution(0, buffer.size() - 1);
+> int idx = distribution(rng);
+
+
+
+
+// [28] Array
+> class UF {
+> private:
+>	int* id;   // id[i] = parent of i
+>	int* rank; // rank[i] = rank of subtree rooted at i (cannot be more than 31)
+>	int count; // number of components
+> 
+> public:
+>	UF(int N) {
+>		count = N;
+>		id = new int[N];
+>		rank = new int[N];
+>		for (int i = 0; i < N; i++) { id[i] = i; rank[i] = 0; }
+>	}
+
+
+
+
+// [29] Accumulate
+> vector<vector<int>> moves = { {1}, {0, 2}, {0, 1, 3, 4}, {2, 4}, { 0 } };
+> vector<vector<int>> v(2, vector<int>(5, 1));
+> v[(n + 1) % 2][i] = accumulate(begin(moves[i]), end(moves[i]), 0, [&](int s, int j)
+>			{ return (s + v[n % 2][j]) % 1000000007; });
+
+
+
+
+// [30] Heap
+> vector<ListNode*> v;
+> make_heap(v.begin(), v.end(), heapComp); //vector -> heap data strcture
+> while(v.size()>0) {
+> 	curNode->next=v.front();
+> 	pop_heap(v.begin(), v.end(), heapComp); 
+        v.pop_back(); 
+        curNode = curNode->next;
+        if(curNode->next) {
+            v.push_back(curNode->next); 
+            push_heap(v.begin(), v.end(), heapComp);
+        }
+    }
+
+
+// [31] Uniform distri
+LT30
+
+
+// [32] Stable_partition
+LT164
+
+
+
+## Cpp learning
+(1) binary search
+https://en.cppreference.com/w/cpp/algorithm/lower_bound
+
+template<class ForwardIt, class T, class Compare=std::less<>>
+ForwardIt binary_find(ForwardIt first, ForwardIt last, const T& value, Compare comp={})
+{
+    // Note: BOTH type T and the type after ForwardIt is dereferenced 
+    // must be implicitly convertible to BOTH Type1 and Type2, used in Compare. 
+    // This is stricter than lower_bound requirement (see above)
+ 
+    first = std::lower_bound(first, last, value, comp);
+    return first != last && !comp(value, *first) ? first : last;
+}
+
+
+
+// [32] Stable partition
+LT164
+
+
+
+
+## Sample code
+(i) LT1235
+https://leetcode.com/problems/maximum-profit-in-job-scheduling/discuss/409188/C%2B%2B-with-pictur
+
+int jobScheduling(vector<int>& startTime, vector<int>& endTime, vector<int>& profit) {
+    map<int, int> times;
+    unordered_map<int, vector<pair<int, int>>> jobs;
+    for (auto i = 0; i < startTime.size(); ++i) {
+        times[startTime[i]] = 0;
+        jobs[startTime[i]].push_back({ endTime[i], profit[i] });
+    }    
+    int max_profit = 0;
+    for (auto it = rbegin(times); it != rend(times); ++it) {
+        for (auto job : jobs[it->first]) {
+            auto it = times.lower_bound(job.first);
+            max_profit = max(max_profit, (it == end(times) ? 0 : it->second) + job.second);
+        }
+        it->second = max_profit;
+    }
+    return max_profit;
+}
+
+
+// points
+- map maintain in sorted order of key
+- iota fill in array 0...n
+- use iterator to traverse container
+
+
+
+
+## C learning
+# (I) Sample code
+// (i) LT3
+int lengthOfLongestSubstring(char * s){
+    char *ascii[128]={0,};
+    int max=0;
+    int len;
+    char *c = s;
+    char *pos = s;  
+    for( ; *c ; c++){
+        if( ascii[*c] >= pos ){
+            pos = ascii[*c]+1;
+        }
+        ascii[*c] = c;
+        len = (c - pos)+1;
+        max = max>len?max:len;
+    }
+    return max;    
+}
+
