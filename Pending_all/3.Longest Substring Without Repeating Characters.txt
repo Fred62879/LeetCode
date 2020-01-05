@@ -1,0 +1,73 @@
+## Specification
+Given a string, find the length of the longest substring without repeating characters.
+
+Example 1:
+Input: "abcabcbb"
+Output: 3 
+Explanation: The answer is "abc", with the length of 3. 
+
+Example 2:
+Input: "bbbbb"
+Output: 1
+Explanation: The answer is "b", with the length of 1.
+
+Example 3:
+Input: "pwwkew"
+Output: 3
+Explanation: The answer is "wke", with the length of 3. Note that the answer must be a substring, "pwke" is a subsequence and not a substring.
+
+
+## Ides
+# (I) Sliding window/Two pointer
+// optimized_concise
+The idea of these imple is to record a start index, and via comparing the id where current char last appeared and the start index, we know whether we shall update start pointer
+
+-discussion
+https://leetcode.com/problems/longest-substring-without-repeating-characters/discuss/1738/4ms-C-code-in-12-lines
+
+https://leetcode.com/problems/longest-substring-without-repeating-characters/discuss/2242/My-O(n)-solution-runtime%3A-5ms
+
+https://leetcode.com/problems/longest-substring-without-repeating-characters/discuss/2314/Accepted-16ms-c%2B%2B-DP-solution-O(n)-with-bitmask-to-record-the-last-position-of-each-letter-appears
+
+
+// optimized
+Instead of recording whether each char has ever appeared in the string already covered, we can record the exact location that specific char appears. As a result, when we encounter a same char again, we can bypass the whole portion of the string before where that char last appeared.
+
+https://leetcode.com/problems/longest-substring-without-repeating-characters/discuss/2314/Accepted-16ms-c%2B%2B-DP-solution-O(n)-with-bitmask-to-record-the-last-position-of-each-letter-appears
+
+
+// indep_12ms_9.1MB
+We set lo and hi bound pointers and traverse the whole string one time. Need to consider special chars and thus i used array for 256 chars.
+
+
+
+## Testcases
+"cdd"
+
+
+
+
+## Code
+# (I) Sliding window/Two pointer
+// optimized
+
+
+// indep_12ms_9.1MB
+class Solution {
+public:
+    int lengthOfLongestSubstring(string s) {
+        if (s.size() == 0) return 0;
+        
+        int appear[256]{1}, lo = 0, hi = 1, res = 1;
+        appear[s[0]] = 1;
+        for (; hi < s.size(); ) {
+            if (!appear[s[hi]]) {
+                res = max(res, hi - lo + 1);
+                appear[s[hi++]] = 1;
+            } else {
+                appear[s[lo++]] = 0;
+            }
+        }
+        return res;
+    }
+};

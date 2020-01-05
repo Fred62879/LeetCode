@@ -13,14 +13,21 @@ You may assume that the given Sudoku puzzle will have a single unique solution.
 The given board size is always 9x9.
 
 
+
 ## Testcases
 [["5","3",".",".","7",".",".",".","."],["6",".",".","1","9","5",".",".","."],[".","9","8",".",".",".",".","6","."],["8",".",".",".","6",".",".",".","3"],["4",".",".","8",".","3",".",".","1"],["7",".",".",".","2",".",".",".","6"],[".","6",".",".",".",".","2","8","."],[".",".",".","4","1","9",".",".","5"],[".",".",".",".","8",".",".","7","9"]]
+
+[[".",".",".","2",".",".",".","6","3"],["3",".",".",".",".","5","4",".","1"],[".",".","1",".",".","3","9","8","."],[".",".",".",".",".",".",".","9","."],[".",".",".","5","3","8",".",".","."],[".","3",".",".",".",".",".",".","."],[".","2","6","3",".",".","5",".","."],["5",".","3","7",".",".",".",".","8"],["4","7",".",".",".","1",".",".","."]]
+
 
 
 ## Ideas
 (II) DFS... (cell-wise)
+_(ii)_
 https://leetcode.com/problems/sudoku-solver/discuss/15806/Yet-another-0ms-C%2B%2B-solution
 
+
+_(i)_
 https://leetcode.com/problems/sudoku-solver/discuss/15748/Sharing-my-2ms-C%2B%2B-solution-with-comments-and-explanations.
 
 Instead of maintaining three records of row, column, and box numbers used, here we maintain a bitset for each cell recording the values it cannot take. As a result, when we are processing the cells already filled with value and when we are propagating the constriants to all cells on the same row/col/box, we can also check the condition of the cell. For instance, if a cell has only one choice left, then it can be filled directly with that value.
@@ -47,61 +54,79 @@ Inheriting the constraint checking methods from LT36, DFS can be performed from 
 
 ## Code
 # (II) DFS... (Cell-wise)
-// others
+// others_0ms
 
-// indep_imple_not finished
+
+// indep_imple_0ms
 class Solution {
 public:
-    vector<cell> cells;
-    
     struct cell {
         int val, nposib;
         bitset<9> constriants;
-        cell: val(0), nposib(0), constriants[];
-    }
+        cell(): val(0), nposib(9), constriants(){};
+    };
     
-    bool propagate(int r, int c, int val) {
-        cell& c = cells[r * 9 + c];
-        if (c.val == val) return true;
-        if (c.constriants[val]) return false;
+    vector<cell> cells;
+    
+    bool propagate(int i, int j, int val, vector<vector<char>>& board) {
+        cell& c = cells[i * 9 + j];
+        if (c.val == val) return false;
+        if (c.constriants[val - 1]) return true;
         
-        c.constriants.set(val);
+        c.constriants.set(val - 1);
         if (--c.nposib == 1)
-            for (int i = 0; i < 9; i++) 
-                if (!c.constriants[i]) set(r, c, i);
-        
+            for (int k = 1; k <= 9; k++) 
+                if (!c.constriants[k - 1]) return set(i, j, k, board);
+        return true;
     }
     
-    bool set(int i, int j, int val) {
+    bool set(int i, int j, int val, vector<vector<char>>& board) {
         cell& c = cells[i * 9 + j];
         if (c.val == val) return true;
-        if (c.constriants[val]) return false;
+        if (c.constriants[val - 1]) return false;
         
+        board[i][j] = val +'0';
         c.val = val, c.nposib = 1;
+        c.constriants = bitset<9>();
+        c.constriants.reset(val - 1);
         for (int k = 0; k < 9; k++) {
-            if (k != j) propagate(i, k); // propagate to cells on the same row
-            if (k != i) propagate(k, j); // ... column
             
+            if (k != j && !propagate(i, k, val, board)) return false; // propagate to cells on the same row
+            if (k != i && !propagate(k, j, val, board)) return false; // ... column
+            int row = i/3 * 3 + k/3, col = j/3 * 3 + k%3;
+            if (row != i && col != j && !propagate(row, col, val, board)) return false; // ... box
         }
+        return true;
     }
     
-    void dfs() {
+    bool dfs(vector<int>& mtcells, int ci, vector<vector<char>>& board) {
+        if (ci == mtcells.size()) return true;
         
+        int id = mtcells[ci];
+        if (cells[id].val) return dfs(mtcells, ci + 1, board);
+        
+        for (int i = 1; i <= 9; i++) if (!cells[id].constriants[i - 1]) {
+            vector<cell> snapshot(cells);
+            if (set(id / 9, id % 9, i, board) && dfs(mtcells, ci + 1, board))
+                return true;
+            cells = snapshot;
+        }
+        return false;
     }
     
     void solveSudoku(vector<vector<char>>& board) {
-        cells.assign(81);
-        for (int i = 0; i < 9; i++) {
-            for (int j = 0; j < 9; j++) if (board[i][j] != '.') {
-                set(i, j, board[i][j] - '0');
-            }
-        }
-        vector<int> eptyc;
-        // collect empty cells
-        for (int i = 0; i < 81; i++) {
-            if (!cells[i].value) eptyc.push_back(i);
-        }
-        dfs(eptyc);
+        cells.resize(81);
+        for (int i = 0; i < 9; i++)
+            for (int j = 0; j < 9; j++) if (board[i][j] != '.')
+                set(i, j, board[i][j] - '0', board);
+        
+        vector<int> mtcells;
+        for (int i = 0; i < 81; i++) // collect empty cells
+            if (!cells[i].val) mtcells.push_back(i);
+        
+        sort(mtcells.begin(), mtcells.end(), [this] (int a, int b) {
+            return cells[a].nposib < cells[b].nposib; });
+        dfs(mtcells, 0, board);
     }
 };
 

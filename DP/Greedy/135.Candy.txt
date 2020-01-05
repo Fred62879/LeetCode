@@ -1,0 +1,259 @@
+## Specification
+
+
+
+## Testcases
+[1,2,87,87,87,2,1]
+[1,3,4,5,2]
+[1,2,2,2,2,2]
+[1,2,3,4,5,6,6,4,3,4,5,7,9,6,5,4,3,2,1,0]
+[1,2,4,3,0,2,4,6,9,8,7,9,7,6,8,5,4,7,7,6,6,7,7,7,4,3,5,5,2,1,1,0]
+
+
+
+## Ideas
+# (III) Math
+// others
+https://leetcode.com/problems/candy/discuss/42770/One-pass-constant-space-Java-solution
+
+In discussion, another imple checks the distance from respectively the left and right vallies to the peak. Once we know this, we can decide the value for peak which in return enable us to calcualte the # of candies needed (1+2+3+...+n). This method is sort of a divide and conquer, such that it divides the whole seq into chunks by vallies.
+
+
+# (II) Two pass
+// others
+https://leetcode.com/problems/candy/discuss/42769/A-simple-solution
+- In the first travesal, we only assign values to ratings on up slope and given 1 candy to everything else. This implicitly set candies of ratings on plateau to be 1. Then in the second traversal, we go in the reverse direction and we only need to update candies that is on a up slope in current direction. Note that for peaks, we only change its value if incrementing on the current slope will exceed the previously assigned peak value. Thus, a max is used.
+
+
+# (I) Greedy
+// others_simplified version of indep
+https://leetcode.com/problems/candy/discuss/42795/Two-C%2B%2B-solutions-given-with-explanation-(both-with-O(N)-time-one-with-O(1)-space-the-other-with-O(N)-space)
+
+https://leetcode.com/problems/candy/discuss/42770/One-pass-constant-space-Java-solution
+
+Instead of updating every step we move downside the hill, this imple count the total # of ratings on a down hill and when an uphill is encountered, it updates candies for ratings on the down hill altogether. Note, since we dont know whether the rating ends with a seq of increasing ratings or not, we have to check this after the for loop and update the downhill accordingly if it does exist.
+
+
+// 2nd_visit
+This time, I divide clearly three cases, given current rating being larger than, equal to, and smaller than the previous rating. In normal cases, if we are in a plateau, we only need to assign 1 candy, if we are in down slope, we assign one less candy than previous, and if we are in up slope, we assign one more candy than previous. However, there are special cases we need to consider in each of these three cases.
+
+(i) Equal to: When we are at the 2nd element of the plateau (..., 6,6) we need to immediately optimize its previous candy. This is because, the following candy assignment has nothing to do with the part preceding the current person (we only need to adjust candy assigned to current person as it has the same rating as the previous person). Thus, if the first person in the plateau happens to be in a down slope, we shall change its candy to be 1, and accodringly reduce candies assigned to all people on the down slope. In this case, we dont count the peak where down slope starts.
+
+(ii) Less than: It is very simple that in this case, if the previous candy is one already, we only need to increase candies assigned to all people on the down slope (peak inclusive).
+
+(iii) Larger than: if the current rating is the first one on the up slope and if the pervious rating is the valley, we need to set candy assigned to pervious person to be 1, and accordingly reduce candies given to people in that down slope. (This process is exactly the same as in (i)). Note that we dont need to consider if the previous rating is on a plateau as all plateau rating is given exactly 1 candy.
+
+
+// indep
+The idea is that we calcualte the min number of candies needed for ratings[0:i] before every i. There are several notable points:
+(i) Since we want to traverse the vector only once, we shall maintain current res as the minimum (Otherwise, like in my initial two imple, the minimum result can only be given if the rating array end with a portion of increaseing ratings);
+(ii) If the rating is mono-increasing, min # of candies needed is 1+2+3+...+n, thus we only need to increment prevCandy by one each time and update peak id as well;
+(iii) If we reach a plateau, we set current candy as 1, and recent peak id as current i;
+(iii) If we encounter a local decrease, we also set the current candy as one (local minimum to satisfy greedy). However, this dependes on whether # of candies for previous rating (which is strictly larger than cur rating) is large enough (> 1) to allow current candy being 1.
+
+(iii)-i: If prev candy is larger than 1, we simply set current candy as 1 and add to min # of candies so far.
+(iii)-ii: However, if prev candy is precisely 1, we need to allocate one more candy to all ratings along the down hill. Two possibilities need to be considered regardless of whether the previous rating is the end of a plateau or along the down hill:
+(a) Since we allocate one candy to the rating right after the peak (which may be given e.g. 6 candies), there are spaces (5) where we do not need to allocate more candies to the peak while allocating more candies to those after the peak. If this space (coverage in code) is larger than 0 (6,3,2,1), then each time we encounter a decreasing rating and require to lift up candies for ratings alongside the down hill, we ignore this peak. (b) If the coverage is <= 0, then it means candies we have allocated from peak onward are 6,5,4,3,2,1. To append another 1 at the end, we have to also include the peak in.
+
+If the previous candy is not one, it must be a unique peak (no plateau), we need to keep track of its value (coverage). Since we only maintain the current minimum, 
+     
+
+
+
+
+## Code
+
+# (II) Two pass
+// derived_28ms_10.7MB
+class Solution {
+public:
+    int candy(vector<int>& ratings) {
+        if (ratings.size() == 0) return 0;
+        int res = 1, n = ratings.size(), pcandy = 1, down = 0;
+        
+        vector<int> arr(n); arr[0] = 1;
+        for (int i = 1; i < n; i++) {
+            if (ratings[i] > ratings[i - 1]) arr[i] = arr[i - 1] + 1;
+            else arr[i] = 1;
+        }
+        for (int i = n - 2; i >= 0; i--) {
+            if (ratings[i] > ratings[i + 1])
+                arr[i] = max(arr[i], arr[i + 1] + 1);
+        }
+        return accumulate(arr.begin(), arr.end(), 0);
+    }
+};
+
+
+# (I) Greedy
+// concise_similar to 2nd visit
+class Solution {
+public:
+    int candy(vector<int>& ratings) {
+        if (ratings.size() == 0) return 0;
+        int res = 1, n = ratings.size(), pcandy = 1, down = 0;
+        
+        for (int i = 1; i < n; i++) {
+            if (ratings[i] < ratings[i - 1]) { down++; continue; }
+
+	    if (down) { // also works
+            // if (i > 1 && ratings[i - 1] < ratings[i - 2]) { // down slope ends
+                res += (1 + down) * down / 2;
+                if (pcandy < down + 1) res += down + 1 - pcandy; // candy given to peak not enough
+                pcandy = 1;
+            }
+            if (ratings[i] == ratings[i - 1]) res += (pcandy = 1);
+            else res += ++pcandy;
+            down = 0;
+        }
+        
+        if (down) {
+            res += (1 + down) * down / 2;
+            if (pcandy < down + 1) res += down + 1 - pcandy;
+        }
+        return res; 
+    }
+};
+
+// 2nd_visit_indep_24ms_10.2MB
+class Solution {
+public:
+    int candy(vector<int>& ratings) {
+        if (ratings.size() == 0) return 0;
+        int res = 1, n = ratings.size(), pcandy = 1, down = 0;
+        
+        for (int i = 1; i < n; i++) {
+            if (ratings[i] == ratings[i - 1]) {
+                if (pcandy > 1 && i > 1 && ratings[i - 1] < ratings[i - 2])
+                    res -= (pcandy - 1) * down; // down slope followed by plateau
+                pcandy = 1, res++, down = 0;
+		
+            } else if (ratings[i] < ratings[i - 1]) {
+                if (pcandy == 1) res += (down + 1), pcandy++; // not enough space, add to previous
+                res += --pcandy, down++;
+		
+            } else {
+                if (pcandy > 1 && i > 1 && ratings[i - 1] < ratings[i - 2]) 
+                    res -= down * (pcandy - 1), pcandy = 1; // down slope followed by up slope
+                pcandy++, res += pcandy, down = 0; // add current
+            }
+        }
+        
+        if (down && pcandy > 1) // if rating seq end with a decreasing portion
+            res -= (pcandy - 1) * down;
+        return res; 
+    }
+};
+
+// indep
+class Solution {
+public:
+    int candy(vector<int>& ratings) {
+        if (ratings.size() == 0) return 0;
+        
+        int n = ratings.size(), res = 1, prevRt = ratings[0], prevCd = 1;
+        int isDecrease = 0, firstpeakid = 0, recentpeakid = 0, coverage = 0;
+        
+        for (int i = 1; i < n; prevRt = ratings[i++]) {
+            if (ratings[i] > prevRt) {
+                if (isDecrease) { // minimize down side candy
+                    if (prevCd > 1)
+                        res -= (i - firstpeakid - 1) * (prevCd - 1), prevCd = 1;
+                    isDecrease = 0;
+                }
+                firstpeakid = recentpeakid = i, res += ++prevCd, coverage = 0;
+            } else if (ratings[i] == prevRt) { // plateau
+                prevCd = 1, res += prevCd, recentpeakid = i, coverage = 0;
+            } else {
+                isDecrease = 1;
+                if (prevCd == 1) {
+                    int offset = coverage-- > 0 ? 1 : 0;
+                    res += (i - recentpeakid - offset); // increment all candies after most recent peak
+                    res++;
+                } else {
+                    coverage = prevCd - 2;
+                    res++, prevCd = 1;
+                    
+                }
+            }
+        }
+        return res;
+    }
+};
+
+
+// repo
+class Solution {
+public:
+    int candy(vector<int>& ratings) {
+        if (ratings.size() == 0) return 0;
+        
+        int n = ratings.size(), res = 1, prevRt = ratings[0], prevCd = 1;
+        int isDecrease = 0, firstpeakid = 0, recentpeakid = 0;
+        
+        for (int i = 1; i < n; prevRt = ratings[i++]) {
+            if (ratings[i] > prevRt) {
+                if (isDecrease) { // minimize down side candy
+                    if (prevCd > 1)
+                        res -= (i - firstpeakid - 1) * (prevCd - 1), prevCd = 1;
+                    isDecrease = 0;
+                }
+                firstpeakid = recentpeakid = i, res += ++prevCd;
+            } else if (ratings[i] == prevRt) { // plateau
+                // if (recentpeakid != firstpeakid) res -= prevCd - 1; // peaks on the plateau beside the two bds can all be given one cd
+                // if (prevCd > 1) prevCd--;
+                prevCd = 1, res += prevCd, recentpeakid = i;
+            } else {
+                isDecrease = 1;
+                if (prevCd > 1) {
+                    res += --prevCd;
+                } else if (prevCd == 1) {
+                    res += i - recentpeakid; // increment all previous candy sicne peak (last point if plateau exists)
+                    res++; // current candy is 1
+                } else {
+                    assert(false);
+                }
+            }
+            cout << i << ": " << res << endl;
+        }
+        return res;
+    }
+};
+
+class Solution {
+public:
+    int candy(vector<int>& ratings) {
+        if (ratings.size() == 0) return 0;
+        
+        int n = ratings.size(), res = 1, prevRt = ratings[0], prevCd = 1;
+        int isDecrease = 0, firstpeakid = 0, recentpeakid = 0; // , firstpeak = 1, recentPeak = 1;
+        
+        for (int i = 1; i < n; prevRt = ratings[i++]) {
+            if (ratings[i] > prevRt) {
+                if (isDecrease) { // minimize down side candy
+                    isDecrease = 0;
+                    if (prevCd > 1)
+                        res -= (i - firstpeakid - 1) * (prevCd - 1), prevCd = 1;
+                }
+                // peak = ++prevCd;
+                firstpeakid = recentpeakid = i, res += ++prevCd;
+            } else if (ratings[i] == prevRt) { // plateau
+                if (prevCd > 1) prevCd--;
+                res += prevCd, recentpeakid = i;
+            } else {
+                isDecrease = 1;
+                if (prevCd > 1) {
+                    res += --prevCd;
+                } else if (prevCd == 1) {
+                    //recentPeak++;
+                    res += i - recentpeakid; // increment all previous candy sicne peak (last point if plateau exists)
+                    res++; // current candy is 1
+                } else {
+                    assert(false);
+                }
+            }
+            cout << i << ": " << res << endl;
+        }
+        return res;
+    }
+};

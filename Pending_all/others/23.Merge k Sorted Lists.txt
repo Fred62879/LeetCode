@@ -1,0 +1,231 @@
+## Specification
+Merge k sorted linked lists and return it as one sorted list. Analyze and describe its complexity.
+
+Example:
+
+Input:
+[
+  1->4->5,
+  1->3->4,
+  2->6
+]
+Output: 1->1->2->3->4->4->5->6
+
+
+## Testcases
+[[1,4,5],[1,3,4],[2,6]]
+[[],[],[],[]]
+[[1,7,15],[4,8,16],[2,10,14],[5,9,12],[3,11,17],[6,13]]
+
+
+## Ideas
+# (III) Heap
+https://leetcode.com/problems/merge-k-sorted-lists/discuss/10527/Difference-between-Priority-Queue-and-Heap-and-C%2B%2B-implementation
+
+# (II) Priority queue
+// indep
+The idea is very simple. We add all pointers to a minpq first (comparator implemented as a larger-true one to generate a min-pq given pq in default being a max-pq). Then each time we pop out the smallest node and pop in the next node of that node.
+
+# (I) Merge Sort/Divide and Conquer
+// DOC
+https://leetcode.com/problems/merge-k-sorted-lists/discuss/10610/C%2B%2B-code-O(NlogK)-in-time-O(1)-in-space-Divide_Conquer.
+
+// merge sort
+https://leetcode.com/problems/merge-k-sorted-lists/discuss/10882/C%2B%2B-solution-using-Merge-Sort
+
+// improve based on indep
+https://leetcode.com/problems/merge-k-sorted-lists/discuss/10531/Sharing-my-straightforward-C%2B%2B-solution-without-data-structure-other-than-vector
+
+// indep
+Merge sort requires two extra helper methods (merge two). In this case, in the major method, a while loop is employed instead of recursively using a second helper method.
+
+Constantly push back newly merged ones without alternating between the two helper vectors. The original imple in this post is not efficient. While there is an optimized version in the following discussion.
+
+
+## Code
+# (III) Heap
+// 2nd visit_Oct-30-2019
+class Solution {
+public:
+    ListNode* mergeKLists(vector<ListNode*>& lists) {
+        ListNode* res = new ListNode(0), *nxt = res;
+        // put null nodes at the very end such that when we encounter a null node we can return directly
+        auto cmp = [](ListNode* a, ListNode* b) { return !a || (b && a->val > b->val); };
+        make_heap(lists.begin(), lists.end(), cmp);
+        
+        while(!lists.empty()) {
+            auto cur = lists[0];
+            if (!cur) break;
+            
+            pop_heap(lists.begin(), lists.end(), cmp);
+            lists.pop_back();
+            
+            nxt->next = cur;
+            if (cur->next) {
+                lists.push_back(cur->next);
+                push_heap(lists.begin(), lists.end(), cmp);
+            }
+            nxt = nxt->next;
+        }
+        return res->next;
+    }
+};
+
+
+# (II) Priority queue
+// others_iterative construction_24ms_10.9MB
+class Solution {
+public:
+    ListNode* mergeKLists(vector<ListNode*>& lists) {
+        ListNode* res = new ListNode(0), *nxt = res;
+        auto cmp = [](ListNode* a, ListNode* b) { return a->val > b->val; };
+        priority_queue<ListNode*, vector<ListNode*>, decltype(cmp)> pq{cmp};
+        for (auto ln : lists) 
+            if (ln) pq.push(ln);
+        
+        while(!pq.empty()) {
+            auto cur = pq.top(); pq.pop();
+            nxt->next = cur;
+            if (cur->next) pq.push(cur->next);
+            nxt = nxt->next;
+        }
+	/*
+	// for loop a bit more concise
+	for(ListNode* run = dummy; !pq.empty(); run = run->next) {
+            auto cur = pq.top(); pq.pop();
+            if(cur->next) pq.push(cur->next);
+            run->next = cur;
+        }
+	*/
+        return res->next;
+    }
+}; 
+
+// indep_recursive construction_28ms_12.5MB
+struct comp {
+    bool operator()(ListNode* a, ListNode* b) const {
+        return a->val > b->val;
+    }
+};
+
+class Solution {
+public:
+    vector<int> res;
+    
+    ListNode* construct(int i) {
+        if (i == res.size()) return nullptr;
+        ListNode* ret = new ListNode(res[i]);
+        ret->next = construct(i + 1);
+        return ret;
+    }
+    
+    ListNode* mergeKLists(vector<ListNode*>& lists) {
+        int n = lists.size();
+        if (n == 0) return nullptr;
+        
+        priority_queue<ListNode*, vector<ListNode*>, comp> pq;
+        for (int i = 0; i < n; i++) if (lists[i] != nullptr)
+            pq.push(lists[i]);
+        
+        while(pq.size() > 0) {
+            ListNode* cur = pq.top(); pq.pop();
+            res.push_back(cur->val);
+            if (cur->next != nullptr) pq.push(cur->next);
+        }
+        return res.empty() ? nullptr : construct(0);
+    }
+};
+
+
+# (I) Merge sort/Divide and Conquer
+// real merge sort_20ms
+class Solution {
+public:
+    ListNode* mergeTwo(ListNode* a, ListNode* b) {
+        if (!a) return b;
+        if (!b) return a;
+        
+        if (a->val < b->val) {
+            a->next = mergeTwo(a->next, b);
+            return a;
+        } else {
+            b->next = mergeTwo(a, b->next);
+            return b;
+        }
+    }
+    /*
+    // iterative tends to be slower
+    ListNode* mergeTwo(ListNode* a, ListNode* b) {
+        ListNode* res = new ListNode(-1), *cur = res;
+        while (cur) {
+            if (!a) { cur->next = b; break; }
+            if (!b) { cur->next = a; break; }
+            
+            if (a->val < b->val) {
+                cur->next = a;
+                a = a->next;
+            } else {
+                cur->next = b;
+                b = b->next;
+            }
+            cur = cur->next;
+        }
+        return res->next;
+    }
+    */
+    ListNode* partition(vector<ListNode*>& lists, int lo, int hi) {
+        if (lo == hi) return lists[lo];
+        int mid = (lo + hi) / 2;
+        auto front = partition(lists, lo, mid);
+        auto back = partition(lists, mid + 1, hi);
+        return mergeTwo(front, back);
+    }
+    
+    ListNode* mergeKLists(vector<ListNode*>& lists) {
+        if (lists.empty()) return {};
+        return partition(lists, 0, lists.size() - 1);
+    }
+};
+
+// indep_64ms_48MB
+class Solution {
+public:
+    ListNode* merge(ListNode* a, ListNode* b) {
+        if (!a) return b;
+        if (!b) return a;
+        
+        ListNode* res;
+        if (a->val > b->val) {
+            res = new ListNode(b->val);
+            res->next = merge(a, b->next);
+        } else {
+            res = new ListNode(a->val);
+            res->next = merge(a->next, b);
+        }
+        return res;
+    }
+    
+    ListNode* mergeKLists(vector<ListNode*>& lists) {
+        if (lists.size() == 0) return nullptr;
+        vector<ListNode*> clists(lists), nlists;
+        while (true) {
+            for (int i = 0; i < clists.size(); i += 2) {
+                if (i + 1 == clists.size())
+                    nlists.push_back(clists[i]);
+                else
+                    nlists.push_back(merge(clists[i], clists[i + 1]));
+            }
+            clists = nlists, nlists.clear();
+            if (clists.size() == 1) return clists[0];
+        }
+        return NULL;
+    }
+};
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode(int x) : val(x), next(NULL) {}
+ * };
+ */

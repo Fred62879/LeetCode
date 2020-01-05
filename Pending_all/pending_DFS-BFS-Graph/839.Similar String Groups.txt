@@ -1,39 +1,69 @@
 ## Specification
+
 Two strings X and Y are similar if we can swap two letters (in different positions) of X, so that it equals Y. For example, "tars" and "rats" are similar (swapping at positions 0 and 2), and "rats" and "arts" are similar, but "star" is not similar to "tars", "rats", or "arts". 
 
-Together, these form two connected groups by similarity: {"tars", "rats", "arts"} and {"star"}.  Notice that "tars" and "arts" are in the same group even though they are not similar.  Formally, each group is such that a word is in the group if and only if it is similar to at least one other word in the group.
+Together, these form two connected groups by similarity: {"tars", "rats", "arts"} and {"star"}.  Notice that "tars" and "arts" are in the same group even though they are not similar.  
+
+Formally, each group is such that a word is in the group if and only if it is similar to at least one other word in the group.
 
 We are given a list A of strings.  Every string in A is an anagram of every other string in A.  How many groups are there?
 
+
+
 Example 1:
+
 Input: ["tars","rats","arts","star"]
+
 Output: 2
+
+
 Note:
 
+
 A.length <= 2000
+
 A[i].length <= 1000
+
 A.length * A[i].length <= 20000
+
 All words in A consist of lowercase letters only.
+
 All words in A have the same length and are anagrams of each other.
+
 The judging time limit has been increased for this question.
+
+
 
 
 
 ## Testcases
 ["kccomwcgcs","socgcmcwkc","sgckwcmcoc","coswcmcgkc","cowkccmsgc","cosgmccwkc","sgmkwcccoc","coswmccgkc","kowcccmsgc","kgcomwcccs"]
+
+
 ["akmjfuyexdbuwienqsolcdess","mcbeedqifoslenwjdauuysxsk","oxdsekdsjbiyamulefenwqusc","felsxokeamdicwjunsqudsbey","yxdsekdsjbioamulefenwqusc","yeobladedijmxusfwukscsqne","lcysbswusdmqaoeuiednfxejk","dxfdeqskeuouymalsjcniesbw","jsnedyewscmsbiudqxkeolfau","ajmxqddueenlsisbfesockuwy","akmjfuyexdbswienqsolcdesu","sdexyedioqsakwlfbsencumuj","lcysbswusdmqaoeuiednxfejk","sdexyedioqsakwlfbsenucmuj","fmsuwbexauqsoeyecdilsjkdn","felsxokeamsicwjundqudsbey","jsnedyiwscmsbeudqxkeolfau","jdiboufslaceuneyqwsdmeskx","lcysbswukdmqaoeuiednxfejs","fkemdoqsdieswusbnlyuaxecj","oxdsekdsjyibamulefenwqusc","ubmsssynixlefaedjecwokduq","ejydqwnksbecildseuaufxmos","kcaxwsisjoquenuflebesymdd","jsnedyiwssmcbeudqxkeolfau"]
 
 
 
+
+
 ## Ideas
+
 # (4) BFS
+
+
 
 # (3) DFS
 
+
+
 # (2) Union find
+
 // disjoint set class
 
+
+
 // union
+
 Noticable points include the concise recursive imple of trace. Also, the for loop setup enable the differentiation of identical words. The root map is ini as empty and the in the first for loop, each i denotes the child to be checked and the j (0~i) at the second level represents the parent whose root have all been decided.
 
 As we encounter each A[i], we first assume it being an independent group incrementing count. Then, before the 1st similar word A[j] to A[i] is encountered, each root[A[i]] must be itself and once A[j] is approached, count decrement as A[j] is ascertained not to be an independent group anymore. However, as we proceed, when further similar words to A[j] is discovered, if this new A[i] is a child (a == b) of the first A[i], we do nothing. Otherwise, it means A[j] is connecting two independent groups, and to merge this group, count decrement again.
@@ -43,10 +73,18 @@ Indep.
 
 
 
+
+
+
+
 ## Code
+
 # (4) BFS
+
 // indep_384ms
+
 class Solution {
+
 public:
     // if pass strings directly, time becomes 1684ms
     int compare(string* a, string* b) {
@@ -79,9 +117,15 @@ public:
 };
 
 
+
+
+
 # (3) DFS
+
 // indep_452ms
+
 class Solution {
+
 public:
     int compare(string* a, string* b) {
         for (int i = 0, diff = 0; i < (*a).size(); i++) {
@@ -108,10 +152,16 @@ public:
 };
 
 
+
+
+
 # (2) Union find
+
 // others_efficient imple of Disjoint set
+
 class DS {
-    int[] parent, rank;
+    
+	int[] parent, rank;
     
     public DS(int N) {
         parent = new int[N], rank = new int[N];
@@ -155,7 +205,10 @@ class Solution {
     }
 }
 
+
+
 // others_Disjoint Set_432ms
+
 class disjoint_set {
     vector<int> v;
     int sz;
@@ -206,8 +259,13 @@ public:
     }
 };
 
+
+
+
 // others_no imple_328ms
+
 class Solution {
+
 public:
     unordered_map<string, string> root;
     
@@ -248,9 +306,15 @@ public:
 };
 
 
+
+
+
 # (1) DFS/Connected Components
+
 // indep_968ms
+
 class Solution {
+
 public:
     int count, n;
     vector<int> id;

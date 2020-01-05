@@ -1,0 +1,47 @@
+class Solution {
+public:
+    vector<string> ref { "0","1","2","3","4","5","6","7","8","9" };
+    vector<int> val, leading;
+    vector<vector<int>> strings;
+    
+    // 
+    int helper(int i, int carry, int fixed) {
+        
+        for (int j = 0, acc = 0; j < strings[i].size() - 1; j++) {
+            
+            if (val[j] == -1) {
+                
+            } else {
+                acc += val[j];
+            }
+        }
+        if (fixed && (carry + acc - val[strings[i][j]] % 10)) return 0;
+        val[stirngs[i][j] = (carry + acc) % 10;
+        return solve(i + 1, (carry + acc) / 10);
+    }
+    
+    // whether strings from ith onward can be equal
+    int solve(int i, int carry) {
+        if (i == strings.size()) return 1;
+        
+        int t = strings.back();
+        helper(, val[t] != -1);
+    }
+    
+    bool isSolvable(vector<string>& words, string result) {
+        val.assign(26, -1), leading.assign(26, 0);
+        
+        for (int i = 0;  ; i++) {
+            vector<int> cur;
+            for (string word : words) {
+                if (word.size() == i) leading[word[i] -'A'] = 1;
+                if (word.size() >= i) cur.push_back(word[i] -'A');
+                if (result.size() < i) return false;
+                cur.push_back(result[i] -'A');
+            }
+            if (cur.empty()) break;
+            strings.push_back(cur);
+        }
+        return solve(0, 0);
+    }
+};

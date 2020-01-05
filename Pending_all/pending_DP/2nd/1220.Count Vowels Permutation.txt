@@ -1,0 +1,185 @@
+## Specification
+Given an integer n, your task is to count how many strings of length n can be formed under the following rules:
+
+Each character is a lower case vowel ('a', 'e', 'i', 'o', 'u')
+Each vowel 'a' may only be followed by an 'e'.
+Each vowel 'e' may only be followed by an 'a' or an 'i'.
+Each vowel 'i' may not be followed by another 'i'.
+Each vowel 'o' may only be followed by an 'i' or a 'u'.
+Each vowel 'u' may only be followed by an 'a'.
+Since the answer may be too large, return it modulo 10^9 + 7.
+
+ 
+
+Example 1:
+
+Input: n = 1
+Output: 5
+Explanation: All possible strings are: "a", "e", "i" , "o" and "u".
+Example 2:
+
+Input: n = 2
+Output: 10
+Explanation: All possible strings are: "ae", "ea", "ei", "ia", "ie", "io", "iu", "oi", "ou" and "ua".
+Example 3: 
+
+Input: n = 5
+Output: 68
+ 
+
+Constraints:
+
+1 <= n <= 2 * 10^4
+
+
+
+
+## Ideas
+
+# (II) Matrix
+
+// derived
+
+The dp method is intuitive. However, it can be found that at each round of dp, we are actually multiplying a vector with the following matrix. For instance, at the first time when we are evaluating a 2-char string, we are multiplying v1 = { 1,1,1,1,1 } with this matrix which gives us v2 = { 3,2,2,1,2 }. This basically there are totally 3 2-char strings that can terminate with a etc. Thereafter, we multiply v2 with the matrix which gives us further results.
+     a e i o u
+  a  0 1 0 0 0
+  e  1 0 1 0 0
+  i  1 1 0 1 1
+  o  0 0 1 0 1
+  u  1 0 0 0 0
+
+In short, we simply need to calculate this matrix to the power n and add all entries up in the resulting matrix to give the final result. To increase performance, when calculating m^n we cannot multiply one each time and do this for n times. Instead, we try to derive each bit of the binary form of n via bitwise pusing all bits right incrmentally and evaluate the least significant bit each time. 
+
+For instance, when n = 13 (1101), we divide n by 2 each time and each time we multiply m by itself (th power of m goes from 1 to 2, 4, 8, 16 ...) to indicate the power of the current least significant bit in original binary form. If the current least significant bit is 1 and m now equals the original m to the power 4, then it means in original binary form, we have a 1 in digit 2. Therefore, we add this power (4) to the res via multiplying the accumulating res with the current m.
+
+
+// others
+
+https://leetcode.com/problems/count-vowels-permutation/discuss/398224/easy-peasy-python-O(logN)-matrix-rank
+
+https://leetcode.com/problems/count-vowels-permutation/discuss/398173/C%2B%2B-Bottom-up-and-Recursive-DPs-O(n)Matrix-Exponentiation-O(logn)
+
+
+
+
+
+# (I) DP_bottom-up
+
+// others
+
+https://leetcode.com/problems/count-vowels-permutation/discuss/398213/C%2B%2BJava-O(n)-Knight-Dialer
+
+This method appears counter-intuitive. Take i = 2, and c = 'a' for instance. It adds up dp[1][1] which is number of i-1 char strings terminated with e to dp[2][0], instead of add dp[1][0] to dp[2][1]. This turns out to be multiplying the above matrix with a 5x1 identity vector.
+
+Actually from the above matrix method, for the normal imple, we multiply a 1x5 identity vecotr with m^n. This contribute to the same result as multiply m^n with a 5x1 id vector.
+
+
+// indep
+
+We maintain a 2D array dp, with dp[i][j] recording the number of i-char strings termiate with the jth vowel.
+
+
+
+## Code
+
+# (II) Matrix multiplication
+
+// indep_2nd visit_Oct 20 2019
+class Solution {
+public:
+    int q = 1e9 + 7;
+    vector<vector<int>> moves = { {0,1,1,0,1}, {1,0,1,0,0}, {0,1,0,1,0}, {0,0,1,0,0}, {0,0,1,1,0} };
+    
+    vector<vector<int>> product(vector<vector<int>>& a, vector<vector<int>>& b) {
+        vector<vector<int>> res(a.size(), vector<int>(5, 0));
+        for (int i = 0; i < a.size(); i++) // row i in a
+            for (int j = 0; j < 5; j++)    // col j in b
+                for (int k = 0; k < 5; k++)
+                    // res[i][j] = (int)(((long)res[i][j] + (((long)a[i][k] * (long)b[k][j]) % q)) % q);
+                    // res[i][j] = (res[i][j] + (long)a[i][k] * b[k][j] % q) % q;
+                    res[i][j] += (long)a[i][k] * b[k][j] % q, res[i][j] %= q;
+        return res;
+    }
+    
+    int countVowelPermutation(int n) {
+        if (--n == 0) return 5;
+        vector<vector<int>> power = moves, res = {{1,0,0,0,0},{0,1,0,0,0},{0,0,1,0,0},{0,0,0,1,0},{0,0,0,0,1}};
+        while(n) {
+            if (n % 2) res = product(res, power);
+            power = product(power, power);
+            n /= 2;
+        }
+        vector<vector<int>> id = {{1,1,1,1,1}};
+        res = product(id, res);
+        /*
+        int ret = 0;
+        for (int i = 0; i < 5; i++)
+            ret = (ret + res[0][i]) % q;
+        return ret;
+        */
+        return accumulate(res[0].begin(), res[0].end(), 0, [this](int a, int b) { return (a + b) % q;});
+    }
+};
+
+
+# (I) DP_bottom-up
+
+// others_concise_similar as indep
+// 2nd_visit Oct-20-2019
+class Solution {
+public:
+    int countVowelPermutation(int n) {
+        int q = 1e9 + 7, dp[2][5]{ {1,1,1,1,1} };
+        vector<vector<int>> choice{ {1},{0,2},{0,1,3,4},{2,4},{0} };
+        for (int i = 1; i <= n; i++)
+            for (int j = 0; j < 5; j++)
+                // dp[i % 2][j] = accumulate(choice[j].begin(), choice[j].end(),		//  0,[q, &dp, i](int a, int b) { return (a + dp[1 - i % 2][b]) % q; });
+	        dp[i % 2][j] = accumulate(begin(choice[j]), end(choice[j]), 0,
+                                          [q, &dp, i](int a, int b) { return (a + dp[1 - i % 2][b]) % q; });
+        // return accumulate(dp[1 - n % 2], dp[1 - n % 2] + 5, 0, 
+        //                   [q](int a, int b) { return (a + b) % q; });
+	return accumulate(dp[1 - n % 2], dp[1 - n % 2] + 5, 0, 
+                          [&](int a, int b) { return (a + b) % q; })
+    }
+};
+
+
+
+class Solution {
+public:
+    int countVowelPermutation(int n) {
+        // 'a', 'e', 'i', 'o', 'u'
+        vector<vector<int>> moves = { {1}, {0, 2}, {0, 1, 3, 4}, {2, 4}, { 0 } };
+	vector<vector<int>> v(2, vector<int>(5, 1));
+
+        while (--n > 0) {
+            for (auto i = 0; i < 5; ++i)
+                v[(n + 1) % 2][i] = accumulate(begin(moves[i]), end(moves[i]), 0,
+                                               [&](int s, int j) {return (s + v[n % 2][j]) % 1000000007; });
+        }
+        return accumulate(begin(v[0]), end(v[0]), 0, [](int s, int n) { return (s + n) % 1000000007; });
+    }
+};
+
+// indep_20ms
+class Solution {
+public:
+    int countVowelPermutation(int n) {
+        int q = 1e9 + 7;
+        int choice[5][4] = { {1, -1, -1, -1}, {0, 2, -1, -1}, {0, 1, 3, 4}, {2, 4, -1, -1}, {0, -1, -1, -1} };
+        // dp[i][j], total # of i-char strings with jth vowel as tail char
+        int dp[n][5]{ {1, 1, 1, 1, 1} }; 
+        for (int i = 1; i < n; i++) { // length i + 1
+            for (int j = 0; j < 5; j++) {
+                for (int nxt : choice[j]) if (nxt != -1) {
+                    dp[i][nxt] = (dp[i][nxt] + dp[i - 1][j]) % q;
+                }
+            }
+        }
+        int res = 0;
+        for (int i = 0; i < 5; i++)
+            res = (res + dp[n - 1][i]) % q;
+        // return accumulate(dp[n - 1].begin(), dp[n - 1].end(), 0);
+        return res;
+    }
+};

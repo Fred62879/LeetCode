@@ -1,0 +1,110 @@
+## Specification
+We have two integer sequences A and B of the same non-zero length. We are allowed to swap elements A[i] and B[i].  Note that both elements are in the same index position in their respective sequences. At the end of some number of swaps, A and B are both strictly increasing. (A sequence is strictly increasing if and only if A[0] < A[1] < A[2] < ... < A[A.length - 1].) Given A and B, return the minimum number of swaps to make both sequences strictly increasing. It is guaranteed that the given input always makes it possible.
+
+Example:
+Input: A = [1,3,5,4], B = [1,2,3,7]
+Output: 1
+Explanation: Swap A[3] and B[3]. Then the sequences are: A = [1, 3, 5, 7] and B = [1, 2, 3, 4] which are both strictly increasing.
+
+Note: A, B are arrays with the same length, and that length 
+will be in the range [1, 1000]. A[i], B[i] are integer values in the range [0, 2000].
+
+
+
+## Testcases
+[0,1,4,6,8]
+[1,2,2,7,10]
+
+
+
+## Ideas
+For instance, as we reach location i, no matter how we modify the two vectors before i, the min number of swaps to restore
+the two vectors from i onward is unique and will not be affected by any previous swaps.
+Thus, dp can be done using only two ints recording respectively the min number of swaps needed to restore the two vectors before
+current id with or without doing a swap at the previous location.
+
+Some basic facts about this question include: (i) when we encounter i such that the ascending order is broken, it is always true that we can swap A[i] & B[i] or equivalently A[i-1] & B[i-1] to restore the order. (ii) when the order is not broken at i, we may as well make a swap depending on whether the balance can be maintained.
+
+In inple, when the order is broken, we simply need to make a single swap.
+
+
+
+## Code
+# (I) DP_bottom-up
+// indep_2nd visit_2019-08-02
+class Solution {
+public:
+    int minSwap(vector<int>& A, vector<int>& B) {
+        // min# of swaps to restore A&B[0:cur] w/ or w/o swapping cur
+        int n = A.size(), swp = 1, nswp = 0;
+        for (int i = 1; i < n; i++) {
+            int cswp, cnswp;
+            if (A[i] <= A[i - 1] || B[i] <= B[i - 1]) { // order violated
+                cnswp = swp, cswp = nswp + 1;
+            } else { // order preserved
+                cnswp = nswp; // do not swap)
+                cswp = swp + 1;
+                if (A[i] > B[i - 1] && B[i] > A[i - 1]) {
+                    cnswp = min(cnswp, swp);
+                    cswp = min(cswp, nswp + 1);
+                }   
+            }
+            nswp = cnswp, swp = cswp;
+        }
+        return min(swp, nswp);
+    }
+};
+
+
+// others_integrated
+class Solution {
+public:
+    int minSwap(vector<int>& A, vector<int>& B) {
+        int N = A.size();
+        int not_swap[1000] = {0};
+        int swap[1000] = {1};
+
+        for (int i = 1; i < N; ++i) {
+            not_swap[i] = swap[i] = N;
+
+            if (A[i - 1] < A[i] && B[i - 1] < B[i]) {
+                not_swap[i] = not_swap[i - 1];
+                swap[i] = swap[i - 1] + 1;
+            }
+
+            if (A[i - 1] < B[i] && B[i - 1] < A[i]) {
+                not_swap[i] = min(not_swap[i], swap[i - 1]);
+                swap[i] = min(swap[i], not_swap[i - 1] + 1);
+            }
+        }
+        return min(swap[N - 1], not_swap[N - 1]);
+    }
+};
+
+// O(1) space_derived
+class Solution {
+public:
+    int minSwap(vector<int>& A, vector<int>& B) {
+	// nswp/swp - min# of swaps needed to order A/B[0:cur]
+	// without/with a swap at A/B[cur]
+        int n = A.size(), nswp = 0, swp = 1;
+
+        for (int i = 1; i < n; i++) {
+            int c1, c2; // current nswp and swp
+
+            if (A[i] > A[i - 1] && B[i] > B[i - 1]) { // order not broken
+                c1 = nswp, c2 = swp + 1; // no swap, double swap
+
+                if (A[i] > B[i - 1] && B[i] > A[i - 1])
+                    c1 = min(c1, swp), c2 = min(c2, nswp + 1);
+
+            } else if (A[i] > B[i - 1] && B[i] > A[i - 1]) { // order broken
+	    // } else { // this also works
+                c1 = swp;       // these are results of
+                c2 = nswp + 1;  // single swap
+            }
+            nswp = c1, swp = c2;
+        }
+        return min(nswp, swp);
+    }
+};

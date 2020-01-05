@@ -7,6 +7,8 @@ hackerrank可不简单，反正比topcoder要难的。其中难度在Expert以上的题你试过就知道了
 
 
 
+asdas
+
 
 ## Java
 # (I) programming tricks
@@ -205,8 +207,21 @@ solutionStarting-from-brute-force-improve-by-memoization
 
 
 // np.matrix, matrix multiplication
+LT1269
 https://leetcode.com/problems/count-vowels-permutation/discuss/398224/easy-peasy-python-O(logN)-matrix-rank
 
+
+// xrange
+https://leetcode.com/problems/number-of-ways-to-stay-in-the-same-place-after-some-steps/discuss/436677/Python-DP
+
+def numWays(self, steps, n, mod=10 ** 9 + 7):
+        A = [0, 1]
+        for t in xrange(steps):
+            A[1:] = [sum(A[i - 1:i + 2]) % mod for i in xrange(1, min(n + 1, t + 3))]
+        return A[1] % mod
+
+// sample
+https://leetcode.com/problems/minimum-falling-path-sum-ii/discuss/451273/Python-DP-O(MN)
 
 
 
@@ -254,6 +269,22 @@ s
 (1) PQ and Multiset
 PriorityQueue.remove() complexity is o(n). so the solution is o(n^2). proper data structure should be something like MultiSet (Not buildin with JDK), can be implemented using Map.
 
+_(i) Multiset_
+//
+https://leetcode.com/problems/advantage-shuffle/discuss/149831/C%2B%2B-6-lines-greedy-O(n-log-n)
+
+> vector<int> A;
+> multiset<int> s(begin(A), end(A));
+> s.upper_bound(B[i]) 			// this is faster
+> upper_bound(s.begin(), s.end(),B[i])  // than this
+Because set is BST internally, and it's algorithm designed/optimized for that. Generic binary search just works with ranges, which is slow for BST.
+
+
+
+(2) TreeSet (java) Map (cpp)
+LT870
+https://leetcode.com/problems/advantage-shuffle/discuss/149840/C%2B%2BJava-Greedy-Solution-Using-Map
+
 
 
 ## Alg hints
@@ -299,6 +330,10 @@ Hash word into int. And then hash vector of words to int.
 _(i)_ Radix sort
 Two imple (1) Algr2 (2) LT164
 
+(ii) For int array
+LT164
+We can either sort based on decimal digit (increase a divider 10 times each time and extract the current digit) OR sort based on binary digit directly
+
 
 (6) Segment tree
 LT1157
@@ -306,3 +341,40 @@ LT1157
 
 (7) BFS (Hadlock/A*)
 LT675
+
+(8) Substring template
+LT76
+https://leetcode.com/problems/minimum-window-substring/discuss/26808/Here-is-a-10-line-template-that-can-solve-most-'substring'-problems
+
+For most substring problem, we are given a string and need to find a substring of it which satisfy some restrictions. A general way is to use a hashmap assisted with two pointers. The template is given below.
+
+int findSubstring(string s){
+        vector<int> map(128,0);
+        int counter; // check whether the substring is valid
+        int begin=0, end=0; //two pointers, one point to tail and one  head
+        int d; //the length of substring
+
+        for() { /* initialize the hash map here */ }
+
+        while(end<s.size()){
+
+            if(map[s[end++]]-- ?){  /* modify counter here */ }
+
+            while(/* counter condition */){ 
+                 
+                 /* update d here if finding minimum*/
+
+                //increase begin to make it invalid/valid again
+                
+                if(map[s[begin++]]++ ?){ /*modify counter here*/ }
+            }  
+
+            /* update d here if finding maximum*/
+        }
+        return d;
+  }
+
+
+(9) Pigeon hole
+LT164
+Put n pigeons into m holes to calculate max distance between two pigeons. m in this case should equal to n - 1 (only in this way can we disregard distance between pigeons within the same hole)

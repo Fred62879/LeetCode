@@ -1,0 +1,241 @@
+## Specification
+Similar: LT691
+
+In a project, you have a list of required skills req_skills,and a list of people. The i-th person people[i] contains a list of skills that person has.
+
+Consider a sufficient team: a set of people such that for every required skill in req_skills, there is at least one person in the team who has that skill.
+We can represent these teams by the index of each person: 
+for example, team = [0, 1, 3] represents the people with skills people[0], people[1], and people[3].
+
+Return any?sufficient team of the smallest possible size, represented by the index of each person.
+
+
+You may return the answer in any order. It is guaranteed an answer exists.
+
+
+
+
+
+Example 1:
+
+
+Input: 
+req_skills = ["java","nodejs","reactjs"], 
+people = [["java"],["nodejs"],["nodejs","reactjs"]]
+
+Output: [0,2]
+
+
+Example 2:
+
+
+Input:
+req_skills = ["algorithms","math","java","reactjs","csharp","aws"], 
+people = [["algorithms","math","java"],["algorithms","math","reactjs"],
+          ["java","csharp","aws"],["reactjs","csharp"],["csharp","math"],["aws","java"]]
+
+Output: [1,2]
+
+
+
+
+Constraints:
+
+
+1 <= req_skills.length <= 16
+
+1 <= people.length <= 60
+
+1 <= people[i].length, req_skills[i].length, people[i][j].length?<= 16
+
+Elements of req_skills and people[i] are (respectively) distinct.
+
+req_skills[i][j], people[i][j][k] are?lowercase English letters.
+
+It is guaranteed a sufficient team exists.
+
+
+
+
+## Ideas
+https://github.com/zywaited/leetcode/blob/master/1101_1150/1125/two/smallest_sufficient_team.go
+
+# (III) BFS
+
+
+# (II) DP
+// 2nd_visit
+_(i)_
+Similar idea to adapted 68ms one. However, failed to imple as a knapsack (m * np) problem but instead do a 2^m. 
+
+
+// python concise
+https://leetcode.com/problems/smallest-sufficient-team/discuss/334572/Python-DP-Solution
+
+// derived_optimized
+Instead of maintaining a 2D vector recording people set as we are doing binary skill operations, we can simple keep track of the last person leading to skill i. In that case, we finally only need to trace the last person from m backward. To do this, we can record id of the current  person as id of the last person composing the newly generated set of skills - i. And we also need to know what the original skill is before applying bp[i] to it, which gives the current new skill set - i.
+
+// adapted
+To derive the min # of people covering all skills, we can do a simple traversal. As we reach each person, we update new set of skills that can be covered using current person and all previous people. Note, this is done bitwise-or-ing the set of skills of current person on all covered skill sets from previous people. Note, instead of using 2D vector, construct an array of vectors would increase performance (others_optimized_48ms)
+
+
+# (I) DFS_backtracking
+
+
+
+
+## Code
+
+# (II) DP_knapsack
+// indep_2nd-visit_Oct-13-2019_88ms
+class Solution {
+public:
+    vector<int> smallestSufficientTeam(vector<string>& req_skills, vector<vector<string>>& people) {
+        int n = req_skills.size(), m = (1 << n) - 1, k = people.size();
+        unordered_map<string, int> skillDict;
+        for (int i = 0; i < n; i++)
+            skillDict[req_skills[i]] = i;
+        
+        vector<int> filled(k), ini(k);
+        vector<vector<int>> dp(m + 1,  vector<int>());
+        for (int i = 0; i < k; i++) {
+            int cur = 0;
+            for (string skill : people[i]) if (skillDict.count(skill))
+                cur |= (1 << skillDict[skill]); // skill int for person[i]
+            filled[i] = ini[i] = cur;
+            // dp[cur].push_back(i);
+            dp[cur] = {i};
+        }
+        
+        for (int i = 0; i < filled.size(); i++) {
+            int cskill = filled[i];
+            if (cskill == m) return dp[m];
+            
+            for (int j = 0; j < k; j++) if (cskill != ini[j]) {
+                int nskill = cskill | ini[j];
+                if (!dp[nskill].empty()) continue;
+
+                dp[nskill] = vector<int>(dp[cskill]);
+                dp[nskill].push_back(j);
+                filled.push_back(nskill);
+            }
+        }
+        return { };
+    }
+};
+
+// derived_optimized_20ms_1D vector
+class Solution {
+public:
+    vector<int> smallestSufficientTeam(vector<string>& rs, vector<vector<string>>& people) {
+        int n = rs.size(), m = (1 << n) - 1, np = people.size(), min_num = INT_MAX;
+        unordered_map<string, int> map;
+        vector<int> bp(np);
+        // pre-process
+        for (int i = 0; i < n; i++) map[rs[i]] = i;
+        for (int i = 0; i < np; i++)
+            for (auto s : people[i])
+                if (map.count(s)) bp[i] |= (1 << map[s]);
+        
+        // find min# of people needed to cover all skills
+        // dp[i], min # of people to cover skills i (bin)
+        // p_pid[i], person index of last preson composing skill i (bin)
+        // p_skill[i], prev skill set before applying bp[p_pid[i]] which yields skill i
+        vector<int> dp(m + 1, INT_MAX), p_pid(m + 1), p_skill(m + 1, -1);
+        for (int i = 0; i < np; i++) {
+            dp[bp[i]] = 1, p_pid[bp[i]] = i;
+            for (int j = 0; j <= m; j++) if (dp[j] != INT_MAX) {
+                int nskill = j | bp[i];
+                if (dp[nskill] > 1 + dp[j]) {
+                    dp[nskill] = 1 + dp[j];
+                    p_pid[nskill] = i, p_skill[nskill] = j;
+                }
+            }
+        }
+        // construct result set of people
+        int cskill = m, pid, ct = dp[m];
+        vector<int> res;
+        while (--ct >= 0) {
+            pid = p_pid[cskill], cskill = p_skill[cskill];
+            res.push_back(pid);
+        }
+        return res;
+    }
+};
+
+// others_optimized_48ms_array of vectors
+class Solution {
+public:
+    vector<int> smallestSufficientTeam(vector<string>& req_skills, vector<vector<string>>& people) {
+        unordered_map<string, int> mp;
+        int n = req_skills.size();
+        for(int i = 0; i < n; ++i) mp[req_skills[i]] = i;
+        
+        vector<int> dp(1 << n, -1), team[1 << n];
+	dp[0] = 0;
+	for (int i = 0; i < people.size(); ++i) {
+            int now = 0;
+            for (string s : people[i]) { // incorporate skill (bin) calculation
+                int x = mp[s];
+                now |= (1 << x);
+            }
+            for (int j = 0; j < (1 << n); ++j) if (dp[j] >= 0) { 
+                int x = now | j; 
+                if (dp[x] == -1 || dp[x] > dp[j]+1) {
+                    dp[x] = dp[j] + 1;
+                    team[x] = team[j];
+                    team[x].push_back(i);
+                }
+            }
+        }
+        return team[(1 << n)-1];
+    }
+};
+
+// adapted_68ms_1D vector
+class Solution {
+public:
+    vector<int> smallestSufficientTeam(vector<string>& rs, vector<vector<string>>& people) {
+        int n = rs.size(), m = (1 << n) - 1, np = people.size(), min_num = INT_MAX;
+        unordered_map<string, int> map;
+        vector<int> bp(np), dp(m + 1, INT_MAX);
+        vector<vector<int>> col(m + 1, vector<int>());
+        // pre-process
+        for (int i = 0; i < n; i++) map[rs[i]] = i;
+        for (int i = 0; i < np; i++)
+            for (auto s : people[i])
+                if (map.count(s)) bp[i] |= (1 << map[s]);
+        
+        // find min# of people needed to cover all skills
+	// while updating set of people for each dp[i]
+        for (int i = 0; i < np; i++) {
+            dp[bp[i]] = 1, col[bp[i]] = { i };
+            for (int j = 0; j <= m; j++) if (dp[j] != INT_MAX) {
+                int nskill = j | bp[i];
+                if (dp[nskill] > 1 + dp[j]) {
+                    dp[nskill] = 1 + dp[j];
+                    auto set = col[j];
+                    set.push_back(i);
+                    col[nskill] = set;
+                }
+            }
+        }
+        return col[m];
+    }
+};
+
+
+
+
+## Testcases
+["java","nodejs","reactjs"]
+[["java"],["nodejs"],["nodejs","reactjs"]]
+
+["algorithms","math","java","reactjs","csharp","aws"]
+[["algorithms","math","java"],["algorithms","math","reactjs"],["java","csharp","aws"],["reactjs","csharp"],["csharp","math"],["aws","java"]]
+
+["gkgtfxpvxnxlbhxu","baayobms","yomqrposuurmvisx","vsftojpcp","pjovtkytubbouq","hlmvucyi","chpzrslbtd","uighcqpiteg"]
+[["pjovtkytubbouq"],["baayobms"],["baayobms","pjovtkytubbouq"],["chpzrslbtd"],[],["yomqrposuurmvisx"],["uighcqpiteg"],[],["gkgtfxpvxnxlbhxu","yomqrposuurmvisx","uighcqpiteg"],[],["pjovtkytubbouq","uighcqpiteg"],["yomqrposuurmvisx"],[],[],[],["pjovtkytubbouq"],["gkgtfxpvxnxlbhxu","yomqrposuurmvisx","pjovtkytubbouq","uighcqpiteg"],["yomqrposuurmvisx","pjovtkytubbouq"],["chpzrslbtd"],["pjovtkytubbouq"],[],[],["baayobms"],["yomqrposuurmvisx","chpzrslbtd"],["yomqrposuurmvisx","pjovtkytubbouq"],["pjovtkytubbouq"],[],["yomqrposuurmvisx"],[],["yomqrposuurmvisx","pjovtkytubbouq"],[],[],[],["yomqrposuurmvisx"],[],["pjovtkytubbouq"],[],[],[],["vsftojpcp"],[],["yomqrposuurmvisx","pjovtkytubbouq"],[],[],["gkgtfxpvxnxlbhxu"],["yomqrposuurmvisx"],["pjovtkytubbouq","chpzrslbtd"],["uighcqpiteg"],["pjovtkytubbouq"],["yomqrposuurmvisx","pjovtkytubbouq","uighcqpiteg"],[],["pjovtkytubbouq"],[],["chpzrslbtd"],["hlmvucyi"],["yomqrposuurmvisx","pjovtkytubbouq"],["pjovtkytubbouq"],[],["yomqrposuurmvisx"],[]]
+
+["hfkbcrslcdjq","jmhobexvmmlyyzk","fjubadocdwaygs","peaqbonzgl","brgjopmm","x","mf","pcfpppaxsxtpixd","ccwfthnjt","xtadkauiqwravo","zezdb","a","rahimgtlopffbwdg","ulqocaijhezwfr","zshbwqdhx","hyxnrujrqykzhizm"]
+[["peaqbonzgl","xtadkauiqwravo"],["peaqbonzgl","pcfpppaxsxtpixd","zshbwqdhx"],["x","a"],["a"],["jmhobexvmmlyyzk","fjubadocdwaygs","xtadkauiqwravo","zshbwqdhx"],["fjubadocdwaygs","x","zshbwqdhx"],["x","xtadkauiqwravo"],["x","hyxnrujrqykzhizm"],["peaqbonzgl","x","pcfpppaxsxtpixd","a"],["peaqbonzgl","pcfpppaxsxtpixd"],["a"],["hyxnrujrqykzhizm"],["jmhobexvmmlyyzk"],["hfkbcrslcdjq","xtadkauiqwravo","a","zshbwqdhx"],["peaqbonzgl","mf","a","rahimgtlopffbwdg","zshbwqdhx"],["xtadkauiqwravo"],["fjubadocdwaygs"],["x","a","ulqocaijhezwfr","zshbwqdhx"],["peaqbonzgl"],["pcfpppaxsxtpixd","ulqocaijhezwfr","hyxnrujrqykzhizm"],["a","ulqocaijhezwfr","hyxnrujrqykzhizm"],["a","rahimgtlopffbwdg"],["zshbwqdhx"],["fjubadocdwaygs","peaqbonzgl","brgjopmm","x"],["hyxnrujrqykzhizm"],["jmhobexvmmlyyzk","a","ulqocaijhezwfr"],["peaqbonzgl","x","a","ulqocaijhezwfr","zshbwqdhx"],["mf","pcfpppaxsxtpixd"],["fjubadocdwaygs","ulqocaijhezwfr"],["fjubadocdwaygs","x","a"],["zezdb","hyxnrujrqykzhizm"],["ccwfthnjt","a"],["fjubadocdwaygs","zezdb","a"],[],["peaqbonzgl","ccwfthnjt","hyxnrujrqykzhizm"],["xtadkauiqwravo","hyxnrujrqykzhizm"],["peaqbonzgl","a"],["x","a","hyxnrujrqykzhizm"],["zshbwqdhx"],[],["fjubadocdwaygs","mf","pcfpppaxsxtpixd","zshbwqdhx"],["pcfpppaxsxtpixd","a","zshbwqdhx"],["peaqbonzgl"],["peaqbonzgl","x","ulqocaijhezwfr"],["ulqocaijhezwfr"],["x"],["fjubadocdwaygs","peaqbonzgl"],["fjubadocdwaygs","xtadkauiqwravo"],["pcfpppaxsxtpixd","zshbwqdhx"],["peaqbonzgl","brgjopmm","pcfpppaxsxtpixd","a"],["fjubadocdwaygs","x","mf","ulqocaijhezwfr"],["jmhobexvmmlyyzk","brgjopmm","rahimgtlopffbwdg","hyxnrujrqykzhizm"],["x","ccwfthnjt","hyxnrujrqykzhizm"],["hyxnrujrqykzhizm"],["peaqbonzgl","x","xtadkauiqwravo","ulqocaijhezwfr","hyxnrujrqykzhizm"],["brgjopmm","ulqocaijhezwfr","zshbwqdhx"],["peaqbonzgl","pcfpppaxsxtpixd"],["fjubadocdwaygs","x","a","zshbwqdhx"],["fjubadocdwaygs","peaqbonzgl","x"],["ccwfthnjt"]]

@@ -1,0 +1,220 @@
+## Specification
+Given a linked list, reverse the nodes of a linked list k at a time and return its modified list. k is a positive integer and is less than or equal to the length of the linked list. If the number of nodes is not a multiple of k then left-out nodes in the end should remain as it is.
+
+Example:
+Given this linked list: 1->2->3->4->5
+For k = 2, you should return: 2->1->4->3->5
+For k = 3, you should return: 3->2->1->4->5
+
+Note: Only constant extra memory is allowed. You may not alter the values in the list's nodes, only nodes itself may be changed.
+
+
+## Testcases
+[1,2,3,4,5]
+1
+
+[1]
+2
+
+[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26]
+6
+
+[1,2,3,4,5,6]
+7
+
+[]
+2
+
+[1,2]
+2
+
+
+## Ideas
+# (II) Recursive
+_(ii)_ One helper function
+// others
+https://leetcode.com/problems/reverse-nodes-in-k-group/discuss/11435/C%2B%2B-Elegant-and-Small
+
+
+_(i)_ True recursive
+// others
+https://leetcode.com/problems/reverse-nodes-in-k-group/discuss/11423/Short-but-recursive-Java-code-with-comments
+
+This imple is a bit more wordy. Given the current head node, it first traverse to see if k ndoes exists. If so, since the running node for reference already reached the node k nodes aways from the given head, the rest nodes can be traversed recursively. As for the reversion of the current k nodes, it is just the same as in all other imples.
+
+// indep
+I do a single traverse without pre checking the number of nodes nor marching k nodes forward to do a recursion for the rest nodes. The recursion for the rest nodes is performed after we traversed the k nodes in the current level when we naturally reached the node k nodes away from the initial head. The only problem remains to be when we have less than k nodes, we need to reverse what we have done. This can be simply done using revursion as well but this time the call will change the k value to the number of nodes we have.
+
+
+# (I) Iterative
+// others_comment of below disscussion
+https://leetcode.com/problems/reverse-nodes-in-k-group/discuss/11423/Short-but-recursive-Java-code-with-comments
+
+// ini
+For each k elements, we first collect all nodes in a vector. Then we iterate thru these k nodes. Note that we maintain two pointers, (i) pre, the last node of the previou k nodes, (ii) post, the first node of the next k nodes. While we reversing the current k nodes (via changing each node's "next " to its previous node) we need to ensure we have the current k nodes (i) correctly connected to the tail of the previous k nodes (set the first node or the last node in original order to the next of pre) and (ii) leaving a tail to hook with the following k elements (set post as the next of the last or first node in original order).
+
+Actually, this two linking steps are kind of redundant as the linking of last with post in the previous cycle is the same as linking the first with pre in the next cycle. 
+
+
+
+## Code
+# (II) Recursive
+_(ii) One helper function_
+// others
+**** WAIT ****
+
+
+_(i) True recursive_
+// indep_2nd-visit Nov-21-2019
+class Solution {
+public:
+    ListNode* reverseKGroup(ListNode* head, int k) {
+        if (head == NULL) return NULL;
+        
+        ListNode *cur = head, *tail = head, *hold = NULL, *front = NULL;
+        for (int j = 0; j < k; j++, cur = hold) {
+            if (cur == NULL) return reverseKGroup(front, j);
+            hold = cur->next;
+            cur->next = front;
+            front = cur;
+        }
+        tail->next = reverseKGroup(cur, k);
+        return front;
+    }
+};
+
+
+// indep_16ms_9.7MB
+class Solution {
+public:
+    ListNode* reverseKGroup(ListNode* head, int k) {
+        if (k == 1 || !head) return head;
+        // pre-check
+        ListNode* check = head;
+        for (int i = 0; i < k; check = check->next, i++)
+            if (!check) return head;
+        
+        ListNode *cnode = head, *tail = cnode, *front = NULL, *nxt;
+        for (int i = 0; i < k; i++) {
+            nxt = cnode->next;
+            cnode->next = front;
+            front = cnode;
+            cnode = nxt;
+        }
+        tail->next = reverseKGroup(cnode, k);
+        return front;
+    }
+};
+
+
+# (I) Iterative
+// others_concise
+class Solution {
+public:
+    ListNode* reverseKGroup(ListNode* head, int k) {
+        int n = 0;
+        for (ListNode* cur = head; cur != NULL; n++, cur = cur->next);
+        ListNode* res = new ListNode(-1), *tail = res, *front = NULL, *cur = head, *hold, *ntail;
+        for (int i = 0; i <= n - k; i += k) {
+            ntail = cur;
+            for (int j = 0; j < k; j++, cur = hold) {
+                hold = cur->next;
+                cur->next = front;
+                front = cur;
+            }
+            tail->next = front;
+            tail = ntail;
+        }
+        tail->next = cur;
+        return res->next;
+    }
+};
+
+
+// indep_space optimized_16ms_9.9MB
+class Solution {
+public:
+    ListNode* reverseKGroup(ListNode* head, int k) {
+        if (k == 1 || !head) return head;
+        
+        ListNode *cnode = head, *res = new ListNode(-1), *pre = res;
+        // loop over
+        while (true) {
+            ListNode *nxt, *front = NULL, *npre = cnode;
+            for (int i = 0; i < k; i++) {
+                nxt = cnode->next;
+                cnode->next = front;
+
+		// no further nodes
+                if (!nxt) {
+		    // exact times of k
+                    if (i == k - 1) { pre->next = cnode; return res->next; }
+
+		    // otherwise we need to restore
+                    ListNode *tail = NULL;
+                    while (cnode) {
+                        nxt = cnode->next;
+                        cnode->next = tail;
+                        tail = cnode;
+                        cnode = nxt;
+                    }
+                    pre->next = tail;
+                    return res->next;
+                }
+
+                cnode->next = front;
+                front = cnode;
+                cnode = nxt;
+            }
+            pre->next = front;
+            pre = npre;
+        }
+        return res->next;
+    }
+};
+
+
+
+// indep_20ms_10MB
+class Solution {
+public:
+    ListNode* reverseKGroup(ListNode* head, int k) {
+        if (k == 1) return head;
+        //ListNode* a(head);
+        //auto b = new ListNode(1);
+        ListNode *crun = head, *pre = NULL, *post, *res = NULL;
+        vector<ListNode*> col(k);
+        
+        // loop over
+        while (true) {
+            for (int i = 0; i < k; i++) {
+                if (!crun) return res ? res : head;
+                col[i] = crun;
+                crun = crun->next;
+            }
+            post = crun;
+	    // special case, set the very first node only in the first cycle
+            if (!res) res = col[k - 1];
+            for (int i = 0; i < k / 2; i++) {
+                auto front = col[i], tail = col[k - i - 1];
+                if (pre) pre->next = tail;
+                front->next = post;
+                pre = tail;
+                post = front;
+            }
+            if (k % 2 == 0) pre->next = post;
+            else { pre->next = col[k / 2]; pre->next->next = post; }
+            pre = col[0];
+            col.clear();
+        }
+        return res;
+    }
+};
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode(int x) : val(x), next(NULL) {}
+ * };
+ */

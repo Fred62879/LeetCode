@@ -1,0 +1,287 @@
+## Specification
+Similar: LT691
+
+In a project, you have a list of required skills req_skills,and a list of people. The i-th person people[i] contains a list of skills that person has. Consider a sufficient team: a set of people such that for every required skill in req_skills, there is at least one person in the team who has that skill. We can represent these teams by the index of each person:  for example, team = [0, 1, 3] represents the people with skills people[0], people[1], and people[3]. Return any?sufficient team of the smallest possible size, represented by the index of each person. You may return the answer in any order. It is guaranteed an answer exists.
+
+Example 1:
+Input: 
+req_skills = ["java","nodejs","reactjs"], 
+people = [["java"],["nodejs"],["nodejs","reactjs"]]
+Output: [0,2]
+
+Example 2:
+Input:
+req_skills = ["algorithms","math","java","reactjs","csharp","aws"], 
+people = [["algorithms","math","java"],["algorithms","math","reactjs"],
+          ["java","csharp","aws"],["reactjs","csharp"],["csharp","math"],["aws","java"]]
+Output: [1,2]
+
+
+
+
+Constraints:
+
+1 <= req_skills.length <= 16
+1 <= people.length <= 60
+1 <= people[i].length, req_skills[i].length, people[i][j].length?<= 16
+Elements of req_skills and people[i] are (respectively) distinct.
+
+req_skills[i][j], people[i][j][k] are?lowercase English letters.
+
+It is guaranteed a sufficient team exists.
+
+
+
+
+## Ideas
+https://github.com/zywaited/leetcode/blob/master/1101_1150/1125/two/smallest_sufficient_team.go
+
+# (III) BFS
+// optimized
+https://leetcode.com/problems/smallest-sufficient-team/discuss/335362/C%2B%2B-BFS-using-std%3A%3Abitset-44ms-(beats-100)
+
+Instead of keeping track of people in the running team using a vector, since there are at most 60 people, we can use a bitset to record that. General imple is exactly the same way as for naive (nth-visit). nth-visit imple tends to be more bnaive in processing bitset while the optimized version tends to be more elegant.
+
+
+// naive BFS
+https://leetcode.com/problems/smallest-sufficient-team/discuss/351711/just-use-BFS-also-can-solve
+
+Both n-th visit and indep follow a similar idea. To prevent TLE, we shall exclude those skills that have already been visited. (i) Indep. Each time we pop out a set of skills previously collected, we go thru all people to try add each person into this set. And we abolish in cases where the newly formed skill set is perviously seen. This is because if a set of skills has ever been encountered, the number of people we are now taking must be LE that of set of people constituting previously the same set of skills. Moreover, since each time we go thru all people, there is no need to worry if we would miss a set.
+
+For instance, given four people covering skills as 1000, 0011, 0100, 1011. When we combine person 0 and 1, the skill is the same as that of solely person 3. We may worry that although person 3 definitely present as a smaller set of person, it is to the end of the people collection and would have smaller potential to construct an intact set. However, since when poping out person 3, we go thru all people from 0 to 3, there is no chance that such condition will occur.
+
+(ii) nth visit
+However, it turns out that even we only iterating thru people after the last person taken, we still wont miss any set. Although for person 3, we have no more people after it and it will thus not give rise to a sufficient team, we can found that if we start with person 2, then when we reach person 3, that's a sufficient team. Thus, only if a sufficient team exists, since the bfs start from each person, there will be a way that we can reach the set.
+
+
+# (II) DP
+
+
+# (I) DFS_backtracking
+
+
+
+
+
+## Code
+# (III) BFS
+// nth-visit_Dec-10-2019_48ms_14.7MB
+class Solution {
+public:
+    using pset = bitset<61>;
+    int n, m, np;
+    
+    vector<int> convert(pset p) {
+        vector<int> res;
+        pset needle;
+        for (int i = 0; i < 60; needle.reset(i++)) {
+            needle.set(i);
+            if ((p & needle).any()) res.push_back(i);
+        }
+        return res;
+    }
+    
+    int highBit(pset p) {
+        pset needle;
+        for (int i = np; i >= 0; needle.reset(i--)) {
+            needle.set(i);
+            if ((p & needle).any()) return i;
+        }
+        return -1;
+    }
+    
+    vector<int> smallestSufficientTeam(vector<string>& rs, vector<vector<string>>& people) {
+        n = rs.size(), m = 1 << n, np = people.size();
+        // pre-process
+        unordered_map<string, int> map;
+        vector<int> pskill(np);
+        for (int i = 0; i < n; i++) map[rs[i]] = i;
+        for (int i = 0; i < np; i++)
+            for (auto s : people[i])
+                if (map.count(s)) pskill[i] |= (1 << map[s]);
+        
+        // construction
+        queue<pair<int, pset>> q; // q[i][0]-skill covered; q[i][1:], people taken
+        unordered_set<int> marked;
+        pset cur;
+        for (int i = 0; i < np; cur.reset(i++)) {
+            cur.set(i);
+            q.push({ pskill[i], cur });
+            marked.insert(pskill[i]);
+        }
+        
+        // BFS
+        while(!q.empty()) {
+            auto cur = q.front(); q.pop();
+            int coveredSkill = cur.first;
+            if (coveredSkill == m - 1) return convert(cur.second);
+            
+            pset people = cur.second;
+            for (int i = highBit(people) + 1; i < np; i++) {
+                int nskill = coveredSkill | pskill[i];
+                if (marked.count(nskill)) continue;
+                
+                marked.insert(nskill), people.set(i);
+                q.push({ nskill, people }), people.reset(i);
+            }
+        }
+        assert(false);
+    }
+};
+
+// nth-visit_Dec-10-2019_68ms_24.7MB
+class Solution {
+public:
+    vector<int> smallestSufficientTeam(vector<string>& rs, vector<vector<string>>& people) {
+        int n = rs.size(), m = 1 << n, np = people.size();
+        // pre-process
+        unordered_map<string, int> map;
+        vector<int> pskill(np);
+        for (int i = 0; i < n; i++) map[rs[i]] = i;
+        for (int i = 0; i < np; i++)
+            for (auto s : people[i])
+                if (map.count(s)) pskill[i] |= (1 << map[s]);
+        
+        // construction
+        queue<vector<int>> q; // q[i][0]-skill covered; q[i][1:], people taken
+        unordered_set<int> marked;
+        for (int i = 0; i < np; i++)
+            q.push({ pskill[i], i }), marked.insert(pskill[i]);
+        
+        // BFS
+        while(!q.empty()) {
+            auto cur = q.front(); q.pop();
+            int coveredSkill = cur[0];
+            if (coveredSkill == m - 1) { 
+                vector<int> res(cur.begin() + 1, cur.end());
+                return res;
+            }
+            
+            for (int i = cur.back() + 1; i < np; i++) {
+                int nskill = coveredSkill | pskill[i];
+                if (marked.count(nskill)) continue; // justified above
+		
+                marked.insert(nskill);
+                cur[0] = nskill;
+                cur.push_back(i);
+                q.push(cur);
+                cur.pop_back();
+            }
+        }
+        assert(false);
+    }
+};
+
+// optimized
+class Solution {
+public:
+    using pset = bitset<60>;
+    using kset = bitset<16>;
+    
+    vector<int> convert(pset allp) {
+        vector<int> res;
+        for (int i = 0; i < 60; i++)
+            if (allp[i]) res.push_back(i);
+        return res;
+    }
+    
+    vector<int> smallestSufficientTeam(vector<string>& rs, vector<vector<string>>& people) {
+        int n = rs.size(), m = 1 << n, np = people.size();
+        // pre-process
+        unordered_map<string, int> map;
+        vector<kset> pskill(np);
+        for (int i = 0; i < n; i++) map[rs[i]] = i;
+        for (int i = 0; i < np; i++)
+            for (auto s : people[i])
+                if (map.count(s)) pskill[i] |= (1 << map[s]);
+        
+        // construction
+        queue<pair<pset, kset>> q;
+        //vector<kset> marked(m, 0);
+        unordered_set<kset> marked;
+        for (int i = 0; i < np; i++) {
+            pset curp; curp.set(i, 1);
+            q.push({ curp, kset(pskill[i]) });
+            marked.insert(pskill[i]);
+        }
+        
+        // BFS
+        for (int ct = 1; !q.empty(); ct++) {
+            int sz = q.size();
+            for (int i = 0; i < sz; i++) {
+                pset curp = q.front().first;
+                kset cskill = q.front().second;
+                q.pop();
+                int st = log2(curp.to_ullong());
+                for (int j = st + 1; j < np; j++) {
+                    kset nskill = cskill | pskill[j];
+                    if (marked.count(nskill)) continue;
+                    
+                    curp.set(j, 1);
+                    if (nskill == m - 1) return convert(curp); // { curp.to_ullong() };
+                    q.push({ curp, nskill });
+                    marked.insert(nskill);
+                    curp.set(j, 0);
+                }
+            }
+        }
+        assert(false);
+    }
+};
+
+// indep_148ms
+class Solution {
+public:
+    vector<int> smallestSufficientTeam(vector<string>& rs, vector<vector<string>>& people) {
+        int n = rs.size(), m = 1 << n, np = people.size();
+        // pre-process
+        unordered_map<string, int> map;
+        vector<int> bp(np);
+        for (int i = 0; i < n; i++) map[rs[i]] = i;
+        for (int i = 0; i < np; i++)
+            for (auto s : people[i])
+                if (map.count(s)) bp[i] |= (1 << map[s]);
+        
+        // bfs
+        unordered_set<int> marked{ 0 };
+        vector<int> mtvec;
+        queue<pair<int, vector<int>>> col;
+        col.push(make_pair(0, mtvec));
+        
+        while (!col.empty()) {
+            auto pre = col.front(); col.pop();
+            vector<int> ppeople = pre.second;
+            int pskill = pre.first;
+            if (pskill == m - 1) return ppeople;
+            
+            for (int i = 0; i < np; i++) {
+                int nskill = pskill | bp[i];
+                if (marked.count(nskill)) continue;
+                
+                marked.insert(nskill);
+                ppeople.push_back(i);
+                col.push(make_pair(nskill, ppeople));
+                ppeople.pop_back();
+            }
+        }
+        assert(false);
+    }
+};
+
+
+
+## Testcases
+["a","b","c","d"]
+[["a"],["c","d"],["b"],["a","c","d"]]
+
+["java","nodejs","reactjs"]
+[["java"],["nodejs"],["nodejs","reactjs"]]
+
+["algorithms","math","java","reactjs","csharp","aws"]
+[["algorithms","math","java"],["algorithms","math","reactjs"],["java","csharp","aws"],["reactjs","csharp"],["csharp","math"],["aws","java"]]
+
+["gkgtfxpvxnxlbhxu","baayobms","yomqrposuurmvisx","vsftojpcp","pjovtkytubbouq","hlmvucyi","chpzrslbtd","uighcqpiteg"]
+[["pjovtkytubbouq"],["baayobms"],["baayobms","pjovtkytubbouq"],["chpzrslbtd"],[],["yomqrposuurmvisx"],["uighcqpiteg"],[],["gkgtfxpvxnxlbhxu","yomqrposuurmvisx","uighcqpiteg"],[],["pjovtkytubbouq","uighcqpiteg"],["yomqrposuurmvisx"],[],[],[],["pjovtkytubbouq"],["gkgtfxpvxnxlbhxu","yomqrposuurmvisx","pjovtkytubbouq","uighcqpiteg"],["yomqrposuurmvisx","pjovtkytubbouq"],["chpzrslbtd"],["pjovtkytubbouq"],[],[],["baayobms"],["yomqrposuurmvisx","chpzrslbtd"],["yomqrposuurmvisx","pjovtkytubbouq"],["pjovtkytubbouq"],[],["yomqrposuurmvisx"],[],["yomqrposuurmvisx","pjovtkytubbouq"],[],[],[],["yomqrposuurmvisx"],[],["pjovtkytubbouq"],[],[],[],["vsftojpcp"],[],["yomqrposuurmvisx","pjovtkytubbouq"],[],[],["gkgtfxpvxnxlbhxu"],["yomqrposuurmvisx"],["pjovtkytubbouq","chpzrslbtd"],["uighcqpiteg"],["pjovtkytubbouq"],["yomqrposuurmvisx","pjovtkytubbouq","uighcqpiteg"],[],["pjovtkytubbouq"],[],["chpzrslbtd"],["hlmvucyi"],["yomqrposuurmvisx","pjovtkytubbouq"],["pjovtkytubbouq"],[],["yomqrposuurmvisx"],[]]
+
+["hfkbcrslcdjq","jmhobexvmmlyyzk","fjubadocdwaygs","peaqbonzgl","brgjopmm","x","mf","pcfpppaxsxtpixd","ccwfthnjt","xtadkauiqwravo","zezdb","a","rahimgtlopffbwdg","ulqocaijhezwfr","zshbwqdhx","hyxnrujrqykzhizm"]
+[["peaqbonzgl","xtadkauiqwravo"],["peaqbonzgl","pcfpppaxsxtpixd","zshbwqdhx"],["x","a"],["a"],["jmhobexvmmlyyzk","fjubadocdwaygs","xtadkauiqwravo","zshbwqdhx"],["fjubadocdwaygs","x","zshbwqdhx"],["x","xtadkauiqwravo"],["x","hyxnrujrqykzhizm"],["peaqbonzgl","x","pcfpppaxsxtpixd","a"],["peaqbonzgl","pcfpppaxsxtpixd"],["a"],["hyxnrujrqykzhizm"],["jmhobexvmmlyyzk"],["hfkbcrslcdjq","xtadkauiqwravo","a","zshbwqdhx"],["peaqbonzgl","mf","a","rahimgtlopffbwdg","zshbwqdhx"],["xtadkauiqwravo"],["fjubadocdwaygs"],["x","a","ulqocaijhezwfr","zshbwqdhx"],["peaqbonzgl"],["pcfpppaxsxtpixd","ulqocaijhezwfr","hyxnrujrqykzhizm"],["a","ulqocaijhezwfr","hyxnrujrqykzhizm"],["a","rahimgtlopffbwdg"],["zshbwqdhx"],["fjubadocdwaygs","peaqbonzgl","brgjopmm","x"],["hyxnrujrqykzhizm"],["jmhobexvmmlyyzk","a","ulqocaijhezwfr"],["peaqbonzgl","x","a","ulqocaijhezwfr","zshbwqdhx"],["mf","pcfpppaxsxtpixd"],["fjubadocdwaygs","ulqocaijhezwfr"],["fjubadocdwaygs","x","a"],["zezdb","hyxnrujrqykzhizm"],["ccwfthnjt","a"],["fjubadocdwaygs","zezdb","a"],[],["peaqbonzgl","ccwfthnjt","hyxnrujrqykzhizm"],["xtadkauiqwravo","hyxnrujrqykzhizm"],["peaqbonzgl","a"],["x","a","hyxnrujrqykzhizm"],["zshbwqdhx"],[],["fjubadocdwaygs","mf","pcfpppaxsxtpixd","zshbwqdhx"],["pcfpppaxsxtpixd","a","zshbwqdhx"],["peaqbonzgl"],["peaqbonzgl","x","ulqocaijhezwfr"],["ulqocaijhezwfr"],["x"],["fjubadocdwaygs","peaqbonzgl"],["fjubadocdwaygs","xtadkauiqwravo"],["pcfpppaxsxtpixd","zshbwqdhx"],["peaqbonzgl","brgjopmm","pcfpppaxsxtpixd","a"],["fjubadocdwaygs","x","mf","ulqocaijhezwfr"],["jmhobexvmmlyyzk","brgjopmm","rahimgtlopffbwdg","hyxnrujrqykzhizm"],["x","ccwfthnjt","hyxnrujrqykzhizm"],["hyxnrujrqykzhizm"],["peaqbonzgl","x","xtadkauiqwravo","ulqocaijhezwfr","hyxnrujrqykzhizm"],["brgjopmm","ulqocaijhezwfr","zshbwqdhx"],["peaqbonzgl","pcfpppaxsxtpixd"],["fjubadocdwaygs","x","a","zshbwqdhx"],["fjubadocdwaygs","peaqbonzgl","x"],["ccwfthnjt"]]

@@ -29,13 +29,49 @@ Note:
 # (I) Greedy
 The idea is very simple. We start from the largest element of each array and if b > a, then we fill the current position with the smallest element in A. Then increment a pointer pointing to the smallest element in A not used yet.
 
+// others_concise
+https://leetcode.com/problems/advantage-shuffle/discuss/149831/C%2B%2B-6-lines-greedy-O(n-log-n)
+
+// others_map
+https://leetcode.com/problems/advantage-shuffle/discuss/149840/C%2B%2BJava-Greedy-Solution-Using-Map
+
+
+
 
 ## Code
 # (I) Greedy
 _(ii) Map_
 **** WAIT ****
 
+
 _(i) Sort_
+// 2nd_visit_Dec-26-2019
+class Solution {
+public:
+    vector<int> ini(int n, vector<int>& v) {
+        vector<int> id(n, 0);
+        iota(id.begin(), id.end(), 0);
+        sort(id.begin(), id.end(), [&v](int i, int j) {
+            return v[i] < v[j];
+        });
+        return id;
+    }
+    
+    vector<int> advantageCount(vector<int>& A, vector<int>& B) {
+        int n = A.size();
+        vector<int> id(n, 0), ida = ini(n, A), idb = ini(n, B);
+        
+        int loa = 0, hia = n - 1;
+        vector<int> res(n);
+        for (int hib = n - 1; hib >= 0; hib--)
+            id[idb[hib]] = A[ida[hia]] > B[idb[hib]] ? ida[hia--] : ida[loa++];
+        // construct
+        for (int i = 0; i < n; i++)
+            res[i] = A[id[i]];
+        return res;
+    }
+};
+
 // indep
 class Solution {
 public:

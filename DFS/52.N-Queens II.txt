@@ -1,0 +1,29 @@
+## Specification
+The n-queens puzzle is the problem of placing n queens on an n×n chessboard such that no two queens attack each other. Given an integer n, return the number of distinct solutions to the n-queens puzzle.
+
+
+## Code
+# (II)
+
+# (I) DFS
+// indep_0ms
+class Solution {
+public:
+    int res = 0;
+    
+    int dfs(int r, int n, int col, int ldiag, int rdiag) {
+        if (r == n) return 1;
+        
+        int res = 0;
+        for (int c = 0; c < n; c++) if ((col & (1 << c)) == 0) {
+            int ld = n - 1 - c + r, rd = r + c;
+            if ((ldiag & (1 << ld)) || (rdiag & (1 << rd))) continue;
+            res += dfs(r + 1, n, col | (1 << c), ldiag | (1 << ld), rdiag | (1 << rd));   
+        }
+        return res;
+    }
+    
+    int totalNQueens(int n) {
+        return dfs(0, n, 0, 0, 0);
+    }
+};

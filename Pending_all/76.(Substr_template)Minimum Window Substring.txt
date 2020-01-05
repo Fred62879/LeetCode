@@ -1,0 +1,124 @@
+## Similar
+LT30
+
+## Specification
+Given a string S and a string T, find the minimum window in S which will contain all the characters in T in complexity O(n).
+
+Example:
+Input: S = "ADOBECODEBANC", T = "ABC"
+Output: "BANC"
+Note:
+
+If there is no such window in S that covers all characters in T, return the empty string "". If there is such window, you are guaranteed that there will always be only one unique minimum window in S.
+
+
+
+## Testcases
+"a"
+"aa"
+
+"aaaaaaaaaaaabbbbbcdd"
+"abcdd"
+
+
+
+## Idea
+# (I) Two pointers
+// most concise
+https://leetcode.com/problems/minimum-window-substring/discuss/26808/Here-is-a-10-line-template-that-can-solve-most-'substring'-problems
+
+https://leetcode.com/problems/minimum-window-substring/discuss/26917/16ms-simple-and-neat-c%2B%2B-solution-only-using-a-vector.-Detailed-explanation
+
+// map
+https://leetcode.com/problems/minimum-window-substring/discuss/26810/Java-solution.-using-two-pointers-%2B-HashMap
+- Similar idea as indep, but use a map to record the count of each char in t. When going thru s, each time we encounter a char in t, (i) if we are expanding the window (i.e. right sliding hi), we decrement the count (keep subtracting after reaching zero), (ii) if we are minimizing the window (right-sliding lo), we increment the count. 
+
+// indep
+Wordy. We maintain two pointers lo and hi. Since the smallest window must startsand ends with char in t, we first trim irrelevant chars in s. Then we locate the first window that contain all chars in t. Then to minimize the size of this window, we iteratively do the following operation:
+
+Increment lo and trim irrelevant chars such the exactly one char in t is not covered. Note that we may need to increment and trim for multiple times. For instance, if s is (ababaaa...) and t is (ab) then if we want to leave either a or b uncovered, since s contains more than one a, to completely remove the coverage of that char, we have to increment and trim until this is done. Then we increment hi until all chars in t are covered again.
+
+
+
+## Code
+# (I) Two pointers
+// template form
+** WAIT **
+
+// map_derived_20ms_9.8MB
+class Solution {
+public:
+    string minWindow(string s, string t) {
+        unordered_map<char, int> map;
+        for (char c : t) map[c]++;
+        int n = s.size(), count = t.size(), lo = 0, hi = -1;
+        int tlo, len = INT_MAX;
+
+	// upgrade hi until an exact cover of t
+        while(++hi < n) if (map.count(s[hi])) {
+            if (--map[s[hi]] >= 0) count--;
+            // t fully matched exactly at hi
+            while(count == 0) { // upgrade lo to minimize current window
+                if (map.count(s[lo]) && ++map[s[lo]] > 0) {
+                    count++;
+                    if (hi - lo + 1 < len)
+                        len = hi - lo + 1, tlo = lo;
+                }
+		// we keep incrementing lo after obtaining optimal
+		// to destroy the exact match. In the nxt cycle, we
+		// incrementing hi again to seek another hi
+                lo++;
+            }
+        }
+        return len == INT_MAX ? "" : s.substr(tlo, len);
+    }
+};
+
+
+// indep_unfinished
+class Solution {
+public:
+    void update() {
+        
+    }
+    
+    string minWindow(string s, string t) {
+        vector<int> run(26, 0), ref(26, 0);
+        for (char c : t) ref[c -'A']++;
+        int sz = 0, lo = 0, hi = 0, minlen = INT_MAX, tlo = 0, thi = 0;
+        
+        while(!ref[s[lo] -'A']) // trim irrelevant chars, window must start with certain char in t
+            if (++lo == s.size()) return "";
+        for (hi = lo; hi < s.size(); hi++) // find first window
+            if (run[s[hi] -'A']++ < ref[s[hi] -'A'] && ++sz == t.size()) break;
+        
+        while(true) { // alternate between lo and hi incrementation to minimize window size
+            while(true) { // increment lo
+                int cur = s[lo] -'A';
+                cout << "*" << lo << " " << sz << endl;
+                if (--run[cur] < ref[cur]) {
+                    cout << "&" << sz << endl;
+                    if (sz == t.size() - 1) break;
+                    sz--;
+                    if (minlen > hi - lo + 1)
+                        minlen = hi - lo + 1, tlo = lo, thi = hi;
+                }
+                lo++;
+            }
+            for (; hi < s.size(); hi++) { // increment hi
+                cout << lo << " " << hi << " " << sz << endl;
+                int cur = s[hi] -'A';
+                if (run[cur]++ < ref[cur]) {
+                    sz++;
+                    if (minlen > hi - lo + 1)
+                        minlen = hi - lo + 1, tlo = lo, thi = hi;
+                    break;
+                }
+            }
+            if (lo == s.size() - 1) break;
+        }
+        cout << tlo << " " << thi << endl;
+        return s.substr(tlo, thi - tlo + 1);
+    }
+};
+

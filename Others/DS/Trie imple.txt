@@ -1,0 +1,165 @@
+// Imple 1 and usage
+class Solution {
+    struct Node {
+        bool valid = false;
+        unique_ptr<Node> childs[26];
+    };
+    Node dict;
+
+public:
+    vector<string> findAllConcatenatedWordsInADict(vector<string>& words) {
+	*** Construct TRIE ***
+        // build radix tree of reversed words
+        for (const string &word: words) {
+            Node *node = &dict;
+            for (int i = word.length() - 1; i >= 0; i--) {
+                int idx = (word[i] - 'a');
+                if (!node->childs[idx]) {
+                    node->childs[idx] = make_unique<Node>();
+                }
+                node = node->childs[idx].get();
+            }
+            node->valid = true;
+        }
+        
+        vector<string> result;
+		
+        // iterate and try to use dp to break the word
+        for (const string &word: words) if (!word.empty()) {
+            int n = word.size();
+            bool dp[n + 1];
+            dp[0] = true;
+
+            for (int i = 1; i <= n; i++) {
+                dp[i] = false;
+                Node *node = &dict;
+                
+		for (int j = i - 1; j >= 0; j--) {
+                    int idx = (word[j] - 'a');
+                    if (!node->childs[idx]) break;
+
+                    if (node->childs[idx]->valid && dp[j]) {
+                        dp[i] = !(j == 0 && i == n); // rule out self match
+                        break;
+                    }
+                    node = node->childs[idx].get();
+                }
+            }
+            if (dp[n]) result.push_back(word);
+        }
+        return result;
+    }
+};
+
+
+// 2nd
+LT472
+
+
+// 3rd
+class Solution {
+private:
+    struct Trie {
+        bool isEnd;
+        vector<Trie *>next;
+        
+        Trie() {
+            next = vector<Trie *>(26, nullptr);
+            isEnd = false;
+        }
+    };
+
+    string lastWord;
+    queue<Trie *> lastVisited;
+    
+    void addWord(const string &word, Trie *root) {
+        for (char w: word) {
+            if (!root->next[w - 'a']) {
+                root->next[w - 'a'] = new Trie();
+            }
+            root = root->next[w - 'a'];
+        }
+        
+        root->isEnd = true;
+    }
+    
+    Trie * buildTrie(const vector<string> &words) {
+        Trie *root = new Trie();
+        
+        for (auto word: words) {
+            addWord(word, root);
+        }
+        
+        return root;
+    }
+    
+    bool testConcatenated(Trie *root, string &word) {
+        queue<Trie *> visited;
+        int nullCount = 0;
+        int lastIndex = word.find(lastWord);
+        string thisWord = word;
+        
+        if (!lastWord.empty() && lastIndex == 0) {
+            visited = lastVisited;
+            thisWord = word.substr(lastWord.length());
+        } else {
+            visited.push(nullptr);
+        }
+        for (char w: thisWord) {
+            int size = visited.size();
+            
+            nullCount = 0;
+            for (int i = 0; i < size; i++) {
+                Trie *node = visited.front();
+                
+                visited.pop();
+                if (!node) {
+                    if (root->next[w - 'a']) {
+                        node = root->next[w - 'a'];
+                        visited.push(node);
+                    }
+                } else {
+                    node = node->next[w - 'a'];
+                    
+                    if (node) {
+                        visited.push(node);
+                    }
+                }
+                
+                if (node && node->isEnd) {
+                    nullCount++;
+                }
+            }
+            
+            if (nullCount) {
+                visited.push(nullptr);
+            }
+        }
+        
+        lastVisited = visited;
+        lastWord = word;
+        
+        return nullCount > 1;
+    }
+
+public:
+    vector<string> findAllConcatenatedWordsInADict(vector<string>& words) {
+        Trie *root = new Trie();
+        vector<string> result;
+        
+        sort(words.begin(), words.end(), [](const string &a, const string &b) {
+            if (a.length() == b.length()) {
+                return a < b;
+            }
+            return a.length() < b.length();
+        });
+        for (auto word: words) {
+            addWord(word, root);
+            if (testConcatenated(root, word)) {
+                result.push_back(word);
+            }
+        }
+        
+        return result;
+    }
+};

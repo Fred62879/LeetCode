@@ -1,0 +1,83 @@
+## Specification
+Return the largest possible k such that there exists a_1, a_2, ..., a_k such that:
+
+Each a_i is a non-empty string;
+Their concatenation a_1 + a_2 + ... + a_k is equal to text;
+For all 1 <= i <= k,  a_i = a_{k+1 - i}.
+
+Example 1:
+Input: text = "ghiabcdefhelloadamhelloabcdefghi"
+Output: 7
+Explanation: We can split the string on "(ghi)(abcdef)(hello)(adam)(hello)(abcdef)(ghi)".
+
+Example 2:
+Input: text = "merchant"
+Output: 1
+Explanation: We can split the string on "(merchant)".
+
+Example 3:
+Input: text = "antaprezatepzapreanta"
+Output: 11
+Explanation: We can split the string on "(a)(nt)(a)(pre)(za)(tpe)(za)(pre)(a)(nt)(a)".
+
+Example 4:
+Input: text = "aaa"
+Output: 3
+Explanation: We can split the string on "(a)(a)(a)".
+
+Constraints:
+text consists only of lowercase English characters.
+1 <= text.length <= 1000
+
+
+
+## Ideas
+# (II) Greedy
+// derived
+This is essentially a bottom up version with an optimization. If we have two substrs (of length >= 1) matched at front and tail, then we can match them immediately without checking further for longer matched words.
+
+Proof: for word a-W-a. As we are matching the front and tail a of the word, if we expect longer matched front and tail words exist, then W can be divided into sa-V-sa which gives asa-V-asa = a-W-a. If we match a immediately, and keep doing this thru out the whole following process, then we will have total match being 6 + num(V). While if we keep going until we match front asa with tail asa, then we end up with 2 + num(V).
+
+
+# (I) Recursive
+// indep
+The idea is (i) if the front and tail char are identical, then they can be matched immediately to maximize the result; (ii), otherwise, we trace back from the tail char to find char identicla to front char. In this process, each time we reach one such char, we check whether the 2 substrings matches.
+
+
+
+## Code
+# (II) Greedy
+// derived
+
+
+
+# (I) Recursive
+// indep
+class Solution {
+public:
+    // max # of decomposition for text[lo:hi]
+    int solve(int lo, int hi, string text) {
+        if (lo > hi) return 0;
+        if (lo == hi) return 1;
+        if (text[lo] == text[hi]) return 2 + solve(lo + 1, hi - 1, text);
+        
+        int cur = 1;
+        for (int i = hi; i > lo; i--) if (text[i] == text[lo]) {
+            int len = hi - i + 1, matched = 1;
+            
+            if (hi + lo > 2 * i - 1) cur = max(cur, 1);
+            for (int j = 0; matched && j < len; j++)
+                if (text[lo + j] != text[i + j]) matched = 0;
+
+            if (matched) {
+		cur = max(cur, 2 + solve(lo + len, hi - len, text));
+		break; // optimized
+	    }
+        }
+        return cur;
+    }
+    
+    int longestDecomposition(string text) {
+        return solve(0, text.size() - 1, text);
+    }
+};

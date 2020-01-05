@@ -1,0 +1,123 @@
+## Specification
+Consider the string s to be the infinite wraparound string of "abcdefghijklmnopqrstuvwxyz", so s will look like this: "...zabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcd....".
+
+Now we have another string p. Your job is to find out how many unique non-empty substrings of p are present in s. In particular, your input is the string p and you need to output the number of different non-empty substrings of p in the string s.
+
+Note: p consists of only lowercase English letters and the size of p might be over 10000.
+
+Example 1:
+Input: "a"
+Output: 1
+
+Example 2:
+Input: "cac"
+Output: 2
+
+Example 3:
+Input: "zab"
+Output: 6
+
+
+
+## Testcases
+"deadefgxyzabcde"
+
+
+## Ideas
+# (I) DP
+_(ii) def 2_
+dp[i] denotes the len of longest valid subseq starting from p[i]
+
+https://leetcode.com/problems/unique-substrings-in-wraparound-string/discuss/95447/C%2B%2B-two-passes-O(1)-space.-find-the-longest-substring-starting-from-each-letter
+
+// 2nd visit_indep
+Let dp[i] (length 26) denotes len of longest consecutive string starting from each char. The answer is then simply the sum of this dp array. This array ensures that we do not count any substr more than once since we count substrs starting from each char.
+
+When imple this idea, we iterate over the array and stopping each time when the running substr is not consecutive anymore. Then we go thru this subtr and update the len of substr starting from each char while decrementing len. Note that we can optimize this process by stopping this iteratiing after 26 times as if we go further, the length for any char is not possible to exceed what we encountered before.
+
+
+_(i) def 1_
+// ini_concise
+Since s harbors only alphabetically continuous subseq (z to a can also be treated as continuous), for a particular char p[i], substrs starting from it would present in s only if the substr is continuous. This idea is very simple to imple. However, we should also be careful about duplicate. To avoid repetitive counting, we can maintain an array recording the longest length of valid subseq starting from p[i]. 
+
+For p being "deadefgde", when we reach the second d, since the len is finally resolved as 4, longer than its previous value being 2, we know that an extra two chars present downstream of it and for the previously discovered subseq starting from d (de & d), we can expand them (becoming def & defg). However, when we reach the 3rd d, since the len is equal to 2 being smaller, we know that all subseq now would be duplicates of previously counted subseq.
+
+
+
+## Code
+# (I) DP
+_(ii) def 2_
+**** WAIT ****
+
+
+_(i) def 1_
+// 2nd_visit-Dec-25-2019
+class Solution {
+public:
+    int findSubstringInWraproundString(string p) {
+        if (p.size() <= 1) return p.size();
+        
+        int dp[26]{}; //dp[i], len of longest susbtr starting from 'a'+ i
+        int n = p.size(), res = 0, st = 0, i, len;
+        for (i = 1; i < n; i++) {
+            if (p[i] - p[i - 1] == 1 || (p[i - 1] == 'z' && p[i] == 'a')) continue;
+            len = i - st;
+            for (int j = st; j < i && j < st + 26; j++)
+                dp[p[j] -'a'] = max(len--, dp[p[j] -'a']);
+            st = i;
+        }
+        // final round
+        len = i - st;
+        for (int j = st; j < i && j < st + 26; j++)
+            dp[p[j] -'a'] = max(len--, dp[p[j] -'a']);
+        // sum up
+        for (int i = 0; i < 26; i++)
+            if (dp[i]) res += dp[i];
+        return res;
+    }
+};
+
+// bottom-up_derived
+class Solution {
+public:
+    int findSubstringInWraproundString(string p) {
+        int n = p.size(), ans = 0, len = 0;
+        int dp[26]{}; // dp[i], len of continuous char seq terminating at i+'a'
+        for (int i = 0; i < n; i++) {
+            int cur = p[i] -'a';
+            if (i > 0 && (cur - 1 + 26) % 26 != p[i - 1] -'a') len = 0;
+            if (++len > dp[cur]) {
+                ans += len - dp[cur];
+                dp[cur] = len;
+            }
+        }
+        return ans;
+    }
+};
+
+// top-down_indep
+class Solution {
+public:
+    vector<int> dp;
+    int n, ans;
+    
+    // obtain len of longest continuous subseq start from p[i]
+    // while updating dp and ans
+    int solve(int i, string& p) {
+        if (i == n - 1 || (p[i] -'a' + 1) % 26 != p[i + 1] -'a') {
+            if (!dp[p[i] -'a']) ans++, dp[p[i] -'a'] = 1;
+            return 1;
+        }
+        int len = 1 + solve(i + 1, p), prev = dp[p[i] -'a'];
+        if (len > prev) ans += len - prev; // unique subseq starting from p[i]
+        dp[p[i] -'a'] = max(len, prev);
+        return len;
+    }
+    
+    int findSubstringInWraproundString(string p) {
+        n = p.size(), ans = 0;
+        dp.assign(26, 0); // dp[i], len of continuous char seq start from i+'a'
+        for (int i = 0; i < n; i += solve(i, p)); // substr start
+        return ans;
+    }
+};

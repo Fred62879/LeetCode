@@ -1,0 +1,145 @@
+## Specification
+There is a strange printer with the following two special requirements: The printer can only print a sequence of the same character each time. At each turn, the printer can print new characters tarting from and ending at any places, and will cover the original existing characters. Given a string consists of lower English letters only, your job is to count the minimum number of turns the printer needed in order to print it.
+
+Example 1:
+Input: "aaabbb"
+Output: 2
+Explanation: Print "aaa" first and then print "bbb".
+
+Example 2:
+Input: "aba"
+Output: 2
+Explanation: Print "aaa" first and then print "b" from the second place of the string, 
+which will cover the existing character 'a'.
+
+Hint: Length of the given string will not exceed 100.
+
+
+
+## Testcases
+"acbdeaadb"
+"baacdddaaddaaaaccbddbcabdaabdbbcdcbbbacbddcabcaaa"
+
+
+
+## Idea
+# (II) DP_bottom-up
+// others
+[https://leetcode.com/problems/strange-printer/discuss/171837/Bottom-up-DP-solution-in-C%2B%2B-29ms]
+
+[https://leetcode.com/problems/strange-printer/discuss/350087/DP-n3-move-diagonal-wise-C%2B%2B]
+
+// indep
+Same idea as top-down
+
+
+# (I) DP_top-down
+Same idea as remove boxes
+
+
+
+
+## Code
+# (II) DP_bottom-up
+// others_diff idea
+
+
+// indep_20ms
+class Solution {
+public:
+    int strangePrinter(string s) {
+        if (s.size() == 0) return 0;
+        
+        vector<char> letr;
+        // fold idential chars in s
+        for (int i = 0; i < s.size() - 1; i++)
+            if (s[i] != s[i + 1])
+                letr.push_back(s[i]);
+        letr.push_back(s[s.size() - 1]);
+        int m = letr.size();
+        // bottom-up dp
+        int dp[m][m]{}; // dp[i][j], min # of turns to print letr[i:j]
+        for (int i = 0; i < m; i++) dp[i][i] = 1;
+        
+        for (int len = 2; len <= m; len++) {
+            for (int i = 0, j = i + len - 1; j < m; i++, j++) {
+                dp[i][j] = 1 + dp[i + 1][j];
+                for (int k = i + 1; k <= j; k++) if (letr[i] == letr[k])
+                    dp[i][j] = min(dp[i][j], dp[i + 1][k - 1] + dp[k][j]);
+            }
+        }
+        return dp[0][m - 1];
+    }
+};
+
+
+# (I) DP_top-down
+_(ii) 2nd-visit_2019-08-10_
+// indep
+class Solution {
+public:
+    vector<vector<int>> dp;
+    vector<char> letr;
+    int m;
+    
+    // min # of turns to print out letr[lo:hi]
+    int solve(int lo, int hi) {
+        if (lo > hi) return 0;
+        if (dp[lo][hi]) return dp[lo][hi];
+        
+        int isolate = 1 + solve(lo + 1, hi); // print s[lo] independently
+        int bound = INT_MAX;
+        for (int nxt = lo + 1; nxt <= hi; nxt++) if (letr[nxt] == letr[lo]) {
+            int mid = solve(lo + 1, nxt - 1), rest = solve(nxt, hi);
+            bound = min(bound, mid + rest);
+        }
+        return dp[lo][hi] = min(isolate, bound);
+    }
+    
+    int strangePrinter(string s) {
+        if (s.size() == 0) return 0;
+        // fold idential chars in s
+        for (int i = 0; i < s.size() - 1; i++)
+            if (s[i] != s[i + 1])
+                letr.push_back(s[i]);
+        letr.push_back(s[s.size() - 1]);
+        m = letr.size();
+        // dp
+        dp.assign(m, vector<int>(m, 0));
+        for (int i = 0; i < m; i++) dp[i][i] = 1;
+        return solve(0, m - 1);
+    }
+};
+
+_ (i) 1st attempt
+// derived from remove boxes
+class Solution {
+    
+    int[][] dp;
+    ArrayList<Character> ele;
+    
+    private int solve(int lo, int hi) {
+        if (lo > hi) return 0;
+        if (dp[lo][hi] != 0) return dp[lo][hi];
+        int cur = solve(lo + 1, hi) + 1; // lo inclusive printed ahead of lo+1 onward
+        for (int i = lo + 1; i <= hi; i++) {
+            if (ele.get(lo) != ele.get(i)) continue;
+            int mid = solve(lo + 1, i - 1);
+            int fol = solve(i, hi);
+            cur = Math.min(cur, mid + fol);
+        }
+        dp[lo][hi] = cur;
+        return cur;
+    }
+    
+    public int strangePrinter(String s) {
+        int n = s.length(), m = 0, ans = Integer.MAX_VALUE;
+        ele = new ArrayList<Character>();
+        for (int j = 1, i = 0; j <= n; j++) {
+            if (j != n && s.charAt(i) == s.charAt(j)) continue;
+            ele.add(s.charAt(j-1)); i = j; m++;
+        }
+        dp = new int[m][m];
+        return solve(0, m-1);
+    }
+}

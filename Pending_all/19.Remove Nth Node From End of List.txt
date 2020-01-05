@@ -1,0 +1,74 @@
+## Specification
+Given a linked list, remove the n-th node from the end of list and return its head.
+Example:
+Given linked list: 1->2->3->4->5, and n = 2. After removing the second node from the end, the linked list becomes 1->2->3->5.
+
+Note: Given n will always be valid.
+Follow up: Could you do this in one pass?
+
+
+## Ideas
+# (Summary)
+https://leetcode.com/problems/remove-nth-node-from-end-of-list/discuss/8826/Is-there-any-one-think-this-is-a-stupid-one-Wtf-difference-with-2-pointers-1-pass-with-1-pointer-2-pass
+
+
+# (III) Two pass
+
+
+# (II) Two pointers
+// others
+https://leetcode.com/problems/remove-nth-node-from-end-of-list/discuss/8812/My-short-C%2B%2B-solution
+> Mem leakage relevant
+
+// others_two times dereference
+https://leetcode.com/problems/remove-nth-node-from-end-of-list/discuss/8804/Simple-Java-solution-in-one-pass
+> Sth interesting in discussion
+
+// others_same as above
+https://leetcode.com/problems/remove-nth-node-from-end-of-list/discuss/8843/C%2B%2B-solution-easy-to-understand-with-explanations.
+> One soln in discussion without creating a dummy head.
+
+// others_one time dereference
+https://leetcode.com/problems/remove-nth-node-from-end-of-list/discuss/239554/True-one-pass
+
+
+# (I) Mem
+// indep
+We can simply store all nodes in an array and after collecting all nodes, we disturb the link between the target node and its parent and build a new link from its parent to its child
+
+
+
+## Code
+# (II) Two pointers
+
+
+# (I)
+// indep_0ms_8.6MB
+class Solution {
+public:
+    ListNode* removeNthFromEnd(ListNode* head, int n) {
+        if (n == 0) return head;
+        
+        vector<ListNode*> record;
+        ListNode* dummy = new ListNode(0), *cur = dummy;
+        dummy->next = head;
+        
+        while(cur) {
+            record.push_back(cur);
+            cur = cur->next;
+        }
+        
+        int m = record.size();
+        if (n == m) return record[1];
+        record[m - n - 1]->next = n == 1 ? NULL : record[m - n + 1];
+        return dummy->next;
+    }
+};
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode(int x) : val(x), next(NULL) {}
+ * };
+ */

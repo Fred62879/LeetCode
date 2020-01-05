@@ -1,0 +1,155 @@
+## Specification
+The n-queens puzzle is the problem of placing n queens on an n×n chessboard such that no two queens attack each other.
+
+Given an integer n, return all distinct solutions to the n-queens puzzle.Each solution contains a distinct board configuration of the n-queens' placement, where 'Q' and '.' both indicate a queen and an empty space respectively.
+
+Example:
+Input: 4
+Output: [
+ [".Q..",  // Solution 1
+  "...Q",
+  "Q...",
+  "..Q."],
+
+ ["..Q.",  // Solution 2
+  "Q...",
+  "...Q",
+  ".Q.."]
+]
+Explanation: There exist two distinct solutions to the 4-queens puzzle as shown above.
+
+
+## Ideas
+# (I) DFS
+// others_fewer bits
+https://leetcode.com/problems/n-queens/discuss/19866/C%2B%2B-6ms-solution-use-bitmask
+
+This one does not reresent the left and right diagnoal using diagnoal levels which use more than n bits to represent. The basic idea is that we only need to decide whether a specific column is valid. Since we are traversing from row 0 and increment one row each time, we can right shift bits of left diagonal. For instance, if col 1 is taken at row 0, then col 2 cannot be taken at row 1, col 3 cannot be taken at row 2. This is basically we shift right one bit col 0 as we traverse each row.
+
+// others
+https://leetcode.com/problems/n-queens/discuss/19808/Accepted-4ms-c%2B%2B-solution-use-backtracking-and-bitmask-easy-understand.
+
+
+
+## Code
+# (I) DFS
+// others
+class Solution {
+public:
+    vector<string> bd;
+    vector<vector<string>> res;
+    
+    void dfs(int i, int n, int ld, int rd, int col) {
+        if (i == n) { res.push_back(bd); return; }
+        
+        for (int j = 0; j < n; j++) {
+            int cur = 1 << j;
+            if ((cur & ld) == 0 && (cur & rd) == 0 && (cur & col) == 0) {
+                bd[i][j] = 'Q';
+                dfs(i + 1, n, (ld | cur) >> 1, (rd | cur) << 1, col | (cur));
+                bd[i][j] = '.';
+            }
+        }
+    }
+    
+    vector<vector<string>> solveNQueens(int n) {
+        bd.assign(n, string(n, '.'));
+        dfs(0, n, 0, 0, 0);
+        return res;
+    }
+};
+
+// 2nd_visit-Nov-2-2019_indep_bin-mask
+class Solution {
+public:
+    vector<string> board;
+    vector<vector<string>> res;
+    
+    void dfs(int r, int n, int col, int ldiag, int rdiag) {
+        if (r == n) { res.push_back(board); return; }
+        
+        for (int c = 0; c < n; c++) if ((col & (1 << c)) == 0) {
+            int ld = n - 1 - c + r, rd = r + c;
+            if ((ldiag & (1 << ld)) || (rdiag & (1 << rd))) continue;
+            board[r][c] = 'Q';
+            dfs(r + 1, n, col | (1 << c), ldiag | (1 << ld), rdiag | (1 << rd));
+            board[r][c] = '.';
+        }
+    }
+    
+    vector<vector<string>> solveNQueens(int n) {
+        board.assign(n, string(n, '.'));
+        dfs(0, n, 0, 0, 0);
+        return res;
+    }
+};
+
+
+// derived_bit mask
+class Solution {
+public:
+    vector<int> restricts = { 0, 0, 0 };
+    vector<string> board;
+    vector<vector<string>> res;
+    
+    void dfs(int r, int n, vector<string>& board) {
+        if (r == n) { res.push_back(board); return; }
+        
+        for (int c = 0; c < n; c++) {
+            int lftdiag = n - 1 - c + r, rhtdiag = r + c;
+            if (restricts[0] & (1 << c) || restricts[1] & (1 << lftdiag) || restricts[2] & (1 << rhtdiag))
+                continue;
+            restricts[0] |= (1 << c), restricts[1] |= (1 << lftdiag), restricts[2] |= (1 << rhtdiag);
+            board[r][c] = 'Q';
+            dfs(r + 1, n, board);
+            board[r][c] = '.';
+            restricts[0] &= ~(1 << c), restricts[1] &= ~(1 << lftdiag), restricts[2] &= ~(1 << rhtdiag);
+        }
+    }
+    
+    vector<vector<string>> solveNQueens(int n) {
+       if (n == 0) return {};
+        board.assign(n, string(n, '.'));
+        dfs(0, n, board);
+        return res;
+    }
+};
+
+// indep
+class Solution {
+public:
+    vector<string> all;
+    vector<int> vacantCol;
+    vector<vector<string>> res;
+    vector<unordered_map<int, string>> mem;
+    
+    void dfs(int r, int prevc, int n, int hashPrevCol, vector<string> run) {
+        if (mem[r].count(prevc)) {
+            run.insert(run.end(), mem[nhash].begin(), mem[nhash].end());
+            res.push_back(run);
+            return;
+        }
+        if (r == n) { res.push_back(run); return; }
+        
+        for (int i = 0; i < n; i++) if (vacantCol[i] && (prevc == -1 || abs(i - prevc) > 1)) {
+            run.push_back(all[i]);
+            vacantCol[i] = 0;
+            dfs(r + 1, i, n, run);
+            vacantCol[i] = 1;
+            run.pop_back();
+        }
+    }
+    
+    vector<vector<string>> solveNQueens(int n) {
+        if (n == 0) return {};
+        all.assign(n, "");
+        vacantCol.assign(n, 1);
+        dp.assign(n, vector<unordered_map<int, string>>(n, unordered_map<int, string>()));
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                all[i] += j == i ? "Q" : ".";
+        vector<string> mtv;
+        dfs(0, -1, n, 0, mtv);
+        return res;
+    }
+};

@@ -1,0 +1,384 @@
+## Specification
+
+
+
+## Ideas
+# (III) BFS (A*)
+https://leetcode.com/problems/tiling-a-rectangle-with-the-fewest-squares/discuss/414716/Python-two-solutions%3A-backtracking-and-A*-search
+
+There are several variations of this imple. To record the state of each bfs state (# of square taken, skyline/heights, predicted # of squares still needed), we can use either a single vector (reserve the first 1/2 entries) or define a structure. It can be found that struct drag down the running time.
+
+Another important considertaion is how shall we make the heuristic about the # of squares still needed. It is claimed that we can (i) use the # of distinct heights in the height vector or (ii) pre-calculate the min # of squares needed for all possible areas.
+
+It is found that neither perform well than naive BFS. However, the 2nd heuristic does represents a better choice than the first one
+
+
+
+# (II) DFS/Backtracking
+https://leetcode.com/problems/tiling-a-rectangle-with-the-fewest-squares/discuss/414260/8ms-Memorized-Backtrack-Solution-without-special-case!
+
+The idea is to abstractly fill in squares and use a vector to record the heights of the current state. For instance, we can use a vector [0,0,0,0] for a 2x4 rect where entry i represents the heights of area between i and i + 1, i.e. [1,1,2,0] means (heights[0] represets height between 0 and 1):
+     ____
+ ___|    |
+|_|_|____|
+0 1 2    3
+When implementing this idea, each time we locate the shortest area in the lower left corner. For the ex above, we locate 0-2 and we try to fill in all possible squares. But note that we need to start from the largest possible to reduce run time. This is the case because larger squares tend to reduce the total number of squreas needed. Although we are doing dfs, since we backtrack (pruning when current # of squares exceed the global smallest), starting with the largest squares will makes the program coverge more quickly.
+
+Note another optimization is that we can record each heighth status with the # of squares needed to generate it. Once we reach that state again, 
+
+
+# (I) DP (wrong)
+https://leetcode.com/problems/tiling-a-rectangle-with-the-fewest-squares/discuss/414176/Are-you-serious
+
+
+
+
+## Code
+# (III) BFS (A*)
+// others dp heuristic_84ms_44.6MB
+class Solution {
+private:
+    int n, m, area;
+    vector<int> dp;
+    
+    int filled(vector<int>& heights) {
+        for (int i = 2; i < heights.size(); i++)
+            if (heights[i] != n) return 0;
+        return 1;
+    }
+    
+    vector<int> findShort(vector<int>& heights) {
+        int res = 2, minh = INT_MAX;
+        for (int i = 2; i < heights.size(); i++)
+            if (heights[i] < minh) res = i, minh = heights[i];
+        return { res, minh };
+    }
+    
+    int span(int id, vector<int>& heights) {
+        int res = id;
+        while(res < heights.size() && heights[res] == heights[id]) res++;
+        return res - 1;
+    }
+    
+    int heuristic(int i, vector<int>& heights) {
+        int sum = accumulate(heights.begin() + 2, heights.end(), 0);
+        return dp[area - i * i - sum];
+    }
+    
+    void bounding() {
+        dp.assign(n * m + 1, 0);
+        for (int i = 1; i < dp.size(); i++) {
+            int sm = INT_MAX, bd = (int)sqrt(i) + 1;
+            for (int j = 1; j < bd; j++)
+                sm = min(sm, dp[i - j * j]);
+            dp[i] = sm + 1;
+        }
+    }
+    
+public:
+    int tilingRectangle(int n, int m) {
+        if (n == m) return 1;
+        
+        this->n = n, this-> m = m, area = n * m;
+        bounding();
+        auto cmp = [](vector<int> a, vector<int> b) {
+            return a[0] + a[1] > b[0] + b[1];
+        };
+        priority_queue<vector<int>, vector<vector<int>>, decltype(cmp)> pq{cmp};
+        vector<int> ini(m + 2); ini[1] = 1;
+        pq.push(ini);
+        
+        // bfs
+        while(!pq.empty()) {
+            auto cur = pq.top(); pq.pop();
+            int taken = cur[0], pred = cur[1];
+            if (filled(cur)) return taken;
+            
+            // locate shortest fill and span of that fill
+            auto shorts = findShort(cur);
+            int lo = shorts[0], height = shorts[1];
+            int hi = span(lo, cur), lg = min(hi - lo + 1, n - height);
+            
+            // try filling with all possible squares
+            for (int i = lg; i >= 1; i--) {
+                vector<int> nxt(cur.begin(), cur.end());
+                for (int j = lo; j < i + lo; j++) nxt[j] += i;
+                nxt[0] = taken + 1;
+                nxt[1] = pred + heuristic(i, cur);
+                pq.push(nxt);
+            }
+        }
+        assert(false);
+    }
+};
+
+// adapted heuristic_292ms_119.5MB
+// use struct containing two ints and heights
+class Solution {
+public:
+    int n, m;
+    
+    struct ele {
+        int taken, pred;
+        vector<int> heights;
+        ele(int t, int p, int m) : taken(t), pred(p) {
+            heights.assign(m, 0);
+        }
+    };
+    
+    int filled(vector<int>& heights) {
+        for (int i : heights)
+            if (i != n) return 0;
+        return 1;
+    }
+    
+    vector<int> findShort(vector<int>& heights) {
+        int res = 0, minh = INT_MAX;
+        for (int i = 0; i < heights.size(); i++)
+            if (heights[i] < minh) res = i, minh = heights[i];
+        return { res, minh };
+    }
+    
+    int span(int id, vector<int>& heights) {
+        int res = id;
+        while(res < heights.size() && heights[res] == heights[id]) res++;
+        return res - 1;
+    }
+    
+    int heuristic(int lo, int hi, int i, int height, vector<int>& heights) {
+        if (lo == 0) return i != hi;
+        if (heights[lo - 1] == i + height)
+            return i == hi ? -1 : 0;
+        return i == hi;
+    }
+    
+    int tilingRectangle(int n, int m) {
+        if (n == m) return 1;
+        
+        this->n = n, this->m = m;
+        auto cmp = [](ele a, ele b) {
+            if (a.taken != b.taken) return a.taken > b.taken;
+            return a.pred > b.pred;
+            // return a.taken + a.pred > b.taken + b.pred;
+        };
+        // priority_queue<vector<int>, vector<vector<int>>, decltype(cmp)> pq{cmp};
+        priority_queue<ele, vector<ele>, decltype(cmp)> pq{cmp};
+        ele e(0, 1, m); 
+        pq.push(e);
+        
+        // bfs
+        while(!pq.empty()) {
+            auto cur = pq.top(); pq.pop();
+            int taken = cur.taken, pred = cur.pred;
+            vector<int> heights = cur.heights;
+            if (filled(heights)) return taken;
+            
+            // locate shortest fill and span of that fill
+            auto shorts = findShort(cur.heights);
+            int lo = shorts[0], height = shorts[1];
+            int hi = span(lo, cur.heights), lg = min(hi - lo + 1, n - height);
+            
+            // try filling with all possible squares
+            for (int i = lg; i >= 1; i--) {
+                int npred = pred + heuristic(lo, hi, i, height, cur.heights);
+                ele ne(taken + 1, npred, m);
+                
+                vector<int> nv(cur.heights.begin(), cur.heights.end());
+                ne.heights = nv;
+                for (int j = lo; j < i + lo; j++) ne.heights[j] += i;
+                pq.push(ne);
+            }
+        }
+        assert(false);
+    }
+};
+
+
+// A*, adapted heuristic_192ms_97.7MB
+// reserve first two entries of heights
+class Solution {
+private:
+    int n;
+    
+    int filled(vector<int>& heights) {
+        for (int i = 2; i < heights.size(); i++)
+            if (heights[i] != n) return 0;
+        return 1;
+    }
+    
+    vector<int> findShort(vector<int>& heights) {
+        int res = 2, minh = INT_MAX;
+        for (int i = 2; i < heights.size(); i++)
+            if (heights[i] < minh) res = i, minh = heights[i];
+        return { res, minh };
+    }
+    
+    int span(int id, vector<int>& heights) {
+        int res = id;
+        while(res < heights.size() && heights[res] == heights[id]) res++;
+        return res - 1;
+    }
+    
+    int heuristic(int lo, int hi, int i, int height, vector<int>& heights) {
+        if (lo == 0) return i != hi;
+        if (heights[lo - 1] == i + height)
+            return i == hi ? -1 : 0;
+        return i == hi;
+    }
+    
+public:
+    int tilingRectangle(int n, int m) {
+        if (n == m) return 1;
+        
+        this->n = n;
+        auto cmp = [](vector<int> a, vector<int> b) {
+            return a[0] + a[1] > b[0] + b[1];
+        };
+        priority_queue<vector<int>, vector<vector<int>>, decltype(cmp)> pq{cmp};
+        vector<int> ini(m + 2); ini[1] = 1;
+        pq.push(ini);
+        
+        // bfs
+        while(!pq.empty()) {
+            auto cur = pq.top(); pq.pop();
+            int taken = cur[0], pred = cur[1];
+            if (filled(cur)) return taken;
+            
+            // locate shortest fill and span of that fill
+            auto shorts = findShort(cur);
+            int lo = shorts[0], height = shorts[1];
+            int hi = span(lo, cur), lg = min(hi - lo + 1, n - height);
+            
+            // try filling with all possible squares
+            for (int i = lg; i >= 1; i--) {
+                vector<int> nxt(cur.begin(), cur.end());
+                for (int j = lo; j < i + lo; j++) nxt[j] += i;
+                nxt[0] = taken + 1; 
+                nxt[1] = pred + heuristic(lo, hi, i, height, cur);
+                pq.push(nxt);
+            }
+        }
+        assert(false);
+    }
+};
+
+
+// normal BFS_36ms_23.5MB
+class Solution {
+public:
+    int n;
+    
+    int filled(vector<int>& heights) {
+        for (int i = 1; i < heights.size(); i++)
+            if (heights[i] != n) return 0;
+        return 1;
+    }
+    
+    vector<int> findShort(vector<int>& heights) {
+        int res = 1, minh = INT_MAX;
+        for (int i = 1; i < heights.size(); i++)
+            if (heights[i] < minh) res = i, minh = heights[i];
+        return { res, minh };
+    }
+    
+    int span(int id, vector<int>& heights) {
+        int res = id;
+        while(res < heights.size() && heights[res] == heights[id]) res++;
+        return res - 1;
+    }
+    
+    int tilingRectangle(int n, int m) {
+        if (n == m) return 1;
+        
+        this->n = n;
+	// pq[i][0], # of squares taken; pq[i][1:], heights
+        queue<vector<int>> pq;
+        vector<int> ini(m + 1);
+        pq.push(ini);
+        
+        // bfs
+        while(!pq.empty()) {
+            auto cur = pq.front(); pq.pop();
+            int taken = cur[0];
+            if (filled(cur)) return taken;
+            
+            // locate shortest fill and span of that fill
+            auto shorts = findShort(cur);
+            int lo = shorts[0], height = shorts[1];
+            int hi = span(lo, cur), lg = min(hi - lo + 1, n - height);
+            
+            // try filling with all possible squares
+            for (int i = lg; i >= 1; i--) {
+                vector<int> nxt(cur.begin(), cur.end());
+                for (int j = lo; j < i + lo; j++) nxt[j] += i;
+                nxt[0] = taken + 1; // increment # of squares taken
+                pq.push(nxt);
+            }
+        }
+        assert(false);
+    }
+};
+
+
+# (II) DFS/Backtracking
+// derived_8ms_9.6MB
+class Solution {
+public:
+    int ans = INT_MAX, n;
+    vector<int> heights;
+    
+    int filled() {
+        for (int i : heights)
+            if (i != n) return 0;
+        return 1;
+    }
+
+    // find id retaining shortest height
+    vector<int> findShort() {
+        int res = 0, minh = INT_MAX;
+        for (int i = 0; i < heights.size(); i++)
+            if (heights[i] < minh) res = i, minh = heights[i];
+        return { res, minh };
+    }
+
+    // find highest point between which and lo, height remains the same
+    int span(int id) {
+        int res = id;
+        while(res < heights.size() && heights[res] == heights[id])
+            res++;
+        return res - 1;
+    }
+    
+    void fill(int lo, int hi, int val) {
+        for (int i = lo; i <= hi; i++)
+            heights[i] = val;
+    }
+    
+    // min # of squares to tile the board under current heights context
+    void dfs(int run) {
+        if (filled()) { ans = min(ans, run); return; } 
+        if (run >= ans) return;
+        
+        // locate shortest fill and span of that fill
+        auto shorts = findShort();
+        int lo = shorts[0], height = shorts[1];
+        int hi = span(lo), lg = min(hi - lo + 1, n - height);
+        
+        // try filling with all possible squares
+        for (int i = lg; i >= 1; i--) {
+            fill(lo, lo + i - 1, height + i);
+            dfs(run + 1);
+            fill(lo, lo + i - 1, height);
+        }
+    }
+    
+    int tilingRectangle(int n, int m) {
+        if (n == m) return 1;
+        heights.assign(m, 0), this->n = n;
+        dfs(0);
+        return ans;
+    }
+};
+
+
+# (I) DP (wrong)

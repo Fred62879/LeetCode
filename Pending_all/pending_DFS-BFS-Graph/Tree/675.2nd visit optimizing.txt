@@ -1,0 +1,251 @@
+# Optimizing
+Extract bfs from the fastest solution first. Then replace its bfs with my own TLE bfs, still TLE. It is found that my way of marking visited cells (mark the cell when the cell is popped out from bfs) leads to the repeated visit of the same cell. For instance, as I add cells in all four directions of the 'from' cell into the queue while none of these four are marked, then the further up moving from the left cell of the 'from' cell (tl) is actually the same as the destination of left moving from the top cell of 'from' cell (lt). And this cell is added into the queue for two times.
+
+   tl/lt    top
+   left    from    right
+	   down
+
+
+// optimized_imple impairment found_AC
+class Solution {
+public:
+    int rows, cols;
+    vector<vector<int>> moves;
+    
+    int bfs(pair<int, int> start, pair<int, int> to, vector<vector<int>>& forest) {
+        int dist = 0;
+        queue<pair<int, int>> qu;
+        qu.push({start.first, start.second});
+        int visited[rows][cols]{};
+        visited[start.first][start.second] = 1;
+        
+        while (!qu.empty()) {
+            for (int j = 0, fr, fc, size = qu.size(); j < size; ++j) {
+                tie(fr, fc) = qu.front(); qu.pop();
+                if (fr == to.first && fc == to.second) { return dist; }
+                
+                if (fc + 1 < cols && forest[fr][fc + 1] && !visited[fr][fc + 1]) // right
+                    qu.push({fr, fc + 1}), visited[fr][fc + 1] = 1;
+                if (fc - 1 >= 0 && forest[fr][fc - 1] && !visited[fr][fc - 1]) // left
+                    qu.push({fr, fc - 1}), visited[fr][fc - 1] = 1;
+                if (fr + 1 < rows && forest[fr + 1][fc] && !visited[fr + 1][fc]) // down 
+                    qu.push({fr + 1, fc}), visited[fr + 1][fc] = 1;
+                if (fr - 1 >= 0 && forest[fr - 1][fc] && !visited[fr - 1][fc]) // up
+                    qu.push({fr - 1, fc}), visited[fr - 1][fc] = 1;
+                
+            }
+            dist++;
+        }
+        return -1;
+    }
+
+    
+    int cutOffTree(vector<vector<int>>& forest) {
+        rows = forest.size(), cols = rows ? forest[0].size() : 0;
+        if (!rows || !cols) return 0;
+        if (forest[0][0] == 0) return -1;
+        
+         priority_queue<pair<int, pair<int, int>>, vector<pair<int, pair<int, int>>>, greater<pair<int, pair<int, int>>>> trees;
+        for (int r = 0; r < rows; ++r)
+            for (int c = 0; c < cols; ++c) if (forest[r][c] > 1)
+                trees.push({forest[r][c], {r, c}});
+        
+        int totalDist = 0;
+        pair<int, int> start = {0, 0};
+        moves.assign({{-1, 0}, {1, 0}, {0, -1}, {0, 1}});
+        
+        // Iterate through trees in increasing height order
+        while (!trees.empty()) {
+            pair<int, int> to = trees.top().second;
+            trees.pop();
+     
+            int res = bfs(start, to, forest);
+            if (res == -1) return -1;
+            totalDist += res;
+            start = to;
+        }
+        return totalDist;
+    }
+};
+
+// bfs nested
+class Solution {
+public:
+    int rows, cols;
+    vector<vector<int>> moves;
+    
+    int bfs(pair<int, int> start, pair<int, int> to, vector<vector<int>>& forest) {
+        int dist = 0;
+        queue<pair<int, int>> qu;
+        qu.push({start.first, start.second});
+        int visited[rows][cols]{};
+        visited[start.first][start.second] = 1;
+        
+        while (!qu.empty()) {
+            for (int j = 0, fr, fc, size = qu.size(); j < size; ++j) {
+                tie(fr, fc) = qu.front(); qu.pop();
+                if (fr == to.first && fc == to.second) { return dist; }
+                
+                if (fc + 1 < cols && forest[fr][fc + 1] && !visited[fr][fc + 1]) // right
+                    qu.push({fr, fc + 1});
+                if (fc - 1 >= 0 && forest[fr][fc - 1] && !visited[fr][fc - 1]) // left
+                    qu.push({fr, fc - 1});
+                if (fr + 1 < rows && forest[fr + 1][fc] && !visited[fr + 1][fc]) // down 
+                    qu.push({fr + 1, fc});
+                if (fr - 1 >= 0 && forest[fr - 1][fc] && !visited[fr - 1][fc]) // up
+                    qu.push({fr - 1, fc});
+                
+            }
+            dist++;
+        }
+        return -1;
+    }
+
+    
+    int cutOffTree(vector<vector<int>>& forest) {
+        rows = forest.size(), cols = rows ? forest[0].size() : 0;
+        if (!rows || !cols) return 0;
+        if (forest[0][0] == 0) return -1;
+        
+         priority_queue<pair<int, pair<int, int>>, vector<pair<int, pair<int, int>>>, greater<pair<int, pair<int, int>>>> trees;
+        for (int r = 0; r < rows; ++r)
+            for (int c = 0; c < cols; ++c) if (forest[r][c] > 1)
+                trees.push({forest[r][c], {r, c}});
+        
+        int totalDist = 0;
+        pair<int, int> start = {0, 0};
+        moves.assign({{-1, 0}, {1, 0}, {0, -1}, {0, 1}});
+        
+        // Iterate through trees in increasing height order
+        while (!trees.empty()) {
+            pair<int, int> to = trees.top().second;
+            trees.pop();
+     
+            int res = bfs(start, to, forest);
+            if (res == -1) return -1;
+            totalDist += res;
+            start = to;
+        }
+        return totalDist;
+    }
+};
+
+// bfs replaced with own bfs_TLE
+class Solution {
+public:
+    int n, m;
+    vector<vector<int>> moves;
+    
+    int bfs(pair<int, int> start, pair<int, int> end, vector<vector<int>>& forest) {
+        int from = start.first * m + start.second, to = end.first * m + end.second;
+        if (from == to) return 0;
+        
+        vector<pair<int, int>> q;
+        int visited[n][m]{};
+        q.push_back(make_pair(from, 0));
+        for (int i = 0; i < q.size(); i++) {
+            int pos = q[i].first, dist = q[i].second, fr = pos / m, fc = pos % m;
+            if (pos == to) return dist;
+            
+            visited[fr][fc] = 1;
+            if (fc + 1 < m && forest[fr][fc + 1] && !visited[fr][fc + 1]) // right
+                q.push_back({pos + 1, dist + 1});
+            if (fc - 1 >= 0 && forest[fr][fc - 1] && !visited[fr][fc - 1]) // left
+                q.push_back({pos - 1, dist + 1});
+            if (fr + 1 < n && forest[fr + 1][fc] && !visited[fr + 1][fc]) // down 
+                q.push_back({pos + m, dist + 1});
+            if (fr - 1 >= 0 && forest[fr - 1][fc] && !visited[fr - 1][fc]) // up
+                q.push_back({pos - m, dist + 1});
+        }
+        return INT_MAX;
+    }
+    
+    int cutOffTree(vector<vector<int>>& forest) {
+        n = forest.size(), m = n ? forest[0].size() : 0;
+        if (!n || !m) return 0;
+        if (forest[0][0] == 0) return -1;
+        
+         priority_queue<pair<int, pair<int, int>>, vector<pair<int, pair<int, int>>>, greater<pair<int, pair<int, int>>>> trees;
+        for (int r = 0; r < n; ++r)
+            for (int c = 0; c < m; ++c) if (forest[r][c] > 1)
+                trees.push({forest[r][c], {r, c}});
+        
+        int totalDist = 0;
+        pair<int, int> start = {0, 0};
+        moves.assign({{-1, 0}, {1, 0}, {0, -1}, {0, 1}});
+        
+        // Iterate through trees in increasing height order
+        while (!trees.empty()) {
+            pair<int, int> to = trees.top().second;
+            trees.pop();
+     
+            int res = bfs(start, to, forest);
+            if (res == -1) return -1;
+            totalDist += res;
+            start = to;
+        }
+        return totalDist;
+    }
+};
+
+
+// bfs extracted from fastest_AC
+class Solution {
+public:
+    int rows, cols;
+    vector<vector<int>> moves;
+    
+    int bfs(pair<int, int> start, pair<int, int> to, vector<vector<int>>& forest) {
+        int dist = 0;
+        queue<pair<int, int>> qu;
+        qu.push({start.first, start.second});
+        int visited[rows][cols]{};
+        visited[start.first][start.second] = 1;
+        
+        while (!qu.empty()) {
+            for (int j = 0, r, c, size = qu.size(); j < size; ++j) {
+                tie(r, c) = qu.front(); qu.pop();
+                if (r == to.first && c == to.second) { return dist; }
+                
+                for (int m = 0, nr, nc; m < 4; ++m) {
+                    nr = r + moves[m][0], nc = c + moves[m][1];
+                    if (nr < 0 || nr >= rows || nc < 0 || nc >= cols || visited[nr][nc] || !forest[nr][nc])
+                        continue;
+                    
+                    visited[nr][nc] = 1;
+                    qu.push({nr, nc});
+                }
+            }
+            dist++;
+        }
+        return -1;
+    }
+
+    
+    int cutOffTree(vector<vector<int>>& forest) {
+        rows = forest.size(), cols = rows ? forest[0].size() : 0;
+        if (!rows || !cols) return 0;
+        if (forest[0][0] == 0) return -1;
+        
+         priority_queue<pair<int, pair<int, int>>, vector<pair<int, pair<int, int>>>, greater<pair<int, pair<int, int>>>> trees;
+        for (int r = 0; r < rows; ++r)
+            for (int c = 0; c < cols; ++c) if (forest[r][c] > 1)
+                trees.push({forest[r][c], {r, c}});
+        
+        int totalDist = 0;
+        pair<int, int> start = {0, 0};
+        moves.assign({{-1, 0}, {1, 0}, {0, -1}, {0, 1}});
+        
+        // Iterate through trees in increasing height order
+        while (!trees.empty()) {
+            pair<int, int> to = trees.top().second;
+            trees.pop();
+     
+            int res = bfs(start, to, forest);
+            if (res == -1) return -1;
+            totalDist += res;
+            start = to;
+        }
+        return totalDist;
+    }
+};

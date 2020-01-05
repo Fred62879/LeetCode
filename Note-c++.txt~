@@ -202,12 +202,6 @@ LT1187
 > int minE = *min_element(nums.begin(),nums.end());
 
 
-// [29]
-> int maxElement = *max_element(array.begin(), array.end());
-
-
-
-
 # (II) Advanced
 
 // [1] VECTOR
@@ -595,30 +589,6 @@ https://leetcode.com/problems/insert-delete-getrandom-o1-duplicates-allowed/disc
 LT30
 
 
-// [32] Stable_partition
-LT164
-
-
-// [33] Bitset
-_(i) bit processing_
-LT1125 BFS_optimized
-// to collect all 1 bit
-> vector<int> result;
->    while (ppl.any()) {
->      int i = __builtin_ctzl(ppl.to_ulong()); // count trailing zeros
->      result.push_back(i);
->      ppl.reset(i);
->    }
->    return result;
-
-// find id of highest 1 bit (convert bitset to long)
-> int lastPerson = people.any() ? log2(people.to_ullong()) : -1;
-
-// convert long to bitset
-> bitset<60> newPeople = people | People(1ull << p);
-
-
-
 ## Cpp learning
 (1) binary search
 https://en.cppreference.com/w/cpp/algorithm/lower_bound
@@ -635,10 +605,9 @@ ForwardIt binary_find(ForwardIt first, ForwardIt last, const T& value, Compare c
 }
 
 
-(2) Memory leak
-https://blogread.cn//it/article/6243?f=wb
 
-https://leetcode.com/problems/remove-nth-node-from-end-of-list/discuss/8812/My-short-C%2B%2B-solution
+// [32] Stable partition
+LT164
 
 
 
@@ -670,27 +639,3 @@ int jobScheduling(vector<int>& startTime, vector<int>& endTime, vector<int>& pro
 - map maintain in sorted order of key
 - iota fill in array 0...n
 - use iterator to traverse container
-
-
-
-
-## C learning
-# (I) Sample code
-// (i) LT3
-int lengthOfLongestSubstring(char * s){
-    char *ascii[128]={0,};
-    int max=0;
-    int len;
-    char *c = s;
-    char *pos = s;  
-    for( ; *c ; c++){
-        if( ascii[*c] >= pos ){
-            pos = ascii[*c]+1;
-        }
-        ascii[*c] = c;
-        len = (c - pos)+1;
-        max = max>len?max:len;
-    }
-    return max;    
-}
-

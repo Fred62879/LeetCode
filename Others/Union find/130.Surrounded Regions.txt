@@ -1,0 +1,108 @@
+## Specification
+Given a 2D board containing 'X' and 'O' (the letter O), capture all regions surrounded by 'X'. A region is captured by flipping all 'O's into 'X's in that surrounded region.
+
+Example:
+X X X X
+X O O X
+X X O X
+X O X X
+
+After running your function, the board should be:
+X X X X
+X X X X
+X X X X
+X O X X
+
+Explanation: Surrounded regions shouldn’t be on the border, which means that any 'O' on the border of the board are not flipped to 'X'. Any 'O' that is not on the border and it is not connected to an 'O' on the border will be flipped to 'X'. Two cells are connected if they are adjacent cells connected horizontally or vertically.
+
+
+
+## Testcases
+[["X","X","O","X","X","X"],["O","O","O","X","X","X"],["O","X","X","O","O","X"],["X","X","X","X","X","X"]]
+
+
+
+## Ideas
+# (I) DFS
+// indep
+For open cells, only those (in)directly linked to open cells on the border can be exempted from filling. Thus, we do dfs on all open border cells. Then, all open cells that are not reached can be replaced with X.
+
+
+
+## Code
+# (II) Union find
+// others_32ms
+class UF {
+private:
+	int* id;   // id[i] = parent of i
+	int* rank; // rank[i] = rank of subtree rooted at i (cannot be more than 31)
+	int count; // number of components
+    
+public:
+	UF(int N) {
+		count = N;
+		id = new int[N];
+		rank = new int[N];
+		for (int i = 0; i < N; i++) { id[i] = i; rank[i] = 0; }
+	}
+    
+	~UF() {
+		delete [] id;
+		delete [] rank;
+	}
+    
+	int find(int p) {
+		while (p != id[p]) {
+			id[p] = id[id[p]];    // path compression by halving
+			p = id[p];
+		}
+		return p;
+	}
+    
+	int getCount() { return count; }
+    
+	bool connected(int p, int q) { return find(p) == find(q); }
+    
+	void connect(int p, int q) {
+		int i = find(p), j = find(q);
+		if (i == j) return;
+		if (rank[i] < rank[j]) id[i] = j;
+		else if (rank[i] > rank[j]) id[j] = i;
+		else { id[j] = i; rank[i]++; }
+		count--;
+	}
+};
+
+
+class Solution {
+public:
+    void solve(vector<vector<char>> &board) {
+        int n = board.size();
+        if (n == 0) return;
+        
+        int m = board[0].size();
+        UF uf = UF(n * m + 1);
+        
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                // if a 'O' node is on the boundry, connect it to the dummy node
+                if ((i == 0 || i == n - 1 || j == 0 || j == m - 1) && board[i][j] == 'O') {
+                    uf.connect(i * m + j, n * m);
+
+                } else if (board[i][j] == 'O') {
+                    if (board[i-1][j] == 'O') uf.connect(i*m + j, (i - 1)*m + j);
+                    if (board[i+1][j] == 'O') uf.connect(i*m + j, (i + 1)*m + j);
+                    if (board[i][j-1] == 'O') uf.connect(i*m + j, i*m + j - 1);
+                    if (board[i][j+1] == 'O') uf.connect(i*m + j, i*m + j + 1);
+                }
+            }
+        }
+        
+        for(int i = 0; i < n; i++)
+            for(int j = 0; j < m; j++)
+                if(!uf.connected(i*m + j, n*m)) board[i][j]='X';
+    }
+};
+
+
+# (I) DFS

@@ -1,0 +1,187 @@
+## Specification
+We have n jobs, where every job is scheduled to be done from startTime[i] to endTime[i], obtaining a profit of profit[i].
+
+You're given the startTime , endTime and profit arrays, you need to output the maximum profit you can take such that there are no 2 jobs in the subset with overlapping time range. If you choose a job that ends at time X you will be able to start another job that starts at time X.
+
+Example 1:
+Input: startTime = [1,2,3,3], endTime = [3,4,5,6], profit = [50,10,40,70]
+Output: 120
+Explanation: The subset chosen is the first and fourth job. 
+Time range [1-3]+[3-6] , we get profit of 120 = 50 + 70.
+
+Example 2:
+Input: startTime = [1,2,3,4,6], endTime = [3,5,10,6,9], profit = [20,20,100,70,60]
+Output: 150
+Explanation: The subset chosen is the first, fourth and fifth job. 
+Profit obtained 150 = 20 + 70 + 60.
+
+Example 3:
+Input: startTime = [1,1,1], endTime = [2,3,4], profit = [5,6,4]
+Output: 6
+
+Constraints:
+1 <= startTime.length == endTime.length == profit.length <= 5 * 10^4
+1 <= startTime[i] < endTime[i] <= 10^9
+1 <= profit[i] <= 10^4
+
+
+## Testcases
+[1,2,3,4,6]
+[3,5,10,6,9]
+[20,20,100,70,60]
+
+[1,1,1]
+[2,3,4]
+[5,6,4]
+
+[6,15,7,11,1,3,16,2]
+[19,18,19,16,10,8,19,8]
+[2,9,1,19,5,7,3,19]
+
+[43,13,36,31,40,5,47,13,28,16,2,11]
+[44,22,41,41,47,13,48,35,48,26,21,39]
+[8,20,3,19,16,8,11,13,2,15,1,1]
+
+https://leetcode.com/submissions/detail/277669487/testcase/
+
+
+## Ideas
+# (II) DP
+Note that some less elegant imple tend to assemble the three arrays together such that each endTime element correspond to a pair of startTime and profit element. In this case, it would be ideal to use a TreeMap (java) or a map(cpp) which automatically sort based on endTime element
+
+// startTime oriented
+https://leetcode.com/problems/maximum-profit-in-job-scheduling/discuss/409188/C%2B%2B-with-picture
+
+// derived_binary search, endTime oriented
+https://leetcode.com/problems/maximum-profit-in-job-scheduling/discuss/409009/JavaC%2B%2BPython-DP-Solution
+
+https://leetcode.com/problems/maximum-profit-in-job-scheduling/discuss/409031/C%2B%2B-Sort-and-DP-O(NlogN)
+
+We first sort the endTime array. To synrc the other two arrays, we use a separate id array to direct teh order elements should be taken. Let dp[i] denotes the largest profit gained from taking tasks finishing before endtime[i], then at each i, we binary search the floor endtime of the current start time. Note, since dp[i] denotes the largest until ..., we have to compare the currently calcualted dp[i] with its previous (dp[i - 1]) and assign the largest to dp[i].
+
+
+# (I) DFS/DP_top-down
+https://leetcode.com/problems/maximum-profit-in-job-scheduling/discuss/409080/JAVA-DFS-%2B-Memo-Solution
+
+https://leetcode.com/problems/maximum-profit-in-job-scheduling/discuss/409463/Top-Down-DP
+
+
+## Code
+# (II) DP
+// startTime oriented
+Almost identical to below
+
+// derived_binary search, endTime oriented_152ms/15.4MB
+class Solution {
+public:
+    int n;
+    vector<int> id, dp;
+    
+    int jobScheduling(vector<int>& startTime, vector<int>& endTime, vector<int>& profit) {
+        n = profit.size(), id.resize(n);
+        dp.resize(n); // dp[i], max profit until ith end time (sorted order)
+        
+        for (int i = 0; i < n; i++) id[i] = i;
+        sort(id.begin(), id.end(), [&endTime](int i, int j){
+            return endTime[i] < endTime[j]; });
+        sort(endTime.begin(), endTime.end());
+        
+        dp[0] = profit[id[0]];
+        for (int i = 1; i < n; i++) {
+            int st = startTime[id[i]];
+            auto lo = upper_bound(endTime.begin(), endTime.end(), st);
+            
+            if (lo == endTime.begin()) {
+                dp[i] = max(dp[i - 1], profit[id[i]]);
+            } else {
+                int a = lo - endTime.begin() - 1;
+                dp[i] = max(dp[a] + profit[id[i]], dp[i - 1]);
+            }
+        }
+        return dp[n - 1];
+    }
+};
+
+
+# (I) DFS/DP_top-down
+// derived_indep_2ndTime-Dec-5-2019
+// 148ms_20.4MB
+class Solution {
+public:
+    int res, n;
+    vector<int> id, mem;
+    
+    // max amt of profits from i onward
+    int solve(int i, int n, vector<int>& st, vector<int>& ed, vector<int>& p) {
+        if (i == n) return 0;
+        if (mem[i] != -1) return mem[i];
+        
+        auto it = lower_bound(st.begin(), st.end(), ed[id[i]]);
+        int take = p[id[i]] + solve(it - st.begin(), n, st, ed, p);
+        int bypass = solve(i + 1, n, st, ed, p);
+        return mem[i] = max(take, bypass);
+    }
+    
+    int jobScheduling(vector<int>& startTime, vector<int>& endTime, vector<int>& profit) {
+        n = profit.size(), res = INT_MIN;
+        id.resize(n), mem.assign(n, -1);
+        iota(id.begin(), id.end(), 0);
+        sort(id.begin(), id.end(), [&startTime] (int i, int j) {
+            return startTime[i] - startTime[j] < 0;
+        });
+        sort(startTime.begin(), startTime.end());
+        return solve(0, n, startTime, endTime, profit);
+    }
+};
+
+// indep_TLE
+struct hash_pair {
+    template<class T1, class T2>
+        size_t operator()(const pair<T1, T2> &p) const {
+        auto ha = hash<T1>{}(p.first);
+        auto hb = hash<T2>{}(p.second);
+        return ha * 37 + hb;
+    }
+};
+
+class Solution {
+public:
+    int n, maxp;
+    unordered_map<pair<int, int>, int, hash_pair> dp;
+    vector<int> rest, id;
+    
+    int solve(int j, int acc, int prevtime, vector<int>& st, vector<int>& et, vector<int>& profit) {
+        if (j == n) return 0;
+        if (maxp >= acc + rest[j]) return -1;
+
+        pair<int, int> cp = { j, prevtime };
+        if (dp.count(cp)) return dp[cp];
+        
+        int i = id[j];
+        int bypass = solve(j + 1, acc, prevtime, st, et, profit);
+        int take = 0;
+        if (prevtime <= st[i]) {
+            take = solve(j + 1, acc + profit[i], et[i], st, et, profit);
+            if (take != -1) take += profit[i];
+        }
+    
+        dp[cp] = max(bypass, take);
+        maxp = max(maxp, dp[cp]);
+        return dp[cp];
+    }
+    
+    int jobScheduling(vector<int>& startTime, vector<int>& endTime, vector<int>& profit) {
+        n = profit.size(), maxp = -1;
+        
+        id.resize(n);
+        for (int i = 0; i < n; i++) id[i] = i;
+        sort(id.begin(), id.end(), [&startTime](int i, int j){ return startTime[i] < startTime[j]; });
+        
+        rest.resize(n); rest[n - 1] = profit[id[n - 1]];
+        for (int i = n - 2; i >= 0; i--)
+            rest[i] = rest[i + 1] + profit[id[i]];
+        
+        solve(0, 0, 0, startTime, endTime, profit);
+        return maxp;
+    }
+};

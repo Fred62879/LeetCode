@@ -1,0 +1,73 @@
+## Specification
+Given a square grid of integers arr, a falling path with non-zero shifts is a choice of exactly one element from each row of arr, such that no two elements chosen in adjacent rows are in the same column. Return the minimum sum of a falling path with non-zero shifts.
+
+Example 1:
+Input: arr = [[1,2,3],[4,5,6],[7,8,9]]
+Output: 13
+Explanation: 
+The possible falling paths are:
+[1,5,9], [1,5,7], [1,6,7], [1,6,8],
+[2,4,8], [2,4,9], [2,6,7], [2,6,8],
+[3,4,8], [3,4,9], [3,5,7], [3,5,9]
+The falling path with the smallest sum is [1,5,7], so the answer is 13.
+
+Constraints:
+1 <= arr.length == arr[i].length <= 200
+-99 <= arr[i][j] <= 99
+
+
+
+## Testcases
+[[0,0,0],[0,0,0],[0,0,0]]
+[[-99,99,10,0],[12,-89,77,11],[2,3,10,-70],[-20,-67,-52,10]]
+
+
+## Ideas
+# (I) DP
+// others_python_concise
+https://leetcode.com/problems/minimum-falling-path-sum-ii/discuss/451273/Python-DP-O(MN)
+
+// others
+https://leetcode.com/problems/minimum-falling-path-sum-ii/discuss/452207/C%2B%2B-O(nm)-or-O(1)
+- No need to maintain dp array. The most straightforward idea is to sum up min value in each row of the given arr. Given the presence of min in the same column of adjacent rows, we only need to involve the second min of each row and evaluate.
+
+// others
+https://leetcode.com/problems/minimum-falling-path-sum-ii/discuss/451258/Simple-DP(Java)-Same-problem-as-Paint-House-2-(265)
+- Similar to indep without using dp array
+
+// indep
+The typical dp array is to record the sum of smallest path stopping at each entry of the array. However, since we can take inheirt from all entries in different cols in previous row (i - 1) for the current entry (i/j), we need to somehow know the min value of dp[i - 1] (excluding dp[i - 1][j]). To do that, i maintained another array mdp, for which, mdp[i][j] records the min(dp[i - 1][0:j - 1; j + 1:]).
+
+This array can be updated traversing from left to right and right to left, each traverse we keep a minSoFar to record the min dp value until the previous entry.
+
+
+## Code
+# (I) DP_bottom-up
+// others_
+*** WAIT ***
+
+// indep_36ms_12.4MB
+class Solution {
+public:
+    int minFallingPathSum(vector<vector<int>>& arr) {
+        int n = arr.size(), m = arr[0].size();
+        int dp[n + 1][m]{}; // dp[i][j], min sum of path stopping at arr[i][j]
+        int mdp[n + 1][m]{}; // mdp[i][j], min sum of path not stopping at arr[i][j]
+        
+        for (int i = 1; i <= n; i++) {
+            int minSoFar = INT_MAX, j;
+            for (j = 0; j < m; j++) {
+                // calculate min sum of path stopping at arr[i - 1][j]
+                dp[i][j] = mdp[i - 1][j] + arr[i - 1][j];
+                // calculate rightward min
+                mdp[i][j] = minSoFar; // msf, min dp until row i - 1 col j - 1;
+                minSoFar = min(minSoFar, dp[i][j]);
+            }
+            for (j = m - 1, minSoFar = INT_MAX; j >= 0; j--)
+                mdp[i][j] = min(mdp[i][j], minSoFar), minSoFar = min(minSoFar, dp[i][j]);
+        }
+        int res = INT_MAX;
+        for (int i : dp[n]) res = min(res, i);
+        return res;
+    }
+};

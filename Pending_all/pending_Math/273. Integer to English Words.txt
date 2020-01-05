@@ -1,0 +1,191 @@
+## Specification
+
+Convert a non-negative integer to its english words representation. Given input is guaranteed to be less than 231 - 1.
+
+Example 1:
+Input: 123
+Output: "One Hundred Twenty Three"
+
+Example 2:
+Input: 12345
+Output: "Twelve Thousand Three Hundred Forty Five"
+
+Example 3:
+Input: 1234567
+Output: "One Million Two Hundred Thirty Four Thousand Five Hundred Sixty Seven"
+
+Example 4:
+Input: 1234567891
+Output: "One Billion Two Hundred Thirty Four Million Five Hundred Sixty Seven Thousand Eight Hundred Ninety One"
+
+
+
+
+## Ideas
+
+# (II) Recursion
+
+_(i) for loop_
+
+https://leetcode.com/problems/integer-to-english-words/discuss/188334/C%2B%2B-4-lines
+
+
+
+https://leetcode.com/problems/integer-to-english-words/discuss/158134/Shorter-than-the-best-answer-Pure-recursion
+
+
+
+_(ii) cond_
+
+https://leetcode.com/problems/integer-to-english-words/discuss/70627/Short-clean-Java-solution
+
+
+
+
+
+# (I) Cond
+
+The idea is simply to process the number 3-by-3 digits. For each three digit, we generate a normal string describing the number (e.g., 101 -> One Hundred, 990 -> Nine Hundred Ninety, 001 -> One). Then we append proper thousand scale (Billion, Million, or Thousand) to the string and combine the current portion into the final answer.
+
+
+
+
+
+
+
+## Code
+
+# (II) Recursion
+
+_(i) for loop_8ms
+
+**** WAIT ****
+
+
+_
+
+
+(ii) cond_
+
+// adapted
+
+class Solution {
+
+public:
+    vector<string> nstr { "Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety" };
+    
+    string overThousand(int num, int divisor, string unit) {
+        string cur = numberToWords(num / divisor), nxt = numberToWords(num % divisor);
+        return cur + " " + unit + (nxt == "Zero" ? "" : (" " + nxt) );
+    }
+    
+    string numberToWords(int num) {
+        if (num <= 20) return nstr[num];
+        if (num / 10 < 10) {
+            string nxt = numberToWords(num % 10);
+            return nstr[(num - 20) / 10 + 20] + (nxt == "Zero" ? "" : (" " + nxt) );
+        }
+        if (num / 100 < 10) {
+            string nxt = numberToWords(num % 100);
+            return nstr[num/100] + " Hundred" + (nxt == "Zero" ? "" : (" " + nxt) );
+        }
+        if (num / 1000 < 1000) return overThousand(num, 1000, "Thousand");
+        if (num / 1e6 < 1000) return overThousand(num, 1000000, "Million");
+        return overThousand(num, 1000000000, "Billion");
+    }
+};
+
+
+
+
+
+# (I) Cond
+
+// indep
+
+class Solution {
+
+public:
+    vector<string> thousanth { "Billion", "Million", "Thousand" };
+    vector<string> tenth { "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety" };
+    vector<string> ten { "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen" };
+    vector<string> number { "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine" };
+    
+    string one_digit(string& num, int lo) {
+        int c = num[lo] -'0';
+        return c ? number[c] : "0";
+    }
+    
+    string two_digit(string& num, int lo, int hi) {
+        int c1 = num[lo] -'0', c2 = num[hi] -'0';
+        if (c1 == 0) return c2 ? number[c2] : "0";
+        if (c1 == 1) return ten[c2];
+        return tenth[c1 - 2] + (c2 ? (" " + number[c2]) : "");
+    }
+    
+    // hi - lo <= 2
+    string three_digit(string& num, int lo, int hi) {
+        if (hi - lo == 0) return one_digit(num, lo);
+        if (hi - lo == 1) return two_digit(num, lo, hi);
+        
+        int c1 = num[lo] -'0'; // msd
+        string last_two = two_digit(num, lo + 1, hi);
+        if (last_two == "0") 
+            return c1 ? (number[c1] + " Hundred") : "0";
+        return c1 ? (number[c1] + " Hundred " + last_two) : last_two;
+    }
+    
+    string numberToWords(int num) {
+        if (!num) return "Zero";
+        string snum = to_string(num), ans = "";
+        int n = snum.size();
+        for (int i = 0; i * 3 < n && i <= 3; i++) {
+            int lo = max(0, n - 3 - i * 3), hi = n - 1 - i * 3;
+            string curThree = three_digit(snum, lo, hi);
+            if (curThree != "0") {
+                if (i == 0) { ans = curThree; continue; }
+                if (ans.size()) ans = " " + ans;
+                ans = curThree + " " + thousanth[3 - i] + ans;
+            }
+        }
+        return ans;
+    }
+};
+
+
+//
+class Solution {
+public:
+    vector<string> thousanth { "Billion" "Million" "Thousand" "" };
+    vector<string> tenth { "Twenty" "Thirty" "Forty" "Fifty" "Sixty" "Seventy" "Eighty" "Ninty" };
+    vector<string> ten { "Eleven" "Twelve" "Thirteen" "Forteen" "Fifteen" "Sixteen" "Seventeen" "Eighteen" "Nineteen" };
+    vector<string> number { "" "One" "Two" "Three" "Four" "Five" "Six" "Seven" "Eight" "Nine" };
+    
+    // hi - lo <= 2
+    string three_digit(string& num, int lo, int hi) {
+        string ans = ""; int all_zero = 1;
+        for (int i = hi; i >= lo; i--) {
+            string cur; int c = stoi(nums[i]);
+            if (c) all_zero = 0;
+            
+            if (hi - i + 1 == 1) {
+                cur = number[c];
+            } else if (hi - i + 1 == 2) {
+                cur = c == 1? "And Ten" + cur : tenth[c - 2] + cur;
+            } else if (c) {
+                cur = number[c] + "Hundred" + cur;
+            }
+            ans = cur + ans;
+        }
+        all_zero ? return "ZERO" : return ans;
+    }
+    
+    string numberToWords(int num) {
+        string snum = to_string(num), ans = "";
+        for (int i = 0; (i + 1) * 3 <= snum.size() && i <= 3; i++) {
+            string curThree = three_digit(num, max(0, n - 3 - i * 3), n - 1 - i * 3);
+            if (curThree != "ZERO") ans = curThree + thousanth[3 - i] + ans;
+        }
+        return ans;
+    }
+};

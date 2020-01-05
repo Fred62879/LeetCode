@@ -1,0 +1,139 @@
+## Specification
+Given a 2D board containing 'X' and 'O' (the letter O), capture all regions surrounded by 'X'. A region is captured by flipping all 'O's into 'X's in that surrounded region.
+
+Example:
+X X X X
+X O O X
+X X O X
+X O X X
+
+After running your function, the board should be:
+X X X X
+X X X X
+X X X X
+X O X X
+
+Explanation: Surrounded regions shouldn’t be on the border, which means that any 'O' on the border of the board are not flipped to 'X'. Any 'O' that is not on the border and it is not connected to an 'O' on the border will be flipped to 'X'. Two cells are connected if they are adjacent cells connected horizontally or vertically.
+
+
+
+## Testcases
+[["X","X","O","X","X","X"],["O","O","O","X","X","X"],["O","X","X","O","O","X"],["X","X","X","X","X","X"]]
+
+
+
+## Ideas
+# (I) DFS
+// indep
+For open cells, only those (in)directly linked to open cells on the border can be exempted from filling. Thus, we do dfs on all open border cells. Then, all open cells that are not reached can be replaced with X.
+
+
+
+## Code
+# (II) Union find
+// others_32ms
+
+
+# (I) DFS
+// others_24ms
+class Solution {
+public:
+    void check(vector<vector<char> >&vec, int i, int j, int row, int col) {
+        if (vec[i][j] == 'O') {
+            vec[i][j] = '1';
+            if (i > 1) check(vec, i - 1, j, row, col);
+            if (j > 1) check(vec, i, j - 1, row, col);
+            if (i + 1 < row) check(vec, i + 1, j, row, col);
+            if (j + 1 < col) check(vec, i, j + 1, row, col);
+        }
+    }
+    
+    void solve(vector<vector<char>>& board) {
+        int i, j, row = board.size();
+        if (!row) return;
+        
+        int col = board[0].size();
+        for(i = 0; i < row; i++) {
+            check(board, i, 0, row, col);
+            if (col > 1) check(board, i, col - 1, row, col);
+        }
+        for(j = 1; j + 1 < col; j++) {
+            check(board, 0, j, row, col);
+            if(row > 1) check(board, row - 1, j, row, col);
+        }
+        
+        for (i = 0; i < row; i++) {
+            for (j = 0; j < col; j++) {
+                if (board[i][j] == 'O') board[i][j] = 'X';
+                if (board[i][j] == '1') board[i][j] = 'O';
+            }
+        }
+    }
+};
+
+// others_28ms
+class Solution {
+public:
+    void solve(vector<vector<char>>& board) {
+        if (board.empty()) return;
+        int row = board.size(), col = board[0].size();
+        for (int i = 0; i < row; ++i) {
+            check(board, i, 0);             // first column
+            check(board, i, col - 1);       // last column
+        }
+        for (int j = 1; j < col - 1; ++j) {
+            check(board, 0, j);             // first row
+            check(board, row - 1, j);       // last row
+        }
+        for (int i = 0; i < row; ++i)
+            for (int j = 0; j < col; ++j)
+                if (board[i][j] == 'O') board[i][j] = 'X';
+                else if (board[i][j] == '1') board[i][j] = 'O';
+    }
+    
+    void check(vector<vector<char>>& board, int i, int j) {
+        if (board[i][j] == 'O') {
+            board[i][j] = '1';
+            if (i > 1) check(board, i - 1, j);
+            if (j > 1) check(board, i, j - 1);
+            if (i + 1 < board.size()) check(board, i + 1, j);
+            if (j + 1 < board[0].size()) check(board, i, j + 1);
+        }
+    }
+};
+
+// indep_32ms
+class Solution {
+public:
+    int n, m;
+    
+    void dfs(int r, int c, vector<vector<int>>& marked, vector<vector<char>>& board) {
+        if (r >= n || c >= m || r < 0 || c < 0 || marked[r][c]) return;
+        
+        marked[r][c] = 1;
+        if (board[r][c] == 'X') return;
+        
+        dfs(r + 1, c, marked, board), dfs(r - 1, c, marked, board);
+        dfs(r, c + 1, marked, board), dfs(r, c - 1, marked, board);
+    }
+    
+    void solve(vector<vector<char>>& board) {
+        if ( (n = board.size()) == 0) return;
+        
+        m = board[0].size();
+        // 0, unvisited; 1, visited; 2, visited & leaked
+        vector<vector<int>> marked(n, vector<int>(m, 0));
+        
+        // dfs open border cells
+        for (int i = 0; i < n; i++)
+            dfs(i, 0, marked, board), dfs(i, m - 1, marked, board);
+        for (int j = 1; j < m - 1; j++)
+            dfs(0, j, marked, board), dfs(n - 1, j, marked, board);
+
+        // fill
+        for (int i = 1; i < n - 1; i++)
+            for (int j = 1; j < m - 1; j++)
+                if (board[i][j] == 'O' && marked[i][j] == 0)
+                    board[i][j] = 'X';
+    }
+};

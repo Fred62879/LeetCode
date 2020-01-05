@@ -1,0 +1,364 @@
+## Specification
+Given a list of words (without duplicates), please write a program that returns all concatenated words in the given list of words. A concatenated word is defined as a string that is comprised entirely of at least two shorter words in the given array.
+
+Example:
+Input: ["cat","cats","catsdogcats","dog","dogcatsdog","hippopotamuses","rat","ratcatdogcat"]
+
+Output: ["catsdogcats","dogcatsdog","ratcatdogcat"]
+
+Explanation: "catsdogcats" can be concatenated by "cats", "dog" and "cats"; "dogcatsdog" can be concatenated by "dog", "cats" and "dog"; "ratcatdogcat" can be concatenated by "rat", "cat", "dog" and "cat".
+
+Note:
+The number of elements of the given array will not exceed 10,000
+The length sum of elements in the given array will not exceed 600,000.
+All the input string will only include lower case letters.
+The returned elements order does not matter.
+
+
+
+## Ideas
+# (II) Trie
+When using trie, different methods share the same building process. However, when validating each word, we can either doing it in a top-down or bottom-up manner.
+
+// derived_bottom-up_TLE_1 + 3D
+Derived from others-1. In this case, the trie is constructed using each word in the reverse order (from last to first char). 
+
+c_n-1, c_n-2, ..., c3, c2, c1, c0
+
+For each word, we updating a dp which indicates whether or not word formed by the last i chars is a concatenated word. To update dp[i], we check eahc of the chars from n - 1 to i - 1. And we only consider the word to be valid if dp[j] != 0 (the last j chars is either an intact word or concatenated) and the word formed by str[i:j] is an intact word.
+
+However, this ends up with a TLE. others-1 actually merge the two for loops in the most bottom level.
+
+
+// others-1_bottom-up_1 + 2D
+https://leetcode.com/problems/concatenated-words/discuss/354601/C%2B%2B-O(n*k2)-solution-using-DP-and-Radix-Tree-(Trie)
+
+Like in the above indep imple, there has to be a 3D for loop to check each word (in which case trie can be built both using normal and reverse order of the word). However, we can actually do a 2D check. Imgine, for each word, we still check normally whether words formed from the first i chars is concatenated and we increment i from 1 to n. This is the 1st dim. Then in the nxt dim we shall consider simultaneously whether the current substr (length i) can be concatenated given the last word composing it being formed by the last j chars (j from 1 to i).
+
+Such imple sort of incorporate the last 2 dims of the above 3D check into 1 dim.
+
+
+// others
+[https://leetcode.com/problems/concatenated-words/discuss/353235/c%2B%2B-trie-and-dfs]
+Similar setup as indep. However, when validating words, we similarly divide the word into front and back portions as is done in dfs.
+
+
+// indep_top-down
+Store words in trie. Then validate each word recursively.
+
+
+# (I) DFS
+Store all words in set and validate each word to see if it can be concatenated.
+
+
+
+## Code
+# (II) Trie
+// indep_TLE
+struct node {
+    int valid;
+    node* nxt[26];
+    
+    node() {
+        valid = 0;
+        for (int i = 0; i < 26; i++)
+            nxt[i] = nullptr;
+    }
+};
+
+class Solution {
+public:
+    node root;
+    
+    void add(string word) {
+        node* cur = &root;
+        for (int i = word.size() - 1; i >= 0; i--) {
+            if (cur->nxt[word[i] -'a'] == nullptr)
+                cur->nxt[word[i] -'a'] = new node();
+            cur = cur->nxt[word[i] -'a'];
+            if (i == 0) cur->valid = 1;
+        }
+    }
+    
+    vector<string> findAllConcatenatedWordsInADict(vector<string>& words) {
+        vector<string> res;
+        for (string word : words) add(word);
+        
+        // bottom up DP
+        for (string word : words) if (word.size()) {
+            int sz = word.size();
+            int dp[sz + 1]{}; // whether the last i chars of word can be ...
+            dp[0] = 1;
+            for (int i = 1; i <= sz; i++) {
+                for (int j = 0; j < i; j++) if (dp[j]) {
+                    node* cur = &root;
+                    for (int k = 1; k <= i - j; k++) {
+                        cur = cur->nxt[word[sz - j - k] -'a'];
+                        if (cur == nullptr) break;
+                        if (k == i - j && cur->valid)
+                            dp[i] = j ? 1 : 2;
+                    }
+                }
+            }
+            if (dp[word.size()]) res.push_back(word);
+        }
+        return res;
+    }
+};
+
+// others-1_indep_256ms
+struct node {
+    int valid;
+    node* nxt[26];
+    
+    node() {
+        valid = 0;
+        for (int i = 0; i < 26; i++)
+            nxt[i] = nullptr;
+    }
+};
+
+class Solution {
+public:
+    node root;
+    
+    void add(string word) {
+        node* cur = &root;
+        for (int i = word.size() - 1; i >= 0; i--) {
+            if (cur->nxt[word[i] -'a'] == nullptr)
+                cur->nxt[word[i] -'a'] = new node();
+            cur = cur->nxt[word[i] -'a'];
+            if (i == 0) cur->valid = 1;
+        }
+    }
+    
+    vector<string> findAllConcatenatedWordsInADict(vector<string>& words) {
+        vector<string> res;
+        for (string word : words) add(word);
+        
+        // bottom up DP
+        for (string word : words) if (word.size()) {
+            int sz = word.size();
+            int dp[sz + 1]{1}; // whether the first i chars of word is...
+            for (int i = 1; i <= sz; i++) { // word[0:i)
+                node* cur = &root;
+                for (int j = 1; j <= i && !dp[i]; j++) {
+                    cur = cur->nxt[word[i - j] -'a'];
+                    if (cur == nullptr) break;
+                    if (dp[i - j] && cur->valid)
+                        dp[i] = j == i ? 2 : 1;
+                }
+            }
+            if (dp[word.size()] == 1) res.push_back(word);
+        }
+        return res;
+    }
+};
+
+// indep_488ms
+struct node {
+    int valid;
+    node* subs[26];
+    node () {
+        valid = 0;
+        for (int i = 0; i < 26; i++) 
+            subs[i] = NULL;
+    }
+};
+
+class Solution {
+public:    
+    node root;
+    
+    // construct trie
+    void add(string word) {
+        node* rt = &root;
+        for (int i = 0; i < word.size(); i++) {
+            if (rt->subs[word[i] -'a'] == NULL)
+                rt->subs[word[i] -'a'] = new node();
+            if (i == word.size() - 1)
+                rt->subs[word[i] -'a']->valid = 1;
+            rt = rt->subs[word[i] -'a'];
+        }
+    }
+    
+    int isConcat(string word, int nw) {
+        if (word.size() == 0) return nw > 1;
+        
+        node* cur = &root;
+        for (int i = 0; i < word.size(); i++) {
+            char c = word[i] -'a';
+            if (cur->subs[c]) {
+                if (cur->subs[c]->valid && isConcat(word.substr(i + 1), nw + 1))
+                    return true;
+                cur = cur->subs[c];
+            } else return false;
+        }
+        return false;
+    }
+    
+    vector<string> findAllConcatenatedWordsInADict(vector<string>& words) {
+        vector<string> ans;
+        for (auto word : words) 
+            if (word != "") add(word);
+        for (auto word : words)
+            if (isConcat(word, 0)) ans.push_back(word);
+        return ans;
+    }
+};
+
+
+# (I) DFS
+_(iii) 3rd visit 2019-09-21_
+// indep_200ms
+class Solution {
+public:
+    unordered_set<string> dict, res;
+    
+    bool valid(string str) {
+        for (int i = 0; i < str.size(); i++) {
+            if (dict.count(str.substr(0, i + 1))) {
+                string rest = str.substr(i + 1);
+                if (rest != "" && dict.count(rest) || res.count(rest) || valid(rest)) {
+                    res.insert(rest);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    vector<string> findAllConcatenatedWordsInADict(vector<string>& words) {
+        vector<string> ret;
+        for (auto str : words)
+            dict.insert(str);
+        for (auto str : words)
+            if (valid(str)) ret.push_back(str);
+        return ret;
+    }
+};
+
+_(ii) 2nd visit 2019-08-17_
+// derived_236ms
+class Solution {
+public:
+    int isConcat(string word, unordered_set<string>& dict) {
+        if (word == "") return false;
+        for (int i = 0; i < word.size() - 1; i++) {
+            auto cur = word.substr(0, i + 1), rest = word.substr(i + 1);
+            if (dict.count(cur) && (dict.count(rest) || isConcat(rest, dict)))
+                return true;
+        }
+        return false;
+    }
+    
+    vector<string> findAllConcatenatedWordsInADict(vector<string>& words) {
+        vector<string> res;
+        unordered_set<string> dict;
+        for (auto word :words) dict.insert(word);
+        
+        for (auto word : words)
+            if (isConcat(word, dict)) res.push_back(word);
+        return res;
+    }
+};
+
+_(i) 1st attempt_
+// others_set
+class Solution {
+
+    Set<String> set = new HashSet<>();
+    
+    private boolean isConct(String s) {
+        for (int i = 1; i < s.length(); i++) {
+            // if (!dict[s.charAt(0)-'a'].contains(s.substring(0, i))) continue;
+            // if (dict[s.charAt(i)-'a'].contains(s.substring(i)) || isConct(s.substring(i)))
+
+            if (set.contains(s.substring(0, i)))
+                if (set.contains(s.substring(i)) || isConct(s.substring(i)))
+                    return true;
+        }
+        return false;
+    }
+    
+    public List<String> findAllConcatenatedWordsInADict(String[] words) {
+        if (words.length == 0) return null;
+        for (String word : words) set.add(word);
+        List<String> res = new ArrayList<String>();
+
+        for (int i = 0; i < words.length; i++)
+            if (isConct(words[i])) res.add(words[i]);
+        return res;
+    }
+}
+
+// update dict, improved a bit
+class Solution {
+    
+    HashMap<String, Integer> cache = new HashMap<String, Integer>();
+    ArrayList<String>[] dict = new ArrayList[26];
+    String[] words;
+    
+    private int conct(String s) {
+        if (s.equals("")) return 0;
+        if (cache.get(s) != null) return cache.get(s);
+        ArrayList<String> curdict = dict[s.charAt(0) - 'a'];
+        for (int i = 0; i < curdict.size(); i++) {
+            if (!s.startsWith(curdict.get(i))) continue;
+            int cur = conct(s.substring(curdict.get(i).length()));
+            if (cur != -1) cur++;
+            if (cache.get(s) == null || cache.get(s) < cur)
+                cache.put(s, cur);
+            if (cache.get(s) >= 2) break;
+        }
+        if (cache.get(s) == null) cache.put(s, -1);
+        return cache.get(s);
+    }
+    
+    public List<String> findAllConcatenatedWordsInADict(String[] words) {
+        if (words.length == 0) return null;
+        for (int i = 0; i < 26; i++) dict[i] = new ArrayList<String>();
+        for (String w : words) if (!w.equals("")) dict[w.charAt(0) - 'a'].add(w);
+        List<String> res = new ArrayList<String>();
+        for (int i = 0; i < words.length; i++)
+            if (conct(words[i]) >= 2) res.add(words[i]);
+        return res;
+    }
+}
+
+// indep_slow
+class Solution {
+    
+    HashMap<String, Integer> cache = new HashMap<String, Integer>();
+    String[] words;
+    
+    private int conct(String s) {
+        if (s.equals("")) return 0;
+        if (cache.get(s) != null) return cache.get(s);
+        for (int i = 0; i < words.length; i++) {
+            if (words[i].equals("") || s.charAt(0) != words[i].charAt(0) || !s.startsWith(words[i])) continue;
+            int cur = conct(s.substring(words[i].length()));
+            if (cur != -1) cur++;
+            if (cache.get(s) == null || cache.get(s) < cur)
+                cache.put(s, cur);
+            if (cache.get(s) >= 2) break;
+        }
+        if (cache.get(s) == null) cache.put(s, -1);
+        return cache.get(s);
+    }
+    
+    public List<String> findAllConcatenatedWordsInADict(String[] words) {
+        if (words.length == 0) return null;
+        this.words = words;
+        List<String> res = new ArrayList<String>();
+        for (int i = 0; i < words.length; i++)
+            if (conct(words[i]) >= 2) res.add(words[i]);
+        return res;
+    }
+}
+
+
+
+## Testcases
+["rfkqyuqfjkx","","vnrtysfrzrmzl","gfve","qfpd","lqdqrrcrwdnxeuo","q","klaitgdphcspij","hbsfyfv","adzpbfudkklrw","aozmixr","ife","feclhbvfuk","yeqfqojwtw","sileeztxwjl","ngbqqmbxqcqp","khhqr","dwfcayssyoqc","omwufbdfxu","zhift","kczvhsybloet","crfhpxprbsshsjxd","ilebxwbcto","yaxzfbjbkrxi","imqpzwmshlpj","ta","hbuxhwadlpto","eziwkmg","ovqzgdixrpddzp","c","wnqwqecyjyib","jy","mjfqwltvzk","tpvo","phckcyufdqml","lim","lfz","tgygdt","nhcvpf","fbrpzlk","shwywshtdgmb","bkkxcvg","monmwvytby","nuqhmfj","qtg","cwkuzyamnerp","fmwevhwlezo","ye","hbrcewjxvcezi","tiq","tfsrptug","iznorvonzjfea","gama","apwlmbzit","s","hzkosvn","nberblt","kggdgpljfisylt","mf","h","bljvkypcflsaqe","cijcyrgmqirz","iaxakholawoydvch","e","gttxwpuk","jf","xbrtspfttota","sngqvoijxuv","bztvaal","zxbshnrvbykjql","zz","mlvyoshiktodnsjj","qplci","lzqrxl","qxru","ygjtyzleizme","inx","lwhhjwsl","endjvxjyghrveu","phknqtsdtwxcktmw","wsdthzmlmbhjkm","u","pbqurqfxgqlojmws","mowsjvpvhznbsi","hdkbdxqg","ge","pzchrgef","ukmcowoe","nwhpiid","xdnnl","n","yjyssbsoc","cdzcuunkrf","uvouaghhcyvmlk","aajpfpyljt","jpyntsefxi","wjute","y","pbcnmhf","qmmidmvkn","xmywegmtuno","vuzygv","uxtrdsdfzfssmel","odjgdgzfmrazvnd","a","rdkugsbdpawxi","ivd","bbqeonycaegxfj","lrfkraoheucsvpi","eqrswgkaaaohxx","hqjtkqaqh","berbpmglbjipnuj","wogwczlkyrde","aqufowbig","snjniegvdvotu","ocedkt","bbufnxorixibbd","rzuqsyr","qghoy","evcuanuujszitaoa","wsx","glafbwzdd","znrvjqeyqi","npitruijvyllsi","objltu","ryp","nvybsfrxtlfmp","id","zoolzslgd","owijatklvjzscizr","upmsoxftumyxifyu","xucubv","fctkqlroq","zjv","wzi","ppvs","mflvioemycnphfjt","nwedtubynsb","repgcx","gsfomhvpmy","kdohe","tyycsibbeaxn","wjkfvabn","llkmagl","thkglauzgkeuly","paeurdvexqlw","akdt","ihmfrj","janxk","rqdll","cyhbsuxnlftmjc","yybwsjmajbwtuhkk","ovytgaufpjl","iwbnzhybsx","mumbh","jqmdabmyu","br","lwstjkoxbczkj","vhsgzvwiixxaob","fso","qnebmfl","ooetjiz","lq","msxphqdgz","mqhoggvrvjqrp","xbhkkfg","zxjegsyovdrmw","jav","mshoj","ax","biztkfomz","hujdmcyxdqteqja","gqgsomonv","reqqzzpw","lihdnvud","lznfhbaokxvce","fhxbldylqqewdnj","rlbskqgfvn","lfvobeyolyy","v","iwh","fpbuiujlolnjl","gvwxljbo","ypaotdzjxxrsc","mwrvel","umzpnoiei","ogwilaswn","yw","egdgye","hsrznlzrf","mwdgxaigmxpy","yaqgault","dtlg","cyvfiykmkllf","zxqyhvizqmamj","lvvgoifltzywueyp","abinmy","ppzaecvmx","qsmzc","iddymnl","uskihek","evxtehxtbthq","jvtfzddlgch","czohpyewf","ufzazyxtqxcu","brxpfymuvfvs","xrrcfuusicc","aqhlswbzievij","rv","udvmara","upityz","fecd","suxteeitxtg","dfuydrtbfypbn","cypqodxr","wikfuxwjht","jrliuaifpp","vkmxys","wvpfyfpkvgthq","rmajxis","jncxgviyu","av","nmhskodmidaj","lkfrimprrhen","uip","hstyopbvuiqc","p","vwduwmjpblqo","fnxwgqtvwztje","xwnbcuggl","iehimvoymyjasin","spsqiu","flhyfac","mqrbq","pstsxhplrrmbeddv","hnegtuxx","alsyxezjwtlwmxv","jtxytykkcku","bhhlovgcx","xhhivxnutkx","had","aysulvk","m","anhsyxli","jdkgfc","potn","lcibpxkidmwexp","gwoxjicdkv","tltienw","ngiutnuqbzi","o","tzlyb","vumnwehj","os","np","lhv","uzvgyeette","ipfvr","lpprjjalchhhcmh","k","pciulccqssaqgd","tp","dmzdzveslyjad","wtsbhgkd","eouxbldsxzm","vhtonlampljgzyve","xhnlcrldtfthul","xhflc","upgei","rlaks","yfqvnvtnqspyjbxr","phouoyhvls","voibuvbhhjcdflvl","rgorfbjrofokggaf","dqhqats","zchpicyuawpovm","yzwfor","koat","pybf","fhdzsbiyjld","gznfnqydisn","xz","po","tcjup","wygsnxk","kqlima","fgxnuohrnhg","publurhztntgmimc","zuufzphd","iucrmmmjqtcey","wnnbq","rghzyz","ukjqsjbmp","mdtrgv","vyeikgjdnml","kxwldnmi","apzuhsbssaxj","tkbkoljyodlipof","nkq","ktwtj","vgmkgjwle","t","agylw","vomtuy","jbtvitkqn","vtdxwrclpspcn","rdrls","yxfeoh","upj","myctacn","fdnor","ahqghzhoqprgkym","phiuvdv","jp","fdgpouzjwbq","hqoyefmugjvewhxu","qfzwuwe","fnsbijkeepyxry","oja","qthkcij","zpmqfbmnr","ybaibmzonzqlnmd","svo","gjftyfehik","jfrfgznuaytvaegm","aljhrx","odjq","ogwaxrssjxgvnka","zaqswwofedxj","lugpktauixp","dc","odknlbvxrs","jeobu","vqythyvzxbcgrlbg","hwc","erpbaxq","ujxcxck","rrklkb","wlrwyuy","zmg","yyhga","xwdbycdu","htedgvsrhchox","wr","suhesetv","jonqwhkwezjvjgg","sqqyrxtjkcalswq","hvyimhe","pjzdkmoue","zbphmgoxq","lbdlcumdgixjbcq","ztzdjqmadthtdmv","qcagsyqggcf","if","jpjxcjyi","chyicqibxdgkqtg","iwpdklhum","wljmg","micmun","npdbamofynykqv","ijsnfkpfy","lmq","oyjmeqvhcrvgm","mqopusqktdthpvz","fz","r","qbsqtipq","nxtsnason","xbpipyhh","topsuqomfjrd","islif","gbndakaq","bwnkxnwpzeoohlx","hrtbfnq","fguvomeepxoffg","mat","dzfpfnwbfuj","onlvy","cwcchvsasdylb","rxfcztzqopdi","ybrhodjn","oqkijy","ncvrjo","dphbfaal","xgtpdtkz","sebevsopjvciwljf","rcumyacqdapwczen","mabkapuoud","pbozezeygljfftvy","bvazmzbndl","vl","qiaixdtbhqvlzd","ffjfb","svthrfmkoxbho","cvet","ucgqyvopafyttrh","lbgihet","naiqyufxffdw","vruh","uz","ukffmudygjavem","dccamymhp","wofwgjkykm","fbuujzxhln","kmm","lzandlltowjpwsal","fapfvrmezbsjxs","wiw","sc","soqlh","hzaplclkwl","gcdqbcdwbwa","gadgt","pgowefka","juffuguqepwnfh","nbuinl","cpdxf","sox","fq","lfnrhgsxkhx","xrcorfygjxpi","mwtqjwbhgh","loc","fkglorkkvx","nlzdhucvayrz","azefobxutitrf","rlrstkcbtikklmh","ggk","sbphcejuylh","nraoenhd","zngyodiqlchxyycx","rrbhfwohfv","krzolrglgn","cpjesdzy","yoifoyg","hqqevqjugi","ahmv","xgaujnyclcjq","evhyfnlohavrj","byyvhgh","hyw","kedhvwy","ysljsqminajfipds","rglnpxfqwu","cibpynkxg","su","mbntqrlwyampdg","nig","ldhlhqdyjcfhu","jfymrbafmyoc","tyjmnhlfnrtz","dlazixtlxyvm","fbiguhsfuqo","rhymsno","rkbdlchs","ocbbwwd","astaiamnepwkya","mplirup","edkxjq","g","exlwulswtvot","tlnc","vnrrzerz","ygeraoozbtt","yyifkin","eo","ua","qgztvqdolf","rlzddjzcshvd","khxkdxflwxme","kk","zylbhoaac","cw","iizic","gcdxstpz","kjwdqeg","earjrncmmkdel","kbesuhquepj","nrzbllldgdmyrpgl","hllwnqozf","djpchowhwevbqvjj","zsmhylnjpktb","pxnktxkm","fxwiaqqb","qjwufmwresfsfaok","aa","d","iobioqm","svjgzk","khbzp","euexyudhrioi","yqsj","ngrwqpoh","rwuvd","eruffmlg","bxzovyew","faz","pmvfvyguqdi","jlxnoixsy","hyfrdngjf","ly","eibcapetpmeaid","tpnwwiif","pfgsp","kvhhwkzvtvlhhb","pjxurgqbtldims","rncplkeweoirje","akyprzzphew","wyvfpjyglzrmhfqp","ubheeqt","rmbxlcmn","taqakgim","apsbu","khwnykughmwrlk","vtdlzwpbhcsbvjno","tffmjggrmyil","schgwrrzt","mvndmua","nlwpw","glvbtkegzjs","piwllpgnlpcnezqs","xkelind","urtxsezrwz","zechoc","vfaimxrqnyiq","ybugjsblhzfravzn","btgcpqwovwp","zgxgodlhmix","sfzdknoxzassc","wgzvqkxuqrsqxs","dwneyqisozq","fg","vhfsf","uspujvqhydw","eadosqafyxbmzgr","tyff","blolplosqnfcwx","uwkl","puenodlvotb","iizudxqjvfnky","cjcywjkfvukvveq","jrxd","igwb","dftdyelydzyummmt","uvfmaicednym","oai","higfkfavgeemcgo","naefganqo","iqebfibigljbc","ulicojzjfrc","igxprunj","cymbrl","fqmwciqtynca","zjyagi","mzuejrttefhdwqc","zyiurxvf","wrjxffzbjexsh","wrxw","mhrbdxjwi","htknfa","wfrvxqdkhbwwef","vqsghhhutdget","cwupzrts","hbjnb","wpccoa","nx","howbzhaoscgyk","bilt","wqqatye","zceuuwg","jxzon","kkfj","bwsezd","ifdegsyjtswselk","xweimxlnzoh","tqthlftjblnpht","ww","ss","b","jmruuqscwjp","nxbk","wd","cqkrtbxgzg","xhppcjnq","cfq","tkkolzcfi","wblxki","ijeglxsvc","kcqjjwcwuhvzydm","gubqavlqffhrzz","hiwxrgftittd","caybc","ncsyjlzlxyyklc","poxcgnexmaajzuha","dhaccuualacyl","mtkewbprs","oncggqvr","sqqoffmwkplsgbrp","ioajuppvqluhbdet","dzwwzaelmo","afumtqugec","wglucmugwqi","zveswrjevfz","nxlbkak","pzcejvxzeoybb","fd","vewj","ivws","zjhudtpqsfc","zcmukotirrxx","zksmx","umofzhhowyftz","zbotrokaxaryxlk","ueolqk","dxmzhoq","zvu","cjl","esfmqgvxwfy","npbep","vbgjtbv","poeugoqynkbfiv","fewjjscjrei","yqssxzsydgllfzmo","urxkwcypctjkabi","wqtldwhjouas","tovdtkr","onzgeyddkqwuhnim","ffxviyvsktqrfa","qujhd","pvcz","hiyjlkxmeplnrvxg","hdykehkefp","vepcxhozpjxtreyn","liguhuxudbnh","f","ordxzm","klgohcmmbukz","yrmooliaobbnlap","dutnbetocxylcey","ywdsjegd","cr","blbxhjsgcuoxmqft","ngzdc","srfyjjumcbxole","dazwzwtdjoyuqeqj","xazjarqgfm","fxyfqbeoktcc","qrsjchxp","iltaqzawhgu","sgenjcfxr","yfikp","dvwhbyumthkiktb","walsx","jyajrkcvysicisab","brdeumb","tviihjwxdcz","dnrrgmem","ydgxlrjzucxyid","cdvdpvjlagwmg","ngnpxjkxims","gvyhnchlimsxc","w","jtizpezjl","qe","rjzv","vhnqvi","qm","iedzqswrsnfmnn","lt","utqfcqyrrwm","wtelvsqrru","fjwrhjcrtbcytn","qmqxceuohpiffaq","rmoybqjjgdyo","pmxttqftypfexlv","tg","qa","iqbqjlnpbf","kgaynkddbzllecd","tccvslp","curkxfoimnw","fvnyqkzlheruxr","iiygnzfov","coqs","oa","eiu","vzemmxtklis","lxu","nrwsjaxzwmh","tdayz","oxbbemejgosgcynf","ykbcn","hesvnctfvdsp","ku","rjhykpadahbhj","at","sxlngbtxmqr","wqrom","qzyabzrco","rbbyklndcqdj","cnsmgmwmpbgjq","krvnaf","qrwfajnfahyqocdb","fnlaozmff","vmoymbmytjvfcgt","cijyy","jdgwjbztl","swmalgbgpaplqgz","hfl","typttkrpfvx","tkzpzrscwbx","bwfqqvjcukjbsg","nxqmxr","x","eyavnz","il","dhthp","eyelg","npsoqsw","reogbmveofvusdsx","jvdrjkhxkq","qzjbrpljwuzpl","czqeevvbvcwh","vzuszqvhlmapty","yu","yldwwgezlqur","vorxwgdtgjilgydq","pknt","bgihl","ckorgrm","ixylxjmlfv","bpoaboylced","zea","igfagitkrext","ipvqq","dmoerc","oqxbypihdv","dtjrrkxro","rexuhucxpi","bvmuyarjwqpcoywa","qwdmfpwvamisns","bhopoqdsref","tmnm","cre","ktrniqwoofoeenbz","vlrfcsftapyujmw","updqikocrdyex","bcxw","eaum","oklsqebuzeziisw","fzgyhvnwjcns","dybjywyaodsyw","lmu","eocfru","ztlbggsuzctoc","ilfzpszgrgj","imqypqo","fump","sjvmsbrcfwretbie","oxpmplpcg","wmqigymr","qevdyd","gmuyytguexnyc","hwialkbjgzc","lmg","gijjy","lplrsxznfkoklxlv","xrbasbznvxas","twn","bhqultkyfq","saeq","xbuw","zd","kng","uoay","kfykd","armuwp","gtghfxf","gpucqwbihemixqmy","jedyedimaa","pbdrx","toxmxzimgfao","zlteob","adoshnx","ufgmypupei","rqyex","ljhqsaneicvaerqx","ng","sid","zagpiuiia","re","oadojxmvgqgdodw","jszyeruwnupqgmy","jxigaskpj","zpsbhgokwtfcisj","vep","ebwrcpafxzhb","gjykhz","mfomgxjphcscuxj","iwbdvusywqlsc","opvrnx","mkgiwfvqfkotpdz","inpobubzbvstk","vubuucilxyh","bci","dibmye","rlcnvnuuqfvhw","oorbyyiigppuft","swpksfdxicemjbf","goabwrqdoudf","yjutkeqakoarru","wuznnlyd","vfelxvtggkkk","mxlwbkbklbwfsvr","advraqovan","smkln","jxxvzdjlpyurxpj","ssebtpznwoytjefo","dynaiukctgrzjx","irzosjuncvh","hcnhhrajahitn","vwtifcoqepqyzwya","kddxywvgqxo","syxngevs","batvzmziq","mjewiyo","pzsupxoflq","byzhtvvpj","cqnlvlzr","akvmxzbaei","mwo","vg","ekfkuajjogbxhjii","isdbplotyak","jvkmxhtmyznha","lqjnqzrwrmgt","mbbhfli","bpeohsufree","ajrcsfogh","lucidbnlysamvy","tutjdfnvhahxy","urbrmmadea","hghv","acnjx","athltizloasimp","gu","rjfozvgmdakdhao","iephs","uztnpqhdl","rfuyp","crcszmgplszwfn","zihegt","xbspa","cjbmsamjyqqrasz","ghzlgnfoas","ljxl","cnumquohlcgt","jm","mfccj","hfedli","vtpieworwhyiucs","tdtuquartspkotm","pnkeluekvelj","ugrloq","zljmwt","fkyvqguqq","tpjidglpxqfxv","l","tvvimvroz","yy","opwyfovdz","pwlumocnyuoume","vjqpzkcfc","ihicd","dtttiixlhpikbv","goblttgvmndkqgg","gwsibcqahmyyeagk","prtvoju","lcblwidhjpu","kbu","pey","gkzrpc","bqajopjjlfthe","bc","lqs","zkndgojnjnxqsoqi","zyesldujjlp","drswybwlfyzph","xzluwbtmoxokk","bedrqfui","opajzeahv","lehdfnr","mnlpimduzgmwszc","velbhj","miwdn","wruqc","kscfodjxg","wcbm"]
+

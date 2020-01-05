@@ -1,0 +1,189 @@
+## Specification
+You have a pointer at index 0 in an array of size arrLen. At each step, you can move 1 position to the left, 1 position to the right in the array or stay in the same place  (The pointer should not be placed outside the array at any time).
+
+Given two integers steps and arrLen, return the number of ways such that your pointer still at index 0 after exactly steps steps. Since the answer may be too large, return it modulo 10^9 + 7.
+
+Example 1:
+Input: steps = 3, arrLen = 2
+Output: 4
+Explanation: There are 4 differents ways to stay at index 0 after 3 steps.
+Right, Left, Stay
+Stay, Right, Left
+Right, Stay, Left
+Stay, Stay, Stay
+
+Example 2:
+Input: steps = 2, arrLen = 4
+Output: 2
+Explanation: There are 2 differents ways to stay at index 0 after 2 steps
+Right, Left
+Stay, Stay
+
+Example 3:
+Input: steps = 4, arrLen = 2
+Output: 8
+
+Constraints:
+1 <= steps <= 500
+1 <= arrLen <= 10^6
+
+
+## Ideas
+# (II) DFS/DP_top-down
+// others
+https://leetcode.com/problems/number-of-ways-to-stay-in-the-same-place-after-some-steps/discuss/436117/C%2B%2B-Recursive-DP-(Memoization)
+
+This imple does not evaluate boundary in going further in dp but assemble that as a pre-check in the front of dp.
+
+https://leetcode.com/problems/number-of-ways-to-stay-in-the-same-place-after-some-steps/discuss/437436/Python3-Top-down-DFS-with-Memoization
+
+
+
+
+# (I) DP_bottom-up
+// python_concise
+https://leetcode.com/problems/number-of-ways-to-stay-in-the-same-place-after-some-steps/discuss/436677/Python-DP
+
+(vi) We also cannot go right beyond the current step number. Thus, we have totally three constriants on the righmost place we can go to at each round of outermost for loop. (less than arrLen, less than half of the total steps allowed, less than current steps moved, less than or equal to total steps minus current steps
+
+
+// others
+https://leetcode.com/problems/number-of-ways-to-stay-in-the-same-place-after-some-steps/discuss/436309/Java-6ms-1D-DP
+
+This imple does not follow strictly a bottom up. Each time we update an entry (dp[i][j]), we only need to refer to dp[i - 1][j - 1], dp[i - 1][j], and dp[i - 1][j + 1]. Thus, if we use a 1D vector, dp[i - 1][j - 1] is updated to be dp[i][j - 1]. In this case, we can use an int to store dp[i - 1][j - 1] which also makes it possible to go without adding dummy vals in the front.
+
+(v) Also, another general optimization is that we cannot go right beyond steps/2, otherwise, we are unable to return to 0 after #steps steps.
+
+
+// others_Optimized version of indep
+https://leetcode.com/problems/number-of-ways-to-stay-in-the-same-place-after-some-steps/discuss/436392/C%2B%2B-Bottom-Up-DP
+
+
+// indep
+Naive bottom up TLE. Improvement (i) Padding the dp array (front and end) such that we dont need to evaluate whether query is within boundary; e.g. steps = 4, arrLen = 6, we add padding to dp array (p means 0)
+   0 1 2 3 4 5 6 7
+0  p         b 	 p
+1  p	   b   	 p
+2  p     b   	 p
+3  p   b 	 p
+4  p t	   	 p
+
+(ii) As we are finding dp[steps][0] (after padding dp[steps][1], t is above chart), as we increasing steps, the span we need to consider shortens by decrementally. We thus also shrink the steps we need to check by one at each round.
+
+(iii) Classical mem optimization. Use 2D vector to replace #steps-D
+
+(iv) Use long such that we can add up the three previous values altogether without the need to modulating the first two sum before adding the third. However, this comes with the cost of huge increase in mem.
+
+(v) above
+
+
+## Code
+# (II) DFS/DP_top-down
+// others_8ms
+**** WAIT ****
+
+// indep_152ms_36.3MB
+class Solution {
+public:
+    int q = 1e9 + 7, steps;
+    vector<unordered_map<int, int>> mem;
+    
+    int dfs(int offset, int i, int bd, int rsteps) {
+        if (rsteps == 0) return offset == 0;
+        if (mem[rsteps].count(i)) return mem[rsteps][i];
+        if (i > min({ steps - rsteps, rsteps, steps / 2 })) return 0;
+        
+        int left = 0, stay = 0, right = 0;
+        if (i - 1 >= 0) left = dfs(offset - 1, i - 1, bd, rsteps - 1);
+        if (i + 1 < bd) right = dfs(offset + 1, i + 1, bd, rsteps - 1);
+        stay = dfs(offset, i, bd, rsteps - 1);
+        
+        return mem[rsteps][i] = ((long)left + stay + right) % q;
+    }
+    
+    int numWays(int steps, int arrLen) {
+        this->steps = steps;
+        int bd = min(arrLen, steps / 2 + 1);
+        mem.assign(steps + 1, unordered_map<int, int>());
+        return dfs(0, 0, bd, steps);
+    }
+};
+
+
+# (I) DP_bottom-up
+// derived_0ms_16.1MB
+class Solution {
+public:
+    int numWays(int steps, int arrLen) {
+        vector<int> ct(arrLen + 1);
+        ct[0] = 1;
+        long q = 1e9 + 7;
+        for (int i = 1; i <= steps; i++) {
+            int prev = 0, j = -1, hold;
+            int hi = min({ arrLen - 1, steps / 2, steps - i, i });
+            while(++j <= hi) {
+                hold = ct[j];
+                ct[j] = ((long)prev + ct[j] + ct[j + 1]) % q;
+                prev = hold;
+            }
+        }
+        return ct[0];
+    }
+};
+
+// indep_12ms_54.2MB
+class Solution {
+public:
+    int numWays(int steps, int arrLen) {
+        long q = 1e9 + 7;
+        // dp[i][j], # of ways to stay at id j - 1 after i moves
+        vector<vector<long>> dp(2, vector<long>(arrLen + 2, 0));
+        dp[0][1] = 1; // dp[][0] and dp[][len + 1] padding
+        for (int i = 1, hi = steps; i <= steps; i++) {
+            hi = min(hi--, arrLen);
+            for (int j = 0; j < hi; j++) {
+                int prev = (i - 1) % 2;
+                dp[i % 2][j + 1] = (dp[prev][j + 1] + dp[prev][j + 2] + dp[prev][j]) % q;
+            }
+        }
+        return (int)dp[steps % 2][1];
+    }
+};
+
+// indep_24ms_31.5MB
+class Solution {
+public:
+    int numWays(int steps, int arrLen) {
+        int q = 1e9 + 7, hi = steps;
+        // dp[i][j], # of ways to stay at id j - 1 after i moves
+        vector<vector<int>> dp(2, vector<int>(arrLen + 2, 0));
+        dp[0][1] = 1; // dp[][0] and dp[][len + 1] padding
+        for (int i = 1; i <= steps; i++) {
+            hi = min(hi--, arrLen);
+            for (int j = 0; j < hi; j++) {
+                int prev = (i - 1) % 2;
+                dp[i % 2][j + 1] = ((dp[prev][j + 1] + dp[prev][j + 2]) % q + dp[prev][j]) % q;
+            }
+        }
+        return dp[steps % 2][1];
+    }
+};
+
+// naive_TLE
+class Solution {
+public:
+    int numWays(int steps, int arrLen) {
+        int q = 1e9 + 7;
+	// dp[i][j], # of ways to stay at id j after i moves
+        vector<vector<int>> dp(steps + 1, vector<int>(arrLen, 0)); 
+        dp[0][0] = 1;
+        for (int i = 1; i <= steps; i++) {
+            for (int j = 0; j < arrLen; j++) {
+                dp[i][j] = dp[i - 1][j];
+                if (j + 1 < arrLen) dp[i][j] = (dp[i][j] + dp[i - 1][j + 1]) % q;
+                if (j - 1 >= 0) dp[i][j] = (dp[i][j] + dp[i - 1][j - 1]) % q;
+            }
+        }
+        return dp[steps][0];
+    }
+};

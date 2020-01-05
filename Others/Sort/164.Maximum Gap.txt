@@ -1,0 +1,194 @@
+## Specification
+Given an unsorted array, find the maximum difference between the successive elements in its sorted form. Return 0 if the array contains less than 2 elements.
+
+Example 1:
+Input: [3,6,9,1]
+Output: 3
+Explanation: The sorted form of the array is [1,3,6,9], either
+             (3,6) or (6,9) has the maximum difference 3.
+Example 2:
+Input: [10]
+Output: 0
+Explanation: The array contains less than 2 elements, therefore return 0.
+Note:
+
+You may assume all elements in the array are non-negative integers and fit in the 32-bit signed integer range. Try to solve it in linear time/space.
+
+
+## Testcases
+[1,16,12,10,4,8,2,6]
+[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,24,29,31,32,30,98,99,76]
+[1,10000000]
+[1,1,1,1,1,5,5,5,5,5]
+[1,1,1,1]
+xhttps://leetcode.com/submissions/detail/284638591/testcase/
+
+
+## Ideas
+Two general strategies are: (i) sort the array and traverse one time to get the max gap (Radix sort) (ii) calculate max gap while sorting (somehow, not fully sorting it) (Bucket sort)
+// An summary (imple not elegant and may be buggy)
+https://leetcode.com/problems/maximum-gap/discuss/50690/Clean-C%2B%2B-implementation-of-3-linear-time-sort-alg-with-detailed-explaination
+
+
+# (II) Radix sort
+_(ii) Bit Radix_
+Instead of sorting based on each decimal digit as in classical radix, we can treat each number in its bin form and sort based on each binary digit.
+
+// python_31 bit (nlogn)
+// very concise cpp (discussion) (stable-partition)
+https://leetcode.com/problems/maximum-gap/discuss/50647/I-solved-it-using-radix-sort
+- This method checks each of the 32 bits. For each bit, it iterate thru all numbers. Thus, time comlexity is 32n. However, given n <= 2^32, 32n is nlogn already. When n > 2^32, there are at most 32n unique integers and after removing duplicates in linear time, 32n is still larger than nlogn
+
+
+_(i) Classical radix_
+We can sort based on each digit from LSD to MSD
+
+Two possible imple. One is as in ALgrII where we count each digit to its next place (for (int i = 0; i < N; i++) count[a[i].charAt(d) + 1]++;). If not, we imple as shown here.
+
+Notably point in this imple is that in the 3rd iteration where we reorder num via assigning correpsonding elements to the aux array, we need to iterate from the end. This is to preserve the relative order of numbers with the same digit currently under check. For instance, in first run of while loop, we order based on digit on ones place (20, 12, 43, 36, 27, 8, 29). This somehow implicitly finalized the relative order of 20, 27, and 29. In the next run of while, we shouldnt change this relative order
+
+// 10 based and 16 based
+https://leetcode.com/problems/maximum-gap/discuss/50642/Radix-sort-solution-in-Java-with-explanation
+
+
+
+# (I) Bucket sort
+In bucket sort, the notable point is how large each bucket should be. Since there is no way that the max gap will be smaller than (max-min)/(n-1) (gap when all values are evenly distributed). As a result, only if we make the bucket size smaller than this value, we can be sure that neither gaps between values within the same bucket would be the largest gap possible.
+
+Normally, when values are not evenly distributed, at least one hole shall be empty. Thus, it is for sure that the max gap is not between values within the same bucket. However, if all values are evenly distributed, then each bucket shall have only one value and no buckets are empty. In this case, we can still obtain the uniform distance as the max and min value in each bucket is the same value and when finally traversing the array, we would definitely get that value.
+
+// others_concise (pigeon hole)
+https://leetcode.com/problems/maximum-gap/discuss/50644/Pigeon-hole-principle
+
+// others
+https://leetcode.com/problems/maximum-gap/discuss/50643/bucket-sort-JAVA-solution-with-explanation-O(N)-time-and-space
+
+
+
+## Code
+# (II) Radix sort
+// others_bin digit sort
+**** WAIT ****
+
+// indep_12ms_9.2MB
+// can be optimized
+class Solution {
+public:
+    void radixSort(vector<int>& nums) {
+        int n = nums.size(), mx = INT_MIN;
+        long q = 1, cq = 1;
+        for (int num : nums) mx = max(mx, num);
+        
+        vector<int> aux(n);
+        while(mx / q) q *= 10;
+        while(cq <= q) {
+            int ct[11]{}, cur, d;
+            for (int num : nums)
+                cur = num / cq, d = cur - 10 * (cur / 10), ct[d + 1]++;
+            for (int i = 1; i <= 9; i++)
+                ct[i] += ct[i - 1];
+            for (int num : nums)
+                cur = num / cq, d = cur - 10 * (cur / 10), aux[ct[d]++] = num;
+            for (int i = 0; i < n; i++)
+                nums[i] = aux[i];
+            cq *= 10;
+        }
+    }
+    
+    int maximumGap(vector<int>& nums) {
+        if (nums.size() < 2) return 0;
+        
+        radixSort(nums);
+        int res = INT_MIN;
+        for (int i = 1, prev = nums[0]; i < nums.size(); prev = nums[i++])
+            res = max(res, nums[i] - prev);
+        return res;
+    }
+};
+
+# (I) Bucket sort
+// 2nd_visit_indep_8ms_9.3MB
+class Solution {
+public:
+    int maximumGap(vector<int>& nums) {
+        if (nums.size() < 2) return 0;
+        
+        int mn = INT_MAX, mx = INT_MIN, n = nums.size();
+        for (int num : nums)
+            mn = min(mn, num), mx = max(mx, num);
+        if (mn == mx) return 0;
+        
+        int avg = (int)ceil((double)(mx - mn) / n), m = (mx - mn) / avg;
+        vector<int> mins(m + 1, INT_MAX), maxs(m + 1, INT_MIN);
+        for (int i = 0; i < n; i++) {
+            int id = (nums[i] - mn) / avg;
+            mins[id] = min(mins[id], nums[i]);
+            maxs[id] = max(maxs[id], nums[i]);
+        }
+        
+        int res = INT_MIN, prev = maxs[0];
+        for (int i = 1; i <= m; i++) {
+            if (mins[i] != INT_MAX)
+                res = max(res, mins[i] - prev);
+            if (maxs[i] != INT_MIN) prev = maxs[i];
+        }
+        return res;
+    }
+};
+
+// others_concise
+class Solution {
+public:
+    int maximumGap(vector<int>& nums) {
+        const int n = nums.size();
+        if(n<=1) return 0;
+        int maxE = *max_element(nums.begin(),nums.end());
+        int minE = *min_element(nums.begin(),nums.end());
+        double len = double(maxE-minE)/double(n-1);
+        vector<int> maxA(n,INT_MIN);
+        vector<int> minA(n,INT_MAX);
+        for(int i=0; i<n; i++) {
+            int index = (nums[i]-minE)/len;
+            maxA[index] = max(maxA[index],nums[i]);
+            minA[index] = min(minA[index],nums[i]);
+        }
+        int gap = 0, prev = maxA[0];
+        for(int i=1; i<n; i++) {
+            if(minA[i]==INT_MAX) continue;
+            gap = max(gap,minA[i]-prev);
+            prev = maxA[i];
+        }
+        return gap;
+    }
+};
+
+// adpated_8ms_9.3MB
+class Solution {
+public:
+    int maximumGap(vector<int>& nums) {
+        if (nums.size() < 2) return 0;
+        
+        int mx = INT_MIN, mn = INT_MAX;
+        for (int num : nums) mx = max(mx, num), mn = min(mn, num);
+        int len = mx - mn;
+        if (len == 0) return 0;
+        
+        int sz = ceil(((double)len / (double)(nums.size() - 1))), m = len / sz + 1;
+        
+        vector<int> bucketmax(m, INT_MIN), bucketmin(m, INT_MAX);
+        // construct bucket
+        for (int num : nums) {
+            int id = (num - mn) / sz;
+            bucketmax[id] = max(bucketmax[id], num);
+            bucketmin[id] = min(bucketmin[id], num);
+        }
+        // find largest gap
+        int res = INT_MIN;
+        for (int i = 1, pmax = bucketmax[0]; i < m; i++) {
+            if (bucketmin[i] == INT_MAX) continue;
+            res = max(res, bucketmin[i] - pmax);
+            pmax = bucketmax[i];
+        }
+        return res;
+    }
+};

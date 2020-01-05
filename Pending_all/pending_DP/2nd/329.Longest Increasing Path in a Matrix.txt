@@ -1,0 +1,279 @@
+## Specification
+Given an integer matrix, find the length of the longest increasing path. From each cell, you can either move to four directions: left, right, up or down. You may NOT move diagonally or move outside of the boundary (i.e. wrap-around is not allowed).
+
+Example 1:
+Input: nums = 
+[
+  [9,9,4],
+  [6,6,8],
+  [2,1,1]
+] 
+Output: 4 
+Explanation: The longest increasing path is [1, 2, 6, 9].
+
+Example 2:
+Input: nums = 
+[
+  [3,4,5],
+  [3,2,6],
+  [2,2,1]
+] 
+Output: 4 
+Explanation: The longest increasing path is [3, 4, 5, 6]. Moving diagonally is not allowed.
+
+
+## Testcases
+
+[[9,9,4],[6,6,8],[2,1,1]]
+
+
+
+## Code
+# (II) BFS(topo sort)
+
+https://leetcode.com/problems/longest-increasing-path-in-a-matrix/discuss/144558/Java-BFS-Topological-Sort
+
+https://leetcode.com/problems/longest-increasing-path-in-a-matrix/discuss/78336/Graph-theory-Java-solution-O(v2)-no-DFS
+
+the 2nd imple basically integrate the sort part.
+
+
+# (I) DFS
+Intuitive and naive. Notably, for loop would increase running time significantly. Thus, try to write out the 4 direction population explicitly without using a loop.
+
+
+
+## Code
+# (III) Graph
+
+**** WAIT ****
+
+
+
+# (II) BFS
+
+// topo sort_2nd visit_indep_72ms
+class Solution {
+public:
+    int n, m;
+    vector<vector<int>> indegree;
+    
+    vector<int> zeroDegree() {
+        vector<int> res;
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < m; j++) if (indegree[i][j] == 0) {
+                res.push_back(i * m + j);
+                indegree[i][j] = -1;
+            }
+        return res;
+    }
+    
+    int longestIncreasingPath(vector<vector<int>>& matrix) {
+        if (matrix.size() == 0 || matrix[0].size() == 0) return 0;
+        n = matrix.size(), m = matrix[0].size();
+        indegree.assign(n, vector<int>(m, 0));
+        // calcualte degree for each element
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                if (i - 1 >= 0 && matrix[i - 1][j] > matrix[i][j]) indegree[i - 1][j]++;
+                if (i + 1 < n && matrix[i + 1][j] > matrix[i][j]) indegree[i + 1][j]++;
+                if (j - 1 >= 0 && matrix[i][j - 1] > matrix[i][j]) indegree[i][j - 1]++;
+                if (j + 1 < m && matrix[i][j + 1] > matrix[i][j]) indegree[i][j + 1]++;
+            }
+        }
+        // topo bfs
+        vector<int> q = zeroDegree();
+        int res = 1;
+        while (true) {
+            for (int loc : q) {
+                int i = loc / m, j = loc % m;
+                if (i - 1 >= 0 && matrix[i - 1][j] > matrix[i][j]) indegree[i - 1][j]--;
+                if (i + 1 < n && matrix[i + 1][j] > matrix[i][j]) indegree[i + 1][j]--;
+                if (j - 1 >= 0 && matrix[i][j - 1] > matrix[i][j]) indegree[i][j - 1]--;
+                if (j + 1 < m && matrix[i][j + 1] > matrix[i][j]) indegree[i][j + 1]--;
+            }
+            q = zeroDegree();
+            if (q.empty()) return res;
+            res++;
+        }
+        return res;
+    }
+};
+
+
+
+// indep_884ms
+
+class Solution {
+public:
+    vector<vector<int>> dp;
+    int n, m;
+    
+    int valid(int i, int j, int prev, vector<vector<int>>& matrix) {
+        if (i < 0 || i >= n || j < 0 || j >= m || matrix[i][j] <= prev)
+            return 0;
+        return 1;
+    }
+    
+    int longestIncreasingPath(vector<vector<int>>& matrix) {
+        n = matrix.size();
+        if (n == 0) return 0;
+        m = matrix[0].size();
+        
+        int res = 1;
+        unordered_set<int> dp[2];
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < m; j++)
+                dp[1].insert(i * m + j);
+        while(true) {
+            int cl = res % 2, nl = 1 - cl, ct = 0;
+            dp[nl].clear();
+            for (int tail : dp[cl]) {
+                int r = tail / m, c = tail % m, prev = matrix[r][c];
+                if (valid(r + 1, c, prev, matrix)) dp[nl].insert((r + 1) * m + c);
+                if (valid(r - 1, c, prev, matrix)) dp[nl].insert((r - 1) * m + c);
+                if (valid(r, c + 1, prev, matrix)) dp[nl].insert(r * m + (c + 1));
+                if (valid(r, c - 1, prev, matrix)) dp[nl].insert(r * m + (c - 1));
+            }
+            if (dp[nl].empty()) break;
+            res++;
+        }
+        return res;
+    }
+};
+
+
+
+# (I) DFS
+
+// 2nd-visit_new dfs setup_36ms
+class Solution {
+public:
+    int n, m;
+    vector<vector<int>> mem;
+    
+    // length of longest increaseing path from matrix[i][j] onward
+    int dfs(int i, int j, vector<vector<int>>& matrix) {
+        if (mem[i][j] != INT_MAX) return mem[i][j];
+        
+        int l = 0, r = 0, u = 0, d = 0;
+        if (i - 1 >= 0 && matrix[i - 1][j] > matrix[i][j]) u = dfs(i - 1, j, matrix);
+        if (i + 1 < n && matrix[i + 1][j] > matrix[i][j]) d = dfs(i + 1, j, matrix);
+        if (j - 1 >= 0 && matrix[i][j - 1] > matrix[i][j]) l = dfs(i, j - 1, matrix);
+        if (j + 1 < m && matrix[i][j + 1] > matrix[i][j]) r = dfs(i, j + 1, matrix);
+        return mem[i][j] = max({l, r, u, d}) + 1;
+    }
+    
+    int longestIncreasingPath(vector<vector<int>>& matrix) {
+        if (matrix.size() == 0 || matrix[0].size() == 0) return 0;
+        n = matrix.size(), m = matrix[0].size();
+        mem.assign(n, vector<int>(m, INT_MAX));
+        
+        int res = 0;
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < m; j++)
+                res = max(res, dfs(i, j, matrix));
+        return res;
+    }
+};
+
+// optmize_derived_40ms
+class Solution {
+public:
+    vector<vector<int>> dp;
+    int n, m;
+    
+    // find longest increasing path from matrix[i][j] onward
+    int solve(int i, int j, int prev, vector<vector<int>>& matrix) {
+        if (i < 0 || i >= n || j < 0 || j >= m || matrix[i][j] <= prev)
+            return -1;
+        if (dp[i][j] != -1) return dp[i][j];
+        
+        int l = solve(i, j - 1, matrix[i][j], matrix);
+        int r = solve(i, j + 1, matrix[i][j], matrix);
+        int u = solve(i - 1, j, matrix[i][j], matrix);
+        int d = solve(i + 1, j, matrix[i][j], matrix);
+        return dp[i][j] = max(1 + max({l, r, u, d}), 1);
+    }
+    
+    int longestIncreasingPath(vector<vector<int>>& matrix) {
+        n = matrix.size();
+        if (n == 0) return 0;
+        m = matrix[0].size();
+        // dp[i][j], longest increasing path from matrix[i][j] onward
+        dp.assign(n, vector<int>(m, -1));
+        
+        int res = 1;
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < m; j++)
+                res = max(res, solve(i, j, INT_MIN, matrix));
+        return max(res, 1);
+    }
+};
+
+
+// others_288ms
+
+class Solution {
+public:
+    int longestIncreasingPath(vector<vector<int>>& matrix) {
+        int rows = matrix.size();
+        if (!rows) return 0;
+        int cols = matrix[0].size();
+        
+        vector<vector<int>> dp(rows, vector<int>(cols, 0));
+        std::function<int(int, int)> dfs = [&] (int x, int y) {
+            if (dp[x][y]) return dp[x][y];
+            vector<vector<int>> dirs = {{-1, 0}, {1, 0}, {0, 1}, {0, -1}};
+            for (auto &dir : dirs) {
+                int xx = x + dir[0], yy = y + dir[1];
+                if (xx < 0 || xx >= rows || yy < 0 || yy >= cols) continue;
+                if (matrix[xx][yy] <= matrix[x][y]) continue;
+                dp[x][y] = std::max(dp[x][y], dfs(xx, yy));
+            }
+            return ++dp[x][y];
+        };
+        
+        int ret = 0;
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < cols; ++j) {
+                ret = std::max(ret, dfs(i, j));
+            }
+        }
+        
+        return ret;
+    }
+};
+
+// indep
+
+class Solution {
+public:
+    vector<vector<int>> dp;
+    int n, m;
+    
+    // find longest increasing path from matrix[i][j] onward
+    int solve(int i, int j, vector<vector<int>>& matrix) {
+        if (dp[i][j] != -1) return dp[i][j];
+        
+        vector<vector<int>> nxts = {{i + 1, j}, {i - 1, j}, {i, j - 1}, {i, j + 1}};
+        for (vector<int> nxt : nxts)
+            if (!(nxt[0] < 0 || nxt[0] >= n || nxt[1] < 0 || nxt[1] >= m || matrix[nxt[0]][nxt[1]] <= matrix[i][j]))
+                dp[i][j] = max(dp[i][j], 1 + solve(nxt[0], nxt[1], matrix));
+        return dp[i][j] = max(dp[i][j], 1);
+    }
+    
+    int longestIncreasingPath(vector<vector<int>>& matrix) {
+        n = matrix.size();
+        if (n == 0) return 0;
+        m = matrix[0].size();
+        // dp[i][j], longest increasing path from matrix[i][j] onward
+        dp.assign(n, vector<int>(m, -1));
+        
+        int res = 1;
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < m; j++)
+                res = max(res, solve(i, j, matrix));
+        return max(res, 1);
+    }
+};

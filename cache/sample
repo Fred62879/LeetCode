@@ -1,0 +1,45 @@
+class MajorityChecker {
+public:
+    int n, nsqrt, 
+    vector<int> arr;
+    vector<int> candis;
+    unordered_map<int, vector<int>> ids;
+    
+    MajorityChecker(vector<int>& arr) {
+        n = arr.size(), nsqrt = (int)sqrt(n);
+        this->arr = arr;
+        for (int i = 0; i < n; i++) {
+            if (!ids.count(arr[i])) ids[arr[i]] = {};
+            ids[arr[i]].push_back(i);
+        }
+        for (auto ele : ids) if (ele->second.size() >= nsqrt)
+            candis.push_back(ele->first);
+    }
+    
+     int getMajor(int left, int right) {
+        int res = -1, ct = 0;
+        for (int i = left; i <= right; i++) {
+            if (ct == 0) res = arr[i], ct = 1;
+            else if (arr[i] == res) ct++;
+            else if (--ct == 0) res = arr[i], ct = 1;
+        }
+        return res;
+    }
+    
+    int count(int lo, int hi, int t) {
+        auto left = lower_bound(ids[t].begin(), ids[t].end(), lo);
+        auto right = upper_bound(ids[t].begin(), ids[t].end(), hi);
+        return right - left;
+    }
+    
+    int query(int left, int right, int threshold) {
+        int len = right - left + 1;
+        if (nsqrt >= threshold) {
+            for (int cand : candis)
+                if (count(left, right, cand) >= threshold) return cand;
+        } else {
+            
+        }
+        return -1;
+    }
+};

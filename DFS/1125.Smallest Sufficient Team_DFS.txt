@@ -1,0 +1,391 @@
+## Specification
+Similar: LT691
+
+In a project, you have a list of required skills req_skills,and a list of people. The i-th person people[i] contains a list of skills that person has.
+
+Consider a sufficient team: a set of people such that for every required skill in req_skills, there is at least one person in the team who has that skill.
+We can represent these teams by the index of each person: 
+for example, team = [0, 1, 3] represents the people with skills people[0], people[1], and people[3].
+
+Return any?sufficient team of the smallest possible size, represented by the index of each person.
+
+
+You may return the answer in any order. It is guaranteed an answer exists.
+
+
+
+
+
+Example 1:
+
+
+Input: 
+req_skills = ["java","nodejs","reactjs"], 
+people = [["java"],["nodejs"],["nodejs","reactjs"]]
+
+Output: [0,2]
+
+
+Example 2:
+
+
+Input:
+req_skills = ["algorithms","math","java","reactjs","csharp","aws"], 
+people = [["algorithms","math","java"],["algorithms","math","reactjs"],
+          ["java","csharp","aws"],["reactjs","csharp"],["csharp","math"],["aws","java"]]
+
+Output: [1,2]
+
+
+
+
+Constraints:
+
+
+1 <= req_skills.length <= 16
+
+1 <= people.length <= 60
+
+1 <= people[i].length, req_skills[i].length, people[i][j].length?<= 16
+
+Elements of req_skills and people[i] are (respectively) distinct.
+
+req_skills[i][j], people[i][j][k] are?lowercase English letters.
+
+It is guaranteed a sufficient team exists.
+
+
+
+
+## Ideas
+https://github.com/zywaited/leetcode/blob/master/1101_1150/1125/two/smallest_sufficient_team.go
+# (III) BFS
+
+# (II) DP
+
+# (I) DFS_backtracking
+_(i)_ skill-wise
+The skill-wise imple tends to be more concise than person-wise for
+(i) we dont need to check if all skills are covered when we reach the end as we are traversing each skill and when we reach the end, we already covered all skills;
+(ii) no mem need to be maintained; in person-wise, we have to keep a mem because the combination of different people may contribute to the same set of skills. If we dont have a mem, we would check some branch more than once. However, in skill-wise, we traverse skills one-by-one, the only repetitoins is that people taken previously possess the skill we are currently checking. This can be either leave there or dealed with as in optimized version.
+(iii) in the path tracking part, for each skill, when we iterate over people possessing that skill, we need to take exactly one person. As a result, we can maintain a running set of people. When we reach end, we can compare the # of people collected in the running set with min set so far.
+
+
+// optimized
+https://leetcode.com/problems/smallest-sufficient-team/discuss/334683/Java-backtracking-solution
+
+Note, since one person may have more than one skills, the below imple which traverse all skills one by one regardless whether or not they are removed as a by-product previously, is not efficient. This imple instead remove all possessed skills as one person is traversed and doing dfs on the rest skills. After finishing dfs, the removed skills are added back for further round.
+
+// naive
+https://leetcode.com/problems/smallest-sufficient-team/discuss/334641/Java-DFS-Backtracking
+
+For each skill, pick every possible person that obtains it to do dfs. During dfs, we can also do backtracking to compare size of the current set of people with the smallest seen so far to prune.
+
+
+_(ii)_ person-wise
+The general dfs idea is that at each person we eithe take him or bypass him. It is straightforward if we want to know the size of the smallest set. The typical form is we use a dp array or map to store the smallest size from ith people onward given j skill already covered.
+
+However, to know exactly which person we are taking, we should embed another program inside dfs to record people while calculating the smallest size. We can imagine the whole dfs path as a tree and the answer set being a path in the tree. Each level represents a person, and nodes in the same level represents differnt taking strategies until that person. Imagine at a certian person i (level i/tree height i), we decide to take it, then the current skill already covered can will be updated. We would like to kee p track of all such updates. Thus, we maintian a 1D vector next where next[cskill] is the first person taken after we already have cskill covered. This is implemented in (3).
+
+A more intuitive way for such tracking is to maintain a 2D vector of pairs, for the current combination of people i and cskill, we record the next person and skill can be reached.
+
+// optimized
+https://leetcode.com/problems/smallest-sufficient-team/discuss/341264/Fast-DFS-cpp-solution
+- Pruning at each person via evaluating whether all skills can be covered taking all rest people.
+
+
+
+
+## Code
+# (I) DFS_backtracking
+_(i) skill-wise_
+// optimized_others_52ms_17.4MB_slower than indep
+class Solution {
+private:
+    int n, m, k, mnp;
+    vector<int> res, run, pskill;
+    vector<vector<int>> skillp, peopleInt;
+    
+    
+    // dfs to cover skills contained in restSkills
+    void dfs(int restSkills) {
+        if (run.size() >= mnp) return;
+        if (restSkills == 0) { res = run; mnp = run.size(); return; }
+        
+        int fskill = log( (~(restSkills - 1)) & restSkills) / log(2);
+        //cout << restSkills << " " << fskill << endl;
+        for (int p : skillp[fskill]) { // iterate over each person possessing fskill
+            vector<int> deleted;
+            
+            for (int i : peopleInt[p]) if (restSkills & (1 << i))
+                deleted.push_back(i), restSkills &= ~ (1 << i); // remove possessed skills
+            
+            run.push_back(p);
+            dfs(restSkills);
+            run.pop_back();
+            for (int i : deleted) restSkills |= (1 << i);
+        }
+    }
+    
+public:
+    vector<int> smallestSufficientTeam(vector<string>& req_skills, vector<vector<string>>& people) {
+        n = req_skills.size(), m = (1 << n) - 1, k = people.size(), mnp = INT_MAX;
+        // required skills map
+        unordered_map<string, int> skillDict;
+        for (int i = 0; i < n; i++)
+            skillDict[req_skills[i]] = i;
+        
+        // skill int for each person
+        pskill.assign(k, 0), peopleInt.assign(k, vector<int>());
+        for (int i = 0; i < k; i++)
+            for (string skill : people[i]) if (skillDict.count(skill)) {
+                pskill[i] |= (1 << skillDict[skill]);
+                peopleInt[i].push_back(skillDict[skill]);
+            }
+        
+        skillp.assign(n, vector<int>());
+        for (int i = 0; i < k; i++)
+            for (auto skill : people[i]) if (skillDict.count(skill))
+                skillp[skillDict[skill]].push_back(i);
+        
+        dfs(m);
+        return res;
+    }
+};
+
+// visit_Dec-31-2019_8ms_9.6MB
+class Solution {
+private:
+    int n, m, k, mnp;
+    vector<int> res, run, pskill;
+    vector<vector<int>> skillp;
+    
+    // from ith skill onward, cskill already covered
+    void dfs(int i, int cskill) {
+        if (run.size() >= mnp) return;
+        if (cskill == m || i == n) { res = run; mnp = run.size(); return; }
+        if (cskill & (1 << i)) { dfs(i + 1, cskill); return; }
+        
+        for (int p : skillp[i]) {
+            int nskill = cskill | pskill[p];
+            run.push_back(p);
+            dfs(i + 1, nskill);
+            run.pop_back();
+        }
+    }
+    
+public:
+    vector<int> smallestSufficientTeam(vector<string>& req_skills, vector<vector<string>>& people) {
+        n = req_skills.size(), m = (1 << n) - 1, k = people.size(), mnp = INT_MAX;
+        // required skills map
+        unordered_map<string, int> skillDict;
+        for (int i = 0; i < n; i++)
+            skillDict[req_skills[i]] = i;
+        
+        // skill int for each person
+        pskill.assign(k, 0);
+        for (int i = 0; i < k; i++)
+            for (string skill : people[i]) if (skillDict.count(skill))
+                pskill[i] |= (1 << skillDict[skill]);
+        
+        skillp.assign(n, vector<int>());
+        for (int i = 0; i < k; i++)
+            for (auto skill : people[i]) if (skillDict.count(skill))
+                skillp[skillDict[skill]].push_back(i);
+        
+        dfs(0, 0);
+        return res;
+    }
+};
+
+
+_(ii) person-wise_
+// 3-indep_40ms_31.1MB
+class Solution {
+public:
+    struct hash_pair {
+        template <class T1, class T2>
+        size_t operator()(const pair<T1, T2>& p) const {
+            auto a = hash<T1>{}(p.first);
+            auto b = hash<T2>{}(p.second);
+            return a * 37 + b;
+        }
+    };
+    
+    int n, m, k;
+    vector<int> pskill, rest, next;
+    unordered_map<pair<int, int>, int, hash_pair> mem;
+    
+    // min # of people needed starting from people i with cskill already covered
+    int dfs(int i, int cskill) {
+        if (mem.count({i, cskill})) return mem[{i, cskill}];
+        if (cskill == m) return 0;
+        if (i == k || (cskill | rest[i]) != m) return -1;
+    
+        int res = 0;
+        int bypass = dfs(i + 1, cskill);
+        int take = dfs(i + 1, cskill | pskill[i]);
+        if (bypass == -1) {
+            if (take == -1) return mem[{i, cskill}] = -1;
+            res = take + 1;
+            next[cskill] = i;
+        } else if (take == -1) {
+            res = bypass;
+        } else if (take + 1 > bypass) {
+            res = bypass;
+        } else {
+            res = take + 1;
+            next[cskill] = i;
+        }
+        return mem[{i, cskill}] = res;
+    }
+    
+    vector<int> smallestSufficientTeam(vector<string>& req_skills, vector<vector<string>>& people) {
+        n = req_skills.size(), m = (1 << n) - 1, k = people.size();
+        // required skills map
+        unordered_map<string, int> skillDict;
+        for (int i = 0; i < n; i++)
+            skillDict[req_skills[i]] = i;
+        
+        // skill int for each person
+        pskill.assign(k, 0);
+        for (int i = 0; i < k; i++)
+            for (string skill : people[i]) if (skillDict.count(skill))
+                pskill[i] |= (1 << skillDict[skill]);
+        
+        // skills covered by people from i onward
+        rest.resize(k);
+        rest[k - 1] = pskill[k - 1];
+        for (int i = k - 2; i >= 0; i--)
+            rest[i] = rest[i + 1] | pskill[i];
+        
+        // DFS
+        next.resize(m + 1);
+        int sz = dfs(0, 0);
+        vector<int> res(sz);
+        for (int i = 0, cskill = 0; i < sz; i++) {
+            int np = next[cskill];
+            res[i] = np;
+            cskill |= pskill[np];
+        }
+        return res;
+    }
+};
+
+// 2-derived_60ms_100MB
+class Solution {
+public:
+    int n, m, k, tail;
+    vector<int> pskill, rest;
+    vector<vector<int>> minsz;
+    vector<vector<pair<int, int>>> nxt;
+    
+    // smallest # of people from ith person onward to cover m 
+    // with cskill already covered
+    int dfs(int i, int cskill) {
+        if (cskill == m) { tail = i - 1; return 0; }
+        if (i == k) return INT_MAX;
+        if (minsz[i][cskill] != INT_MAX) return minsz[i][cskill] == -1 ? INT_MAX : minsz[i][cskill];
+        if ((cskill | rest[i]) != m) return INT_MAX;
+        
+        int bypass = dfs(i + 1, cskill);
+        int nskill = cskill | pskill[i];
+        int take = dfs(i + 1, nskill);
+        if (bypass > take) {
+            nxt[i][cskill] = { i + 1, nskill };
+            return minsz[i][cskill] = take + 1;
+            
+        } else if (bypass != INT_MAX) {
+            nxt[i][cskill] = { i + 1, cskill };
+            return minsz[i][cskill] = bypass;
+        } else {
+            minsz[i][cskill] == -1;
+            return INT_MAX;
+        }
+    }
+    
+    vector<int> smallestSufficientTeam(vector<string>& req_skills, vector<vector<string>>& people) {
+        n = req_skills.size(), m = (1 << n) - 1, k = people.size();
+        // required skills map
+        unordered_map<string, int> skillDict;
+        for (int i = 0; i < n; i++)
+            skillDict[req_skills[i]] = i;
+        
+        // skill int for each person
+        pskill.assign(k, 0);
+        for (int i = 0; i < k; i++)
+            for (string skill : people[i]) if (skillDict.count(skill))
+                pskill[i] |= (1 << skillDict[skill]);
+        
+        // skills covered by people[i:]
+        rest.resize(k); rest[k - 1] = pskill[k - 1];
+        for (int i = k - 2; i >= 0; i--)
+            rest[i] = pskill[i] | rest[i + 1];
+        
+        // DFS
+        minsz.assign(k, vector<int>(m + 1, INT_MAX));
+        nxt.assign(k, vector<pair<int, int>>(m + 1));
+        dfs(0, 0);
+        
+        // trace path
+        vector<int> res;
+        for (int i = 0, cskill = 0, nskill; i < k; i++, cskill = nskill) {
+            nskill = nxt[i][cskill].second;
+            if (nskill != cskill) res.push_back(i);
+            if (nskill == m) break;
+        }
+        return res;
+    }
+};
+
+
+// 1-indep_TLE
+class Solution {
+public:
+    int n, m, np, min_num;
+    vector<int> ans, cur, bp; // binary people on skill basis
+    
+    // given #cover skills satisfied by #cnp people
+    // min # of people still needed from i onward
+    void dfs(int i, int cnp, int cover) {
+        if (cnp >= min_num) return;
+        if (cover == m) { cout << cnp << " "; ans = cur; min_num = cnp; }
+        if (i == np) return;
+        
+        for (int j = i; j < np; j++) { // current round first pick at j
+            cur.push_back(j);
+            dfs(j + 1, cnp + 1, cover | bp[j]);
+            cur.pop_back();
+        }
+    }
+    
+    vector<int> smallestSufficientTeam(vector<string>& rs, vector<vector<string>>& people) {
+        n = rs.size(), m = 1 << n - 1, np = people.size(), min_num = INT_MAX;
+        cout << m << endl;
+        // pre-process
+        unordered_map<string, int> map;
+        for (int i = 0; i < n; i++) map[rs[i]] = i;
+        bp.resize(np);
+        for (int i = 0; i < np; i++)
+            for (auto s : people[i])
+                if (map.count(s)) bp[i] |= (1 << map[s]);
+        // dfs
+        dfs(0, 0, 0);
+        return ans;
+    }
+};
+
+
+
+## Testcases
+["java","nodejs","reactjs"]
+[["java"],["nodejs"],["nodejs","reactjs"]]
+
+["algorithms","math","java","reactjs","csharp","aws"]
+[["algorithms","math","java"],["algorithms","math","reactjs"],["java","csharp","aws"],["reactjs","csharp"],["csharp","math"],["aws","java"]]
+
+["gkgtfxpvxnxlbhxu","baayobms","yomqrposuurmvisx","vsftojpcp","pjovtkytubbouq","hlmvucyi","chpzrslbtd","uighcqpiteg"]
+[["pjovtkytubbouq"],["baayobms"],["baayobms","pjovtkytubbouq"],["chpzrslbtd"],[],["yomqrposuurmvisx"],["uighcqpiteg"],[],["gkgtfxpvxnxlbhxu","yomqrposuurmvisx","uighcqpiteg"],[],["pjovtkytubbouq","uighcqpiteg"],["yomqrposuurmvisx"],[],[],[],["pjovtkytubbouq"],["gkgtfxpvxnxlbhxu","yomqrposuurmvisx","pjovtkytubbouq","uighcqpiteg"],["yomqrposuurmvisx","pjovtkytubbouq"],["chpzrslbtd"],["pjovtkytubbouq"],[],[],["baayobms"],["yomqrposuurmvisx","chpzrslbtd"],["yomqrposuurmvisx","pjovtkytubbouq"],["pjovtkytubbouq"],[],["yomqrposuurmvisx"],[],["yomqrposuurmvisx","pjovtkytubbouq"],[],[],[],["yomqrposuurmvisx"],[],["pjovtkytubbouq"],[],[],[],["vsftojpcp"],[],["yomqrposuurmvisx","pjovtkytubbouq"],[],[],["gkgtfxpvxnxlbhxu"],["yomqrposuurmvisx"],["pjovtkytubbouq","chpzrslbtd"],["uighcqpiteg"],["pjovtkytubbouq"],["yomqrposuurmvisx","pjovtkytubbouq","uighcqpiteg"],[],["pjovtkytubbouq"],[],["chpzrslbtd"],["hlmvucyi"],["yomqrposuurmvisx","pjovtkytubbouq"],["pjovtkytubbouq"],[],["yomqrposuurmvisx"],[]]
+
+["hfkbcrslcdjq","jmhobexvmmlyyzk","fjubadocdwaygs","peaqbonzgl","brgjopmm","x","mf","pcfpppaxsxtpixd","ccwfthnjt","xtadkauiqwravo","zezdb","a","rahimgtlopffbwdg","ulqocaijhezwfr","zshbwqdhx","hyxnrujrqykzhizm"]
+[["peaqbonzgl","xtadkauiqwravo"],["peaqbonzgl","pcfpppaxsxtpixd","zshbwqdhx"],["x","a"],["a"],["jmhobexvmmlyyzk","fjubadocdwaygs","xtadkauiqwravo","zshbwqdhx"],["fjubadocdwaygs","x","zshbwqdhx"],["x","xtadkauiqwravo"],["x","hyxnrujrqykzhizm"],["peaqbonzgl","x","pcfpppaxsxtpixd","a"],["peaqbonzgl","pcfpppaxsxtpixd"],["a"],["hyxnrujrqykzhizm"],["jmhobexvmmlyyzk"],["hfkbcrslcdjq","xtadkauiqwravo","a","zshbwqdhx"],["peaqbonzgl","mf","a","rahimgtlopffbwdg","zshbwqdhx"],["xtadkauiqwravo"],["fjubadocdwaygs"],["x","a","ulqocaijhezwfr","zshbwqdhx"],["peaqbonzgl"],["pcfpppaxsxtpixd","ulqocaijhezwfr","hyxnrujrqykzhizm"],["a","ulqocaijhezwfr","hyxnrujrqykzhizm"],["a","rahimgtlopffbwdg"],["zshbwqdhx"],["fjubadocdwaygs","peaqbonzgl","brgjopmm","x"],["hyxnrujrqykzhizm"],["jmhobexvmmlyyzk","a","ulqocaijhezwfr"],["peaqbonzgl","x","a","ulqocaijhezwfr","zshbwqdhx"],["mf","pcfpppaxsxtpixd"],["fjubadocdwaygs","ulqocaijhezwfr"],["fjubadocdwaygs","x","a"],["zezdb","hyxnrujrqykzhizm"],["ccwfthnjt","a"],["fjubadocdwaygs","zezdb","a"],[],["peaqbonzgl","ccwfthnjt","hyxnrujrqykzhizm"],["xtadkauiqwravo","hyxnrujrqykzhizm"],["peaqbonzgl","a"],["x","a","hyxnrujrqykzhizm"],["zshbwqdhx"],[],["fjubadocdwaygs","mf","pcfpppaxsxtpixd","zshbwqdhx"],["pcfpppaxsxtpixd","a","zshbwqdhx"],["peaqbonzgl"],["peaqbonzgl","x","ulqocaijhezwfr"],["ulqocaijhezwfr"],["x"],["fjubadocdwaygs","peaqbonzgl"],["fjubadocdwaygs","xtadkauiqwravo"],["pcfpppaxsxtpixd","zshbwqdhx"],["peaqbonzgl","brgjopmm","pcfpppaxsxtpixd","a"],["fjubadocdwaygs","x","mf","ulqocaijhezwfr"],["jmhobexvmmlyyzk","brgjopmm","rahimgtlopffbwdg","hyxnrujrqykzhizm"],["x","ccwfthnjt","hyxnrujrqykzhizm"],["hyxnrujrqykzhizm"],["peaqbonzgl","x","xtadkauiqwravo","ulqocaijhezwfr","hyxnrujrqykzhizm"],["brgjopmm","ulqocaijhezwfr","zshbwqdhx"],["peaqbonzgl","pcfpppaxsxtpixd"],["fjubadocdwaygs","x","a","zshbwqdhx"],["fjubadocdwaygs","peaqbonzgl","x"],["ccwfthnjt"]]

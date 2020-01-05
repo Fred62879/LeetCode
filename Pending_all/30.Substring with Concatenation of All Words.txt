@@ -1,0 +1,201 @@
+## Similar
+LT76
+
+## Specification
+You are given a string, s, and a list of words, words, that are all of the same length. Find all starting indices of substring(s) in s that is a concatenation of each word in words exactly once and without any intervening characters.
+
+Example 1:
+Input:
+  s = "barfoothefoobarman",
+  words = ["foo","bar"]
+Output: [0,9]
+Explanation: Substrings starting at index 0 and 9 are "barfoo" and "foobar" respectively. The output order does not matter, returning [9,0] is fine too.
+
+Example 2:
+Input:
+  s = "wordgoodgoodgoodbestword",
+  words = ["word","good","best","word"]
+Output: []
+
+
+
+## Testcases
+"barfoothefoobarman"
+["foo","bar"]
+
+"wordgoodgoodgoodbestword"
+["word","good","best","word"]
+
+"wordgoodgoodgoodbestword"
+["word","good","best","word","good","good"]
+
+"wordgoodgoodgoodbestword"
+["word","good","best","word","good","good"]
+
+"lingmindraboofooowingdingbarrwingmonkeypoundcake"
+["fooo","barr","wing","ding","wing"]
+
+"a"
+["a","a"]
+
+"abaababbaba"
+["ab","ba","ab","ba"]
+
+
+
+## Ideas
+# (II) Sliding window/Two pointers
+// elegant hashing
+https://leetcode.com/problems/substring-with-concatenation-of-all-words/discuss/13700/My-AC-c%2B%2B-code-O(n)-complexity-26ms
+
+The basic idea is that we hash the whole string vector to a single integer (key) and each word-length substr in s to ints. When sliding the window, we only need to do a rolling hash (subtract the hash value of the front word and add the hash value of the tail word) and compare the running hash with the key.
+
+
+// sliding window sole_optimize indep
+https://leetcode.com/problems/substring-with-concatenation-of-all-words/discuss/13656/An-O(N)-solution-with-detailed-explanation
+
+// indep
+Given the length of word being sz, we do sliding for sz times each time the reading frame is different. For one sliding, we first find the first window that is exactly the same number of identical sized substrings in s as in words. Then we sliding the window rightward incrementing the two pointers lo and hi, until we reach the end.
+
+Notable point is that we use a map to record the occurence of each word in words. The occurrence for each word can be understood as the number of that word we still need to find in s. And we also maintain an int count which counts the total number of words in "words" that is not yet covered.
+
+In finding the first window, we decrement the freq each time the substr in s matches certain word in words given the occurrence of that word is still positive, and count that word towards the total number of words already seen.
+
+Then when sliding the window, we first lift lo rightward while excluding substr starts from original lo from those already covered and then move hi rightward while including substr starts from original hi.
+
+
+# (I) Naive traversal
+
+
+
+## Code
+# (II) Sliding window
+// elegant hash_others_8ms
+class Solution {
+public:
+    double hash(double f, vector<double>& code, string &word) {
+        double res = 0.;
+        for (auto &c : word)
+            res = res * f + code[c];
+        return res;
+    }
+    
+    vector<int> findSubstring(string s, vector<string>& words) {
+        if (s.empty() || words.empty()) return {};
+        int n = s.size(), m = words.size(), sz = words[0].size(), len = sz * m;
+        if (n < len) return {};
+        
+        // hash preparation
+        uniform_real_distribution<double> unif(0., 1.);
+        default_random_engine seed;
+        vector<double> code(128);
+        for (auto &c : code)  c = unif(seed);
+        double f = unif(seed) / 5. + .8;
+        
+        // hash words
+        double val = 0.;
+        for (auto &str : words)
+            val += log(hash(f, code, str));
+        int unit = 1e8, key = log(val - floor(val)) * unit;
+        
+        // hash every sz-long substr in s
+        double fn = pow(f, sz - 1);
+        vector<double> shash(n - sz + 1);
+        string word = string(s.begin(), s.begin() + sz);
+        shash[0] = hash(f, code, word);
+        for (int i = 1; i <= n - sz; i++)
+            shash[i] = (shash[i - 1] - code[s[i - 1]] * fn) * f + code[s[i + sz - 1]];
+        
+        // sliding window
+        vector<int> res;
+        for (int st = 0; st < sz; st++) {
+            int lo = st, hi = st, ct = 0;
+            double ckey = 0;
+            
+            while(hi <= n - sz) {
+                ckey += log(shash[hi]);
+                hi += sz;
+                if (++ct == m) {
+                    int cikey = log(ckey - floor(ckey)) * unit;
+                    if (cikey == key) res.push_back(lo);
+                    ckey -= log(shash[lo]), lo += sz, ct--;
+                }
+            }
+        }
+        return res;
+    }
+};
+
+
+// indep_2nd visit Nov-22-2019
+class Solution {
+public:
+    vector<int> findSubstring(string s, vector<string>& words) {
+        if (s.size() == 0 || words.size() == 0) return {};
+        vector<int> res;
+        int n = s.size(), m = words.size(), count = m, sz = words[0].size(), len = sz * m;
+        if (n < len) return {};
+            
+        unordered_map<string, int> map;
+        vector<string> dict(n);
+        for (int i = 0; i <= n - sz; i++)
+            dict[i] = s.substr(i, sz);
+        
+        // sliding window
+        for (int lo = 0, plo = 0, hi; lo < sz; lo = ++plo, count = m, map.clear()) {
+            // first window
+            for (string str : words) map[str]++;
+            for (hi = lo; hi < len + lo; hi += sz)
+                if (map.count(dict[hi]) && map[dict[hi]]-- > 0) count--;
+            if (count == 0) res.push_back(lo);
+            hi -= sz;
+            // slide rightward
+            while(hi < n - sz) {
+                if (map.count(dict[lo]) && ++map[dict[lo]] > 0)
+                   count++;
+                lo += sz, hi += sz;
+                if (map.count(dict[hi]) && --map[dict[hi]] == 0)
+                    if (--count == 0) res.push_back(lo);
+            }
+        }
+        return res;
+    }
+};
+
+
+# (I) Naive traversal
+// indep
+class Solution {
+public:
+    vector<int> findSubstring(string s, vector<string>& words) {
+        if (s.empty() || words.empty()) return {};
+        int n = s.size(), m = words.size(), len = words[0].size(), tlen = len * m;
+        if (n < m * len) return {};
+        
+        unordered_map<string, int> map, seen;
+        for (string str : words)
+            map[str] = map.count(str) ? map[str] + 1 : 1;
+        
+        // 
+        vector<string> indexword(n - len + 1);
+        string run = s.substr(0, len);
+        for (int i = 0; i <= n - len; i++) {
+            indexword[i] = map.count(run) ? run : "";
+            run.erase(0, 1), run += s[i + len];
+        }
+        
+        vector<int> res; 
+        for (int i = n - tlen, valid = 0; i >= 0; i--) { // start from i
+            valid = 1, seen.clear();
+            for (int j = i; j <= i + (m - 1) * len; j += len) {
+                string cur = indexword[j];
+                if (cur == "") { valid = 0; break; }
+                
+                seen[cur] = seen.count(cur) ? seen[cur] + 1 : 1;
+                if (seen[cur] > map[cur]) { valid = 0; break; }
+            }
+            if (valid) res.push_back(i);
+        }
+        return res;
+    }
+};

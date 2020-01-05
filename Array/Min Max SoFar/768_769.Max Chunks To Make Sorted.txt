@@ -1,0 +1,158 @@
+## Specification
+Given an array arr that is a permutation of [0, 1, ..., arr.length - 1], we split the array into some number of "chunks" (partitions), and individually sort each chunk.  After concatenating them, the result equals the sorted array. What is the most number of chunks we could have made?
+
+Example 1:
+Input: arr = [4,3,2,1,0]
+Output: 1
+Explanation:
+Splitting into two or more chunks will not return the required result.
+For example, splitting into [4, 3], [2, 1, 0] will result in [3, 4, 0, 1, 2], which isn't sorted.
+
+Example 2:
+Input: arr = [1,0,2,3,4]
+Output: 4
+Explanation:
+We can split into two chunks, such as [1, 0], [2, 3, 4].
+However, splitting into [1, 0], [2], [3], [4] is the highest number of chunks possible.
+
+Note:
+arr will have length in range [1, 10].
+arr[i] will be a permutation of [0, 1, ..., arr.length - 1].
+
+
+## Testcases
+[1,2,0,3]
+[5,3,4,8,6,7,1,0,2]
+[1,0,2,8,6,7,5,3,4]
+[1,0,2,3,4]
+[0,2,1]
+[0]
+[0,1]
+
+[0,2,1,5,3,4,7,6,8]
+[1,4,3,6,0,7,8,2,5]
+
+
+[4,2,2,1,1]
+[2,1,3,4,4]
+
+
+## Ideas
+# (II) Stack
+Maintain stack to derive an increasing sequence the elements of which is the smallest possible. Then the final amount of which is the answer.
+
+# (I) Max/Min so far
+// optimized
+Instead of going thru the whole array one by one, at entry i, if left max > right min, then directly jump to where rightmin is attained.
+
+// indep
+At a particular entry (i), if we can cut after it, it must be true that the largest so far ([0,i]) will be <= the smallest from i onward (i, n-1).
+
+
+
+## Code
+# (II) Stack
+// others
+class Solution {
+public:
+    int maxChunksToSorted(vector<int>& arr) {
+        stack<int> cut; cut.push(arr[0]);
+        for (int i = 1, curmax = arr[0]; i < arr.size(); i++) {
+            while (!cut.empty() && cut.top() > arr[i]) cut.pop();
+            curmax = max(curmax, arr[i]);
+            cut.push(curmax);
+        }
+        return cut.size();
+    }
+};
+
+# (I) Max/Min so far
+// 3rd_visit-Dec-17-2019_naive
+// 8ms 9.1MB
+class Solution {
+public:
+    int maxChunksToSorted(vector<int>& arr) {
+        int n = arr.size(), mx[n]{}, mn[n]{};
+        
+        mx[0] = INT_MIN, mn[n - 1] = arr[n - 1]; // mx[i], max of arr[0:i - 1]; mn[i], min of arr[i:]
+        for (int i = 1; i < n; i++) {
+            mx[i] = max(mx[i - 1], arr[i - 1]);
+            mn[n - 1 - i] = min(mn[n - i], arr[n - 1 - i]);
+        }
+        
+        int res = 0;
+        for (int i = n - 1; i >= 0; i--)
+            if (mx[i] <= mn[i]) res++;
+        return res;
+    }
+};
+
+
+// others_only for 769
+class Solution {
+    public int maxChunksToSorted(int[] arr) {
+        int ans = 0, max = 0;
+        for (int i = 0; i < arr.length; ++i) {
+            max = Math.max(max, arr[i]);
+            if (max == i) ans++;
+        }
+        return ans;
+    }
+}
+
+// optimized
+class Solution {
+public:
+    int maxChunksToSorted(vector<int>& arr) {
+        int n = arr.size(), xid = 0, nid = n - 1, ans = 0;
+        vector<int> loclmx(n, 0), loclmn(n, n-1);
+        for (int i = 1; i < n; i++) {
+            if (arr[xid] < arr[i]) xid = i;
+            loclmx[i] = xid; // max 0~cur (inclusive)
+            loclmn[n - 1 - i] = nid; // min cur(exlusive)~n
+            if (arr[nid] > arr[n - 1- i]) nid = n - 1 - i;
+        }
+        for (int i = 0; i < n; i++) { // whether cut after i
+            if (arr[loclmx[i]] <= arr[loclmn[i]] || i == n - 1) ans++;
+            else i = loclmn[i] - 1;
+        }
+        return ans;
+    }
+};
+
+// 2nd visit-Oct 22-2019
+class Solution {
+public:
+    int maxChunksToSorted(vector<int>& arr) {
+        int n = arr.size(), res = 1;
+        int mxsf[n]{}, mnsf[n]{};
+        
+        mnsf[n - 1] = arr[n - 1];
+        for (int i = n - 2; i >= 0; i--)
+            mnsf[i] = min(arr[i], mnsf[i + 1]);
+        for (int i = 1, msf = arr[0]; i < n; i++) {
+            if (msf <= mnsf[i]) 
+                msf = arr[i], res++;
+            else msf = max(msf, arr[i]);
+        }
+        return res;
+    }
+};
+
+// indep
+class Solution {
+public:
+    int maxChunksToSorted(vector<int>& arr) {
+        int n = arr.size(), mx = arr[0], mn = INT_MAX, ans = 0;
+        vector<int> loclmx(n, 0), loclmn(n, n-1);
+        for (int i = 0; i < n; i++) {
+            if (mx < arr[i]) mx = arr[i];
+            loclmx[i] = mx; // max 0~cur (inclusive)
+            loclmn[n - 1 - i] = mn; // min cur(exlusive)~n
+            if (mn > arr[n - 1- i]) mn = arr[n - 1 - i];
+        }
+        for (int i = 0; i < n; i++) // whether cut after i
+            if (loclmx[i] <= loclmn[i]) ans++;
+        return ans;
+    }
+};
