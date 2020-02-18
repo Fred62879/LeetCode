@@ -1,0 +1,78 @@
+
+
+## Testcases
+[[27,27],[8,10],[9,11],[20,21],[25,29],[17,20],[12,12],[12,12],[10,14],[7,7],[6,10],[7,7],[4,8],[30,31],[23,25],[4,6],[17,17],[13,14],[6,9],[13,14]]
+
+
+
+## Ideas
+# (II) Greedy
+// others
+https://leetcode.com/problems/maximum-number-of-events-that-can-be-attended/discuss/510263/JavaC%2B%2BPython-Priority-Queue
+
+https://leetcode.com/problems/maximum-number-of-events-that-can-be-attended/discuss/510253/C%2B%2B-Greedy
+
+Imagine that the end day of all events at not overlapping. In this case, we can simply attend event ends earliest first and then those ends relatively late. Otherwise, we have the chance to miss some events (e.g. attend a on day 1, which means c will never be attended). However, when for instance, more than one events end on day i, is it reasonable to do the same (attend events end relatively early first)?
+
+a a a	a a 
+b b 	b b b
+c 	c c
+	d d d
+	e
+
+If we decide to follow the same procedure, the for the example above, we will attend event e on day 1, a/c on day 2, and b/d on day 3. If we say that for two events end on the same day, one event shall be attended earlier, then the result is same as if we follow the procedure (attend event a on day 1 and b on day 2, still two events attended before day 3).
+
+Thus, the procedure that we attend events end earlier can ensure the max reuslt possible, for (i) When events end date are not overlapping, following the procedure can prevent attending some event that we still can participate in the future at the expense of missing some that can never be joined (ii) when certain events end on the same day, the max can still be assured although slightly violate the procedure may also give the max (attend an event the has a collipse in end date with other events earlier at the expense of missing some events that will never be joined - lose one (e) and gain one (a)).
+
+
+
+## (I) DP
+// indep
+For each day, we collect all events occurring on that day. Then we just do a top-down dp. Specifically, a string is used to record all events joined so far.
+
+
+
+## Code
+# (II) Greedy
+** WAIT **
+
+
+# (I) DP_top-down
+// indep_TLE
+class Solution {
+public:
+    string joined;
+    int n, days = -1;
+    vector<vector<int>> dp;
+    vector<unordered_map<string, int>> mem;
+    
+    // max # of activities can be joined from day d onward udner current joined
+    int solve(int d, int acc) {
+        if (d == days + 1) return acc;
+        if (mem[d].count(joined)) return mem[d][joined];
+        
+        int cur = -1;
+        // for each event available on day d not joined before
+        for (int i = 0; i < n; i++) if (dp[i][d] && joined[i] == '0') {
+            joined[i] = '1';
+            cur = max(cur, solve(d + 1, acc + 1));
+            joined[i] = '0';
+        }
+        cur = max(cur, solve(d + 1, acc));
+        return mem[d][joined] = cur;
+    }
+    
+    int maxEvents(vector<vector<int>>& events) {
+        this->n = events.size();
+        dp.assign(n, vector<int>(100001, 0));
+        for (int i = 0; i < n; i++) joined += "0";
+        
+        for (int i = 0; i < n; i++) { // event i
+            for (int st = events[i][0]; st <= events[i][1]; st++) dp[i][st] = 1;
+            days = max(days, events[i][1]);
+        }
+        
+        mem.resize(days + 1);
+        return solve(0, 0);
+    }
+};

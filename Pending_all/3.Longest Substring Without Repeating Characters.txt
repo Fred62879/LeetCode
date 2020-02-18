@@ -27,8 +27,6 @@ https://leetcode.com/problems/longest-substring-without-repeating-characters/dis
 
 https://leetcode.com/problems/longest-substring-without-repeating-characters/discuss/2242/My-O(n)-solution-runtime%3A-5ms
 
-https://leetcode.com/problems/longest-substring-without-repeating-characters/discuss/2314/Accepted-16ms-c%2B%2B-DP-solution-O(n)-with-bitmask-to-record-the-last-position-of-each-letter-appears
-
 
 // optimized
 Instead of recording whether each char has ever appeared in the string already covered, we can record the exact location that specific char appears. As a result, when we encounter a same char again, we can bypass the whole portion of the string before where that char last appeared.

@@ -1,0 +1,118 @@
+
+
+
+
+## Ideas
+(I) DP_top-down/DFS
+_(ii)_ Array
+//
+https://leetcode.com/problems/maximum-students-taking-exam/discuss/503650/C%2B%2B-DFS-%2B-MEMO-bitcoding-two-rows
+
+https://leetcode.com/problems/maximum-students-taking-exam/discuss/503512/C%2B%2BPY3-Dynamic-Programming-with-Bitmask
+
+
+_(i) Bitmask_
+// same as derived
+https://leetcode.com/problems/maximum-students-taking-exam/discuss/503491/JAVA-Top-Down-DP-Solution
+
+
+
+## Code
+# (I) DP_top-down
+_(ii) Array_
+// others
+
+
+_(i) Bitmask_
+// derived
+class Solution {
+private:
+    int m, n, k;
+    vector<int> masks;
+    vector<vector<int>> mem;
+    
+    int count(int bin) {
+        int res = 0, needle = 1;
+        for (; needle <= bin; needle <<= 1)
+            if (bin & needle) res++;
+        return res;
+    }
+    
+    // get all valid masks
+    void backtrack(int r, int c, int prev, int nprev, vector<vector<char>>& seats) {
+        if (c >= n) { masks.push_back(nprev); return; }
+        if ((nprev << 1) & prev || (nprev >> 1) & prev) return;
+        
+        if (seats[r][c] == '.')
+            backtrack(r, c + 2, prev, nprev | (1 << c), seats);
+        backtrack(r, c + 1, prev, nprev, seats); // bypass current column
+    }
+    
+    // find max # of students from row r onward with prev being bitmask for previous row
+    int solve(int r, int prev, vector<vector<char>>& seats) {
+        if (r == m) return 0;
+        if (mem[r][prev] != -1) return mem[r][prev];
+        
+        int res = INT_MIN;
+        masks.clear(), backtrack(r, 0, prev, 0, seats); // get all valid masks for current row
+        for (int nprev : masks)
+            res = max(res, count(nprev) + solve(r + 1, nprev, seats));
+        // cout << r << " " << prev << ": " << res << endl;
+        return mem[r][prev] = res;
+    }
+    
+public:    
+    int maxStudents(vector<vector<char>>& seats) {
+        m = seats.size(), n = seats[0].size(), k = (1 << n) - 1;
+        mem.assign(m, vector<int>(k + 1, -1));
+        return solve(0, 0, seats);
+    }
+};
+
+// indep_TLE
+class Solution {
+public:
+    int m, n, k;
+    vector<int> broken;
+    vector<vector<int>> mem;
+    
+    int count(int bin) {
+        int res = 0, needle = 0;
+        for (; needle <= bin; needle <<= 1)
+            if (bin & needle) res++;
+        return res;
+    }
+    
+    // find max # of students from row r onward with prev being bitmask for previous row
+    int solve(int r, int prev, vector<vector<char>>& seats) {
+        if (r == m) return count(prev);
+        if (mem[r][prev] != -1) return mem[r][prev];
+        
+        int res = INT_MIN;
+        for (int nprev = 0; nprev <= k; nprev++) {
+            if (nprev & broken[r] || (nprev >> 1) & nprev || (nprev >> 1) & prev || (nprev << 1) & prev) continue;
+            res = max(res, solve(r + 1, nprev, seats));
+            // cout << r << "/" << nprev << "/" << res << endl;
+        }
+        return mem[r][prev] = res;
+    }
+    
+    int maxStudents(vector<vector<char>>& seats) {
+        m = seats.size(), n = seats[0].size(), k = (1 << n) - 1;
+        mem.assign(m, vector<int>(k + 1, -1));
+        
+        broken.assign(m, 0);
+        for (int i = 0; i < m; i++) for (int j = 0; j < n; j++)
+            if (seats[i][j] == '#') broken[i] |= (1 << j);
+        
+        int ans = solve(0, 0, seats);
+        /*
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++)
+                cout << mem[i][j] << " ";
+            cout << endl;
+        }
+        */
+        return ans;
+    }
+};

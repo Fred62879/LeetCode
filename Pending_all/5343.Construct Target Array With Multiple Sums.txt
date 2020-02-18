@@ -1,0 +1,81 @@
+
+
+
+## Testcases
+[1,1,2]
+[1, 1000000000]
+[5, 50]
+https://leetcode.com/submissions/detail/303707962/testcase/
+
+
+
+## Ideas
+# (I) Math
+// others_same as indep
+https://leetcode.com/problems/construct-target-array-with-multiple-sums/discuss/510256/JavaC%2B%2BPython-Backtrack
+
+https://leetcode.com/problems/construct-target-array-with-multiple-sums/discuss/510214/C%2B%2B-Reaching-Points-Work-Backwards
+
+
+We work backward. Given the current array of ints, we find the largest int and subtract sum of other ints from it which gives the original value of current largest before the last operation. We iteratively do this until we the max we get is a 1. However, TLE if not optimized ([1, 10000000]).
+
+Actually, it can be found that when the current largest is way larger than sum of the rest, we keep manipulating the same int iteratively. Thus, we can use modulo to increase performance. That is, each time we find the current max, we modulo sum of rest from it. Notable that, we need to separate out the condition when there is a single 1 being the rest element. In that case, curmax % 1 will always be 0 which normally invalidate the array.
+
+
+## Code
+
+# (I) Math
+// optimized
+** WAIT ** (do not copy sample below)
+
+
+class Solution {
+public:
+    bool isPossible(vector<int>& target) {
+        long sum = 0;
+        priority_queue<int> pq(begin(target), end(target));
+        for (int i : target) sum = sum + i;
+        
+        while(true) {
+            int cur = pq.top(); pq.pop();
+            sum -= cur;
+            if (cur == 1 || sum == 1) return true;
+            
+            if (cur < sum || sum == 0 || cur % sum == 0) return false;
+            
+            cur %= sum, sum += cur;
+            cout << cur << " " << sum << endl;
+            pq.push(cur);
+        }
+        return true;
+    }
+};
+
+
+// indep_TLE
+class Solution {
+public:
+    bool isPossible(vector<int>& target) {
+        int n = target.size(), mx = INT_MIN, res = 0;
+        long sum = 0;
+        // long long sum = accumulate(target.begin(), target.end(), 0);
+        
+        priority_queue<int> pq;
+        for (int i : target)
+            mx = max(mx, i), pq.push(i), sum = (long) sum + i;
+        while(res < n) {
+            int cur = pq.top(); pq.pop();
+            if (cur == 1) return true;
+            
+            sum = sum - cur;
+            int ocur = cur - sum;
+            
+            if (ocur < 1) return false;
+            if (ocur == 1) res++;
+            
+            sum = sum + ocur;
+            pq.push(ocur);
+        }
+        return true;
+    }
+};

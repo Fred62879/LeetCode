@@ -10,8 +10,8 @@ hackerrank可不简单，反正比topcoder要难的。其中难度在Expert以上的题你试过就知道了
 asdas
 
 
-## Java
-# (I) programming tricks
+** Java
+* (I) programming tricks
 // (1) Math.floorMod
 Instead of dp[i][j] = dp[i][j] < 0 ? dp[i][j] + 1000000007 : dp[i][j] % 1000000007;
 you can use Math.floorMod method dp[i][j] = Math.floorMod(dp[i][j], 1000000007);
@@ -76,9 +76,12 @@ CPSC210-lecture-week12-Auction
 > userResponse.equalsIgnoreCase("y")
 
 
+// [8] Array.streams() Sort and filter
+https://leetcode.com/problems/filter-restaurants-by-vegan-friendly-price-and-distance/discuss/490344/Java-one-liner
 
 
-# (II) Others
+
+* (II) Others
 // (1) Comparator
 > public class coinCompare implements Comparator<Integer> {
 >    @Override
@@ -132,13 +135,7 @@ LT56 - Array
 
 
 
-
-		
-
-
-
-
-# (III) Data structures & Alg
+* (III) Data structures & Alg
 // (i) Hash
 (1) hash function for pair
 LT818_BFS
@@ -173,7 +170,8 @@ for(; s[i] == ' '; i++) {}
 
 
 
-## Python
+** Python
+* Programming tech (sample program)
 (1) @lru_cache(None)
 Memo optimize
 LT903_official solution
@@ -205,7 +203,14 @@ https://leetcode.com/problems/smallest-sufficient-team/discuss/334572/Python-DP-
 https://leetcode.com/problems/make-array-strictly-increasing/discuss/377531/O(n2-log(n))-
 solutionStarting-from-brute-force-improve-by-memoization
 
+(4) Sort and filter
+LT1333
+def filterRestaurants(self, A, veganFriendly, maxPrice, maxDistance):
+        A.sort(key=lambda (i, r, v, p, d): (-r, -i))
+        return [i for i, r, v, p, d in A if v >= veganFriendly and p <= maxPrice and d <= maxDistance]
 
+
+* Methods
 // np.matrix, matrix multiplication
 LT1269
 https://leetcode.com/problems/count-vowels-permutation/discuss/398224/easy-peasy-python-O(logN)-matrix-rank
@@ -225,21 +230,26 @@ https://leetcode.com/problems/minimum-falling-path-sum-ii/discuss/451273/Python-
 
 
 
-## C
+
+
+** C
 https://leetcode.com/problems/longest-palindromic-substring/discuss/2923/Simple-C%2B%2B-solution-(8ms-13-lines)
 
+(1) string manipulation
+https://leetcode.com/problems/longest-substring-without-repeating-characters/discuss/1738/4ms-C-code-in-12-lines
 
-## JavaScript
+
+
+** JavaScript
 // [1] Source code
 LT52
 https://leetcode.com/problems/n-queens-ii/discuss/20141/Never-write-codes-like-this-lets-do-eval
 
 It generates source code that's nested loops and ifs, and then runs that code. You can see it by inserting console.log(p); before the return line and testing a custom test case. For example for N=4 you'll see this:
 
-/**
- * @param {number} n
- * @return {number}
- */
+
+// @param {number} n
+// @return {number}
 var totalNQueens = function(n) {
     var p = '', s = 0, l;
     for (var i = 0; i < n; i++) {
@@ -265,7 +275,7 @@ s
 
 
 
-## Data structure
+** Data structure
 (1) PQ and Multiset
 PriorityQueue.remove() complexity is o(n). so the solution is o(n^2). proper data structure should be something like MultiSet (Not buildin with JDK), can be implemented using Map.
 
@@ -280,18 +290,20 @@ https://leetcode.com/problems/advantage-shuffle/discuss/149831/C%2B%2B-6-lines-g
 Because set is BST internally, and it's algorithm designed/optimized for that. Generic binary search just works with ranges, which is slow for BST.
 
 
-
 (2) TreeSet (java) Map (cpp)
 LT870
 https://leetcode.com/problems/advantage-shuffle/discuss/149840/C%2B%2BJava-Greedy-Solution-Using-Map
 
 
 
-## Alg hints
+
+
+
+** Alg hints
 (1) Combination (LT903)
 You have two ways. One way is you can just create a table of binom[n][k] directly, all modulo MOD. Then, use the recurrence C(n,k) = C(n-1,k-1) + C(n-1,k) to populate this table. This solution uses only int.
-
 The second way is that you could just use long. Since every value is modulo MOD, the multiplication of two of those values will fit into a long integer.
+
 
 (2) DFS_constant branches
 A typical setting is the matrix exploration scenario, where using for loop would increase running time significantly. Thus, try to write out the 4 direction population explicitly without using a loop.
@@ -319,11 +331,11 @@ When write out the 4 directions, there is no need to check the validity of both 
 
 A heap is a very good data structure to implement a priority queue. The operations which are made efficient by the heap data structure are the operations that the priority queue interface needs.
 
+
 (4) Hash
 LT30
 https://leetcode.com/problems/substring-with-concatenation-of-all-words/discuss/13700/My-AC-c%2B%2B-code-O(n)-complexity-26ms
-
-Hash word into int. And then hash vector of words to int.
+- Hash word into int. And then hash vector of words to int.
 
 
 (5) Sort
@@ -337,10 +349,18 @@ We can either sort based on decimal digit (increase a divider 10 times each time
 
 (6) Segment tree
 LT1157
- Perfect ds for dividing intervals
+Perfect ds for dividing intervals
 
-(7) BFS (Hadlock/A*)
+
+(7) BFS
+_(i) (Hadlock/A*)_
 LT675
+
+_(ii) Concise bfs imple_
+LT1311
+https://leetcode.com/problems/get-watched-videos-by-your-friends/discuss/470695/C%2B%2B-BFS-%2B-Sort
+
+
 
 (8) Substring template
 LT76
@@ -378,3 +398,9 @@ int findSubstring(string s){
 (9) Pigeon hole
 LT164
 Put n pigeons into m holes to calculate max distance between two pigeons. m in this case should equal to n - 1 (only in this way can we disregard distance between pigeons within the same hole)
+
+
+
+(10) FLoyd Warshall
+LT133
+The Floyd Warshall Algorithm is for solving the All Pairs Shortest Path problem. The problem is to find shortest distances between every pair of vertices in a given edge weighted directed Graph.

@@ -1,0 +1,31 @@
+class Solution {
+public:
+    // vector<int> g;
+    //vector<unordered_set<int>()> mem;
+    
+    // min number of tapes to open from i onwards with state already covered
+    int solve(int i, int covered, int n, vector<int>& ranges, bitset<n> garden) {
+        if (covered) return 0;
+        if (i == ranges.size()) return INT_MAX;
+        //if (mem[i].count(g)) return mem[i][g];
+        
+        vector<int> newcover;
+        for (int i = max(0, i - ranges[i]); i < min(n, i + ranges[i]); i++) {
+            if (garden.test(i)) newcover.push_back(i);
+            garden.set(i);
+        }
+        int take = solve(i + 1, garden.all(), n, ranges);
+        for (int i : newcover) garden.reset(i);
+        
+        int bypass = solve(i + 1, covered, n, ranges);
+        if (take == INT_MAX) return bypass;
+        return min(take + 1, bypass);
+    }
+    
+    int minTaps(int n, vector<int>& ranges) {
+        bitset<n> garden(0);
+        g.assign(n, 0);
+        int res = solve(0, , n, ranges);
+        return res == INT_MAX ? -1 : res;
+    }
+};

@@ -1,0 +1,62 @@
+
+
+
+## Testcases
+4
+[[0,1,3],[1,2,1],[1,3,4],[2,3,1]]
+4
+
+5
+[[0,1,2],[0,4,8],[1,2,3],[1,4,2],[2,3,1],[3,4,1]]
+2
+
+
+https://leetcode.com/submissions/detail/303004475/testcase/
+
+
+
+## Code
+
+# (I)
+// indep
+class Solution {
+public:
+    int n, t;
+    vector<int> marked;
+    vector<vector<int>> dist;
+    
+    // find min distance from i to j (if less than t)
+    // dist - current accumulated dist
+    int findDist(int i, int j) {
+        if (dist[i][j] != INT_MAX) return dist[i][j];
+        if (marked[i]) return INT_MAX;
+        
+        marked[i] = 1;
+        int res = INT_MAX;
+        for (int k = 0; k < n; k++) if (dist[i][k] < t) {
+            if (dist[k][j] != INT_MAX) { res = min(res, dist[i][k] + dist[k][j]); continue; }
+            int d = findDist(k, j); // min dist from k to j
+            if (d != INT_MAX) res = min(res, d + dist[i][k]);
+        }
+        marked[i] = 0;
+        return dist[i][j] = res;
+    }
+    
+    int findTheCity(int n, vector<vector<int>>& edges, int t) {
+        this->n = n, this->t = t, marked.assign(n, 0);
+        dist.assign(n, vector<int>(n + 1, INT_MAX)); // distance between city i and j
+        // init
+        for (int i = 0; i < n; i++) dist[i][n] = 0, dist[i][i] = 0;
+        for (auto edge : edges)
+            dist[edge[0]][edge[1]] = dist[edge[1]][edge[0]] = edge[2];
+        // propagate
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < n; j++)
+                if (i != j && findDist(i, j) <= t) dist[i][n]++;
+        // find max city
+        int min = dist[0][n], res = 0;
+        for (int i = 1; i < n; i++)
+            if (min >= dist[i][n]) min = dist[i][n], res = i;
+        return res;
+    }
+};

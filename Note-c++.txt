@@ -4,14 +4,17 @@
 > vector<map<char,int>> cnt(n);
 > cnt[i][c]...;
 
+
 // (2) If-else
 bulks of if else under several for loops, parenthesis can all be ommitted
+
 
 // (3) Memset
 https://leetcode.com/problems/shortest-path-visiting-all-nodes/discuss/136158/C%2B%2B-7ms-Simple-solution-with-intuition-(this-is-a-wrong-intuition-happened-to-pass-all-test-case)
 
 > bool visited[1<<graph.size()][graph.size()];
 > memset(visited, 0, sizeof(visited));
+
 
 // (4) While
 > do {
@@ -32,12 +35,15 @@ https://leetcode.com/problems/shortest-path-visiting-all-nodes/discuss/136158/C%
 > { v.resize(n);
 > iota(v.begin(), v.end(), 0); }
 
+
 // (6)
 > vector<unordered_set<int>> graph(n + 1, unordered_set<int>());
+
 
 // (7)
 > vector<int> a;
 > if (a.count(..)) equivalent to if (a.find(..) != a.end());
+
 
 // (8) Concise
 > int L, r = 0;
@@ -45,11 +51,14 @@ https://leetcode.com/problems/shortest-path-visiting-all-nodes/discuss/136158/C%
 >	if ((L=a.size()) < 2 || c-a[L-1] || c-a[L-2]) a += c, r = 0;
 >	else r = c, a.pop_back(), a.pop_back();
 
+
 // (9)
 0x3FE
 
+
 // (10) Sort
 LT675 - By default, vectors are sorted based on their first emtry.
+
 
 // (11) Pointer
 > Object* a;
@@ -64,34 +73,35 @@ LT675 - By default, vectors are sorted based on their first emtry.
 >     function2(*a); // change int a
 > }
 
+
 // (12) stringstream
 LT297
 > string str = "a,b,c,d,e", s;
 > getline(s, str, ',');
 s = "a"
 
+
 // [13] LT902
 > string s = "0";
 > s[0] == '0' -> true
 
+
 // [14]
 int dp[a][b]; // entries being INT_MAX
 int dp[a][b]{}; // entries being 0
+
 
 // [15]
 We can add assign values to paras in function overhead.
 > int maxWidthRamp(vector<int>& A, int res = 0) { ... }
 
 
-
 // [16] Bin no bracket
 > k & 1 << i
 
 
-
 // [17] Cout
 > cout << "\nWith iterators = "; // start with a newline
-
 
 
 // [18] string
@@ -99,17 +109,14 @@ _(i) rep_
 > string a(2, 'a'); a = "aa"
 
 
-
 // [19] Vector ini
 > vector<int> team[20]; // size of 20
-
 
 
 // [20]
 In dp problems, to save space, we use 1/2D dp to replace a 2D one via alternating between the two levels of the 2nd dim. To do this implicitly, we can use modula.
 
 https://leetcode.com/problems/count-vowels-permutation/discuss/398213/C%2B%2BJava-O(n)-Knight-Dialer
-
 
 
 // [21] Inside function
@@ -125,22 +132,16 @@ public:
 };
 
 
-
 // [22] assign vals to two ints simultaneously
 > int r, c;
 > pair<int, int> p = { 1, 1 };
 > tie (r, c) = p;
 
 
-
-
-
 // [23] Multi-dim vector ini
 > vector<vector<int>> dp(m + 1,  vector<int>());
 // this will create a 2D vector with element 1 filled in already
 // however, you cannot ini 1D vector in this way (vector<int> a();)
-
-
 
 
 // [24] pointer class manipulation
@@ -163,8 +164,6 @@ public:
 };
 
 
-
-
 // [25] Modulo
 _(i) matrix multiplication_
 Three ways of doing modulo. (LT1220)
@@ -179,7 +178,6 @@ Three ways of doing modulo. (LT1220)
 >                    res[i][j] += (long)a[i][k] * b[k][j] % q, res[i][j] %= q;
 >        return res;
 > }
-
 
 
 // [26] Generate an array [1,2,3,...]
@@ -202,9 +200,30 @@ LT1187
 > int minE = *min_element(nums.begin(),nums.end());
 
 
-// [29]
-> int maxElement = *max_element(array.begin(), array.end());
+// [29] unordered_set
+> unordered_set<int> visited = { id };
 
+// [30] transform
+https://www.geeksforgeeks.org/transform-c-stl-perform-operation-elements/
+> transform(Iterator inputBegin, Iterator inputEnd,
+>           Iterator OutputBegin, unary_operation)
+
+- example LT1311 -
+// keep only the 2nd value in pair to the result vector
+> vector<pair<int, string>> resultPairs;
+> vector<int> result;
+> transform(resultPairs.begin(), resultPairs.end(), back_inserter(result),
+>           [] (pair<int, string>&p) { return p.second; });
+> return result;
+
+
+// [31] back_inserter
+https://www.geeksforgeeks.org/stdback_inserter-in-cpp/
+
+- example LT1311 -
+> vector<int> v1 = { 1, 2, 3 };
+> vector<int> v2 = { 4, 5, 6 };
+> std::copy(v1.begin(), v1.end(), std::back_inserter(v2));
 
 
 
@@ -672,6 +691,61 @@ int jobScheduling(vector<int>& startTime, vector<int>& endTime, vector<int>& pro
 - use iterator to traverse container
 
 
+
+(ii) LT1349
+https://leetcode.com/problems/maximum-students-taking-exam/discuss/503650/C%2B%2B-DFS-%2B-MEMO-bitcoding-two-rows
+
+int maxStudents(vector<vector<char>>& seats) {
+    int m = seats.size(), n = seats[0].size(), mn = m*n;
+    
+	/* can sit @ (p, q) ? */
+    auto cansit = [&](int p, int q){
+        if (seats[p][q] != '.'){return false;};
+        if ((q > (  0)) && (seats[p][q-1] == 'S')){return false;};
+        if ((q < (n-1)) && (seats[p][q+1] == 'S')){return false;};
+        
+        if (((p > 0) && (q > (  0))) && (seats[p-1][q-1] == 'S')){return false;};
+        if (((p > 0) && (q < (n-1))) && (seats[p-1][q+1] == 'S')){return false;};
+        
+        return true;
+    };
+    
+	/* memo of dp (prev row, curr row, x, y) */
+    unordered_map<int, int> memo;
+    
+    function<int(int, int,int,int)> dfs;
+    dfs = [&](int p, int q, int prev, int curr){
+        if (p == m){return 0;}
+        if (q == 0){prev = curr; curr = 0;}
+        
+		/* bitcoding dp state */
+        int codes = (prev << 16) | (curr << 8) | (p << 4) | q;
+        if (memo.count(codes)){return memo[codes];}
+        
+		/* next position */
+        int x = p, y = q + 1;
+        if (y == n){
+            y = 0;
+            x = x + 1;
+        }
+        
+        /* can I put a student here */
+        int S1 = dfs(x, y, prev, curr) + 0;
+        int S2 = 0;
+        
+        if (cansit(p, q)){
+            curr |= (1 << q);
+            
+            seats[p][q] = 'S';
+            S2 = dfs(x, y, prev, curr) + 1;
+            seats[p][q] = '.';
+        }
+        
+        return (memo[codes] = max(S1, S2));
+    };
+    
+    return dfs(0, 0, 0, 0);
+}
 
 
 ## C learning
